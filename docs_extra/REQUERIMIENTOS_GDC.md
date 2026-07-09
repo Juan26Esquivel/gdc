@@ -452,7 +452,7 @@ RLS habilitado en las 13 tablas de negocio. Resumen por tabla (SQL completo en `
 
 ### Módulo 2 — Gestión de Expedientes y Procesos
 
-**RF-04.** El sistema debe permitir al Administrador registrar un expediente indicando: número de expediente, tipo de proceso (de los 6 catalogados), subtipo (cuando aplique, ej. Ordinario/Sumario dentro de Declarativo), cuantía (o indicar que es indeterminada), y si corresponde a un lanzamiento.
+**RF-04.** El sistema debe permitir al Administrador registrar un expediente indicando: número de expediente, tipo de proceso (de los 6 catalogados), subtipo (cuando aplique, ej. Ordinario/Sumario dentro de Declarativo), cuantía (o indicar que es indeterminada), y si corresponde a un lanzamiento. **Implementado** (`gdc/src/app/(app)/expedientes/`), incluyendo la validación del tope de cuantía (RF-35/36) al momento de crear el expediente.
 
 **RF-05.** El sistema debe permitir al Administrador asignar un expediente como tarea a un Asistente específico.
 
@@ -460,7 +460,7 @@ RLS habilitado en las 13 tablas de negocio. Resumen por tabla (SQL completo en `
 
 **RF-07.** El sistema debe mostrar al Juez el desglose de expedientes por fase (Admisión, Notificación de la demanda, Audiencia preliminar, Audiencia de fondo) dentro de cada tipo de proceso.
 
-**RF-08.** El sistema debe registrar el historial de cambios de fase de cada expediente (tabla `expediente_fases`), conservando fecha de inicio y fin de cada fase.
+**RF-08.** El sistema debe registrar el historial de cambios de fase de cada expediente (tabla `expediente_fases`), conservando fecha de inicio y fin de cada fase. **Implementado**: fase `admision` se crea automáticamente al registrar el expediente; el Administrador avanza manualmente de fase desde el listado (cierra la fase activa y abre la siguiente en el mismo orden de `ORDEN_FASES`), pidiendo `fecha_notificacion_demanda` al entrar a la fase `notificacion_demanda`.
 
 ### Módulo 3 — Generación y Ciclo de Vida de Documentos
 

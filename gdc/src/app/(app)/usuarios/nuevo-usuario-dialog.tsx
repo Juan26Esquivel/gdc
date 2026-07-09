@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { crearUsuario, type EstadoCrearUsuario } from "./actions";
+import { ROL_LABEL } from "@/lib/roles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -66,7 +67,11 @@ export function NuevoUsuarioDialog() {
             <input type="hidden" name="rol" value={rol} />
             <Select value={rol} onValueChange={(value) => setRol(value ?? "")}>
               <SelectTrigger id="rol" className="w-full">
-                <SelectValue placeholder="Selecciona un rol" />
+                <SelectValue placeholder="Selecciona un rol">
+                  {(value: string | null) =>
+                    (ROL_LABEL as Record<string, string>)[value ?? ""] ?? null
+                  }
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="juez">Juez</SelectItem>

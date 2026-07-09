@@ -11,13 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { NuevoUsuarioDialog } from "./nuevo-usuario-dialog";
-
-const ROL_LABEL: Record<string, string> = {
-  juez: "Juez",
-  asistente: "Asistente",
-  analista_datos: "Analista de Datos",
-  administrador: "Administrador",
-};
+import { ROL_LABEL } from "@/lib/roles";
 
 export default async function UsuariosPage() {
   const usuarioActual = await getUsuarioActual();

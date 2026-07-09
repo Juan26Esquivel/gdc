@@ -1,13 +1,17 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getUsuarioActual } from "@/lib/auth/current-user";
+import { getUsuarioActual, type RolGdc } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export type EstadoCrearUsuario = { error?: string; ok?: boolean };
 
-const ROLES_VALIDOS = ["juez", "asistente", "analista_datos", "administrador"];
+const ROLES_VALIDOS: RolGdc[] = ["juez", "asistente", "analista_datos", "administrador"];
+
+function esRolValido(valor: string): valor is RolGdc {
+  return (ROLES_VALIDOS as string[]).includes(valor);
+}
 
 export async function crearUsuario(
   _prevState: EstadoCrearUsuario,
@@ -29,7 +33,7 @@ export async function crearUsuario(
   if (password.length < 8) {
     return { error: "La contraseña debe tener al menos 8 caracteres" };
   }
-  if (!ROLES_VALIDOS.includes(rol)) {
+  if (!esRolValido(rol)) {
     return { error: "Rol inválido" };
   }
 

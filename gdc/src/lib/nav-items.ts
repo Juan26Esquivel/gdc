@@ -18,4 +18,9 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Usuarios",
     roles: ["administrador"],
   },
+  {
+    href: "/expedientes",
+    label: "Expedientes",
+    roles: ["juez", "asistente", "administrador"],
+  },
 ];

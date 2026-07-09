@@ -2,15 +2,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getUsuarioActual } from "@/lib/auth/current-user";
 import { NAV_ITEMS } from "@/lib/nav-items";
+import { ROL_LABEL } from "@/lib/roles";
 import { logout } from "@/app/login/actions";
 import { Button } from "@/components/ui/button";
-
-const ROL_LABEL: Record<string, string> = {
-  juez: "Juez",
-  asistente: "Asistente",
-  analista_datos: "Analista de Datos",
-  administrador: "Administrador",
-};
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const usuario = await getUsuarioActual();
