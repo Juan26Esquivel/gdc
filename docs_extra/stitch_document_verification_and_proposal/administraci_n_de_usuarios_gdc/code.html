@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Gestión Documental Judicial - Administración de Usuarios</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Geist:wght@400;600;700&amp;family=Courier+Prime&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "on-primary-container": "#8292b0",
+                    "outline-variant": "#c5c6ce",
+                    "surface-tint": "#4f5f7b",
+                    "surface-container-high": "#dee8ff",
+                    "tertiary": "#121719",
+                    "surface-container-low": "#f0f3ff",
+                    "on-primary-fixed": "#091c34",
+                    "on-error-container": "#93000a",
+                    "error": "#ba1a1a",
+                    "status-confirmed": "#22C55E",
+                    "stone-gray": "#F8FAFC",
+                    "inverse-surface": "#263143",
+                    "on-tertiary-fixed": "#171c1f",
+                    "surface-container": "#e7eeff",
+                    "secondary-fixed": "#d3e4fe",
+                    "secondary-container": "#d0e1fb",
+                    "on-surface-variant": "#44474d",
+                    "primary-fixed-dim": "#b6c7e7",
+                    "outline": "#75777e",
+                    "on-secondary-fixed-variant": "#38485d",
+                    "on-secondary-container": "#54647a",
+                    "status-correction": "#F97316",
+                    "surface-bright": "#f9f9ff",
+                    "on-tertiary-fixed-variant": "#43474b",
+                    "border-muted": "#E2E8F0",
+                    "surface-container-highest": "#d8e3fb",
+                    "status-validated": "#EAB308",
+                    "primary": "#04162e",
+                    "on-error": "#ffffff",
+                    "on-tertiary": "#ffffff",
+                    "primary-fixed": "#d5e3ff",
+                    "primary-container": "#1a2b44",
+                    "tertiary-fixed": "#dfe3e7",
+                    "secondary-fixed-dim": "#b7c8e1",
+                    "on-tertiary-container": "#8d9296",
+                    "inverse-primary": "#b6c7e7",
+                    "on-primary-fixed-variant": "#374762",
+                    "on-primary": "#ffffff",
+                    "surface": "#f9f9ff",
+                    "surface-dim": "#cfdaf2",
+                    "inverse-on-surface": "#ecf1ff",
+                    "on-surface": "#111c2d",
+                    "on-background": "#111c2d",
+                    "tertiary-fixed-dim": "#c3c7cb",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary": "#505f76",
+                    "surface-variant": "#d8e3fb",
+                    "status-generated": "#3B82F6",
+                    "on-secondary-fixed": "#0b1c30",
+                    "background": "#f9f9ff",
+                    "tertiary-container": "#262b2e"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "unit": "4px",
+                    "touch-target": "44px",
+                    "margin-mobile": "16px",
+                    "margin-desktop": "32px",
+                    "gutter": "24px"
+            },
+            "fontFamily": {
+                    "mono-sm": ["Courier Prime"],
+                    "label-md": ["Inter"],
+                    "display-lg": ["Geist"],
+                    "body-lg": ["Inter"],
+                    "headline-sm": ["Geist"],
+                    "headline-md": ["Geist"],
+                    "body-md": ["Inter"]
+            },
+            "fontSize": {
+                    "mono-sm": ["13px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "label-md": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "display-lg": ["36px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-lg": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "headline-sm": ["20px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .sidebar-active {
+            background-color: #d0e1fb; /* secondary-container */
+            color: #54647a; /* on-secondary-container */
+            font-weight: 600;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body class="bg-stone-gray font-body-md text-on-surface overflow-hidden">
+<!-- Sidebar Navigation Shell -->
+<aside class="flex flex-col h-screen fixed left-0 top-0 py-4 bg-primary dark:bg-primary-container w-64 z-20">
+<div class="px-6 mb-8 flex items-center gap-3">
+<div class="w-10 h-10 bg-white rounded flex items-center justify-center">
+<img class="w-8 h-8" data-alt="Official coat of arms of the Republic of Panama, rendered as a minimalist vector icon on a clean white circular background. The style is institutional, authoritative, and high-contrast, using a primary navy blue for the detailed elements of the crest. This symbolizes the judicial power and administrative gravity of the national document management platform." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAEki1fs-uyrEGoyMPlHS6yu49h_R4p22ejs8Lt8iDIbDduvZK2U3-ac8me_6MwSghVRq2BfIarVtgvVHGlpYbGXAND8G-Br2b3gxa3w1hh1v64DCKa-PpHpwrZjcowOtLQe3wgFiHz5P5C-vG6USt184w6Abd0tnEOltvQVwOTGw4SMiyiZbhaqG6xMAP2GVkHPoTS8DShTjliDAy8WdW7WrDZsfoX_dEF-QoZg0pvj9luN1reQ3o1wPF8tC38jRso-7NFmHhM7KrQ"/>
+</div>
+<div>
+<h1 class="text-body-lg font-headline-sm text-on-primary">Órgano Judicial</h1>
+<p class="text-[10px] uppercase tracking-widest text-primary-fixed-dim">Administrador</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<!-- Navigation Items Mapping from JSON -->
+<a class="flex items-center gap-3 text-primary-fixed-dim hover:bg-primary-container hover:text-on-primary rounded-lg mx-2 my-1 px-4 py-3 transition-all" href="#">
+<span class="material-symbols-outlined">folder_open</span>
+<span class="font-body-md">Expedientes</span>
+</a>
+<a class="flex items-center gap-3 text-primary-fixed-dim hover:bg-primary-container hover:text-on-primary rounded-lg mx-2 my-1 px-4 py-3 transition-all" href="#">
+<span class="material-symbols-outlined">gavel</span>
+<span class="font-body-md">Audiencias</span>
+</a>
+<a class="flex items-center gap-3 text-primary-fixed-dim hover:bg-primary-container hover:text-on-primary rounded-lg mx-2 my-1 px-4 py-3 transition-all" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-body-md">Usuarios</span>
+</a>
+<a class="flex items-center gap-3 text-primary-fixed-dim hover:bg-primary-container hover:text-on-primary rounded-lg mx-2 my-1 px-4 py-3 transition-all" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-body-md">Reportes</span>
+</a>
+<!-- Active State: Configuración (Admin de Usuarios context) -->
+<a class="bg-secondary-container text-on-secondary-container font-semibold rounded-lg mx-2 my-1 flex items-center gap-3 px-4 py-3" href="#">
+<span class="material-symbols-outlined">settings_suggest</span>
+<span class="font-body-md">Configuración</span>
+</a>
+</nav>
+<div class="mt-auto px-2">
+<a class="flex items-center gap-3 text-primary-fixed-dim hover:bg-red-900/30 hover:text-white rounded-lg px-4 py-3 transition-all" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-body-md">Cerrar Sesión</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-64 min-h-screen flex flex-col">
+<!-- TopNavBar Shell -->
+<header class="flex justify-between items-center w-full px-margin-desktop h-touch-target bg-surface border-b border-outline-variant z-10">
+<div class="flex items-center gap-4 flex-1">
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full pl-10 pr-4 py-1.5 bg-stone-gray border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary focus:border-primary outline-none" placeholder="Buscar por nombre o expediente..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<button class="material-symbols-outlined p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors">notifications</button>
+<button class="material-symbols-outlined p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors">help</button>
+<button class="material-symbols-outlined p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors">settings</button>
+</div>
+<div class="h-8 w-px bg-outline-variant"></div>
+<div class="flex items-center gap-3">
+<div class="text-right">
+<p class="font-body-md font-semibold text-primary">Carlos Rodríguez</p>
+<p class="text-[11px] text-on-surface-variant leading-none">Administrador de Sistemas</p>
+</div>
+<img class="w-9 h-9 rounded-full object-cover border border-outline-variant" data-alt="A professional, close-up headshot of a Hispanic male in his late 40s, wearing a charcoal business suit and a neutral expression. The lighting is soft and studio-quality, emphasizing a professional and authoritative administrative presence. The background is a clean, corporate gray gradient, matching the judicial and institutional theme of the application." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSKmYsgmg78xyxI64RjwLBwJ5DnEowiQgsMJ7EqkmOvH_pIBL3u_jtJqTn7VvTzK9Mt3G48UyT61O8SDeYzA7UHjz16K6TK5Kyoth_JvoGkKcbGWh5eqHC6GDSQtv8_uiWx4QRLAz7WLGmZCexnaAc6FXLMw_Q7mzXhS6kMfGQ1rXfgGIY3KnelFG5CxYvB3dP0KNFZNZ3lD9kwUxkYG31QFV1D4DY_U9sbdg_lINTd0NNkzkTfDMiIolJ9x574SnZ4QIiX6bz4RF0"/>
+</div>
+</div>
+</header>
+<!-- Page Canvas -->
+<div class="flex-1 flex overflow-hidden">
+<!-- Left Column: Table & Filters -->
+<div class="flex-1 p-margin-desktop space-y-gutter overflow-y-auto custom-scrollbar">
+<!-- Page Header & Action -->
+<div class="flex justify-between items-end">
+<div>
+<h2 class="font-headline-md text-headline-md text-primary">Administración de Usuarios</h2>
+<p class="text-on-surface-variant font-body-md">Gestión de accesos, roles y seguridad del despacho judicial</p>
+</div>
+<button class="bg-primary text-on-primary px-6 py-2.5 rounded-lg font-headline-sm text-label-md flex items-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-sm">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">person_add</span>
+                        NUEVO USUARIO
+                    </button>
+</div>
+<!-- Main Table Card -->
+<div class="bg-white border border-border-muted rounded-xl shadow-sm overflow-hidden">
+<table class="w-full text-left border-collapse">
+<thead class="bg-slate-50 border-b border-border-muted">
+<tr>
+<th class="px-6 py-4 font-headline-sm text-[12px] uppercase tracking-wider text-on-surface-variant">Usuario</th>
+<th class="px-6 py-4 font-headline-sm text-[12px] uppercase tracking-wider text-on-surface-variant">Rol</th>
+<th class="px-6 py-4 font-headline-sm text-[12px] uppercase tracking-wider text-on-surface-variant">Correo Electrónico</th>
+<th class="px-6 py-4 font-headline-sm text-[12px] uppercase tracking-wider text-on-surface-variant text-center">Estado</th>
+<th class="px-6 py-4 font-headline-sm text-[12px] uppercase tracking-wider text-on-surface-variant">Último Acceso</th>
+<th class="px-6 py-4 font-headline-sm text-[12px] uppercase tracking-wider text-on-surface-variant text-right">Acciones</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-muted">
+<!-- User Row 1 -->
+<tr class="hover:bg-stone-gray transition-colors group cursor-pointer" onclick="openDetails('Ana Valdés', 'Juez de Circuito')">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold">AV</div>
+<div>
+<p class="font-body-md font-semibold text-on-surface">Ana Valdés</p>
+<p class="text-[12px] text-on-surface-variant">ID: OJ-4492</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="px-3 py-1 rounded-full text-[11px] font-bold uppercase bg-blue-50 text-blue-700 border-l-4 border-blue-600">Juez</span>
+</td>
+<td class="px-6 py-4 text-body-md text-on-surface-variant">a.valdes@organojudicial.pa</td>
+<td class="px-6 py-4">
+<div class="flex justify-center">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            Activo
+                                        </span>
+</div>
+</td>
+<td class="px-6 py-4 text-body-md text-on-surface-variant">Hoy, 09:15 AM</td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end gap-1">
+<button class="p-2 hover:bg-surface-container-high rounded-lg transition-colors text-primary" title="Editar"><span class="material-symbols-outlined">edit</span></button>
+<button class="p-2 hover:bg-red-50 rounded-lg transition-colors text-red-600" title="Desactivar"><span class="material-symbols-outlined">block</span></button>
+<button class="p-2 hover:bg-surface-container-high rounded-lg transition-colors text-on-surface-variant" title="Restablecer Contraseña"><span class="material-symbols-outlined">lock_reset</span></button>
+</div>
+</td>
+</tr>
+<!-- User Row 2 -->
+<tr class="hover:bg-stone-gray transition-colors group cursor-pointer">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-full bg-secondary-fixed flex items-center justify-center text-secondary font-bold">ML</div>
+<div>
+<p class="font-body-md font-semibold text-on-surface">Marcos López</p>
+<p class="text-[12px] text-on-surface-variant">ID: OJ-3120</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="px-3 py-1 rounded-full text-[11px] font-bold uppercase bg-green-50 text-green-700 border-l-4 border-green-600">Asistente</span>
+</td>
+<td class="px-6 py-4 text-body-md text-on-surface-variant">m.lopez@organojudicial.pa</td>
+<td class="px-6 py-4">
+<div class="flex justify-center">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            Activo
+                                        </span>
+</div>
+</td>
+<td class="px-6 py-4 text-body-md text-on-surface-variant">Ayer, 16:45 PM</td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end gap-1">
+<button class="p-2 hover:bg-surface-container-high rounded-lg transition-colors text-primary"><span class="material-symbols-outlined">edit</span></button>
+<button class="p-2 hover:bg-red-50 rounded-lg transition-colors text-red-600"><span class="material-symbols-outlined">block</span></button>
+<button class="p-2 hover:bg-surface-container-high rounded-lg transition-colors text-on-surface-variant"><span class="material-symbols-outlined">lock_reset</span></button>
+</div>
+</td>
+</tr>
+<!-- User Row 3 -->
+<tr class="hover:bg-stone-gray transition-colors group cursor-pointer bg-surface-container-lowest">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-full bg-tertiary-fixed flex items-center justify-center text-tertiary font-bold">RE</div>
+<div>
+<p class="font-body-md font-semibold text-on-surface">Ricardo Espino</p>
+<p class="text-[12px] text-on-surface-variant">ID: OJ-9011</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="px-3 py-1 rounded-full text-[11px] font-bold uppercase bg-purple-50 text-purple-700 border-l-4 border-purple-600">Analista</span>
+</td>
+<td class="px-6 py-4 text-body-md text-on-surface-variant">r.espino@organojudicial.pa</td>
+<td class="px-6 py-4">
+<div class="flex justify-center">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+                                            Inactivo
+                                        </span>
+</div>
+</td>
+<td class="px-6 py-4 text-body-md text-on-surface-variant">12 Jun 2023</td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end gap-1">
+<button class="p-2 hover:bg-surface-container-high rounded-lg transition-colors text-primary"><span class="material-symbols-outlined">edit</span></button>
+<button class="p-2 hover:bg-green-50 rounded-lg transition-colors text-green-600"><span class="material-symbols-outlined">check_circle</span></button>
+<button class="p-2 hover:bg-surface-container-high rounded-lg transition-colors text-on-surface-variant"><span class="material-symbols-outlined">lock_reset</span></button>
+</div>
+</td>
+</tr>
+<!-- User Row 4 -->
+<tr class="hover:bg-stone-gray transition-colors group cursor-pointer">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center text-white font-bold">AM</div>
+<div>
+<p class="font-body-md font-semibold text-on-surface">Admin Máster</p>
+<p class="text-[12px] text-on-surface-variant">ID: AD-0001</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="px-3 py-1 rounded-full text-[11px] font-bold uppercase bg-slate-800 text-white border-l-4 border-slate-950">Administrador</span>
+</td>
+<td class="px-6 py-4 text-body-md text-on-surface-variant">admin@organojudicial.pa</td>
+<td class="px-6 py-4">
+<div class="flex justify-center">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            Activo
+                                        </span>
+</div>
+</td>
+<td class="px-6 py-4 text-body-md text-on-surface-variant">Hace 2 mins</td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end gap-1">
+<button class="p-2 hover:bg-surface-container-high rounded-lg transition-colors text-primary"><span class="material-symbols-outlined">edit</span></button>
+<button class="p-2 text-slate-300 cursor-not-allowed"><span class="material-symbols-outlined">block</span></button>
+<button class="p-2 hover:bg-surface-container-high rounded-lg transition-colors text-on-surface-variant"><span class="material-symbols-outlined">lock_reset</span></button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="px-6 py-4 bg-slate-50 border-t border-border-muted flex justify-between items-center text-[12px] text-on-surface-variant font-body-md">
+<p>Mostrando 4 de 128 usuarios registrados</p>
+<div class="flex gap-2">
+<button class="px-3 py-1 border border-outline-variant rounded hover:bg-white transition-colors">Anterior</button>
+<button class="px-3 py-1 border border-outline-variant rounded bg-primary text-white">1</button>
+<button class="px-3 py-1 border border-outline-variant rounded hover:bg-white transition-colors">2</button>
+<button class="px-3 py-1 border border-outline-variant rounded hover:bg-white transition-colors">3</button>
+<button class="px-3 py-1 border border-outline-variant rounded hover:bg-white transition-colors">Siguiente</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: User Details Sidepanel -->
+<div class="w-96 bg-white border-l border-border-muted p-6 flex flex-col shadow-[-4px_0_12px_rgba(0,0,0,0.02)] z-10 transition-transform duration-300" id="details-panel">
+<div class="flex justify-between items-start mb-8">
+<h3 class="font-headline-sm text-headline-sm text-primary">Detalles del Usuario</h3>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">close</button>
+</div>
+<div class="text-center mb-8">
+<div class="w-24 h-24 rounded-full bg-primary-fixed mx-auto mb-4 flex items-center justify-center text-primary text-3xl font-bold border-4 border-white shadow-md">AV</div>
+<h4 class="font-headline-md text-headline-sm text-primary" id="detail-name">Ana Valdés</h4>
+<p class="text-on-surface-variant font-body-md" id="detail-title">Juez de Circuito</p>
+</div>
+<div class="space-y-6">
+<div>
+<label class="block text-[11px] font-bold text-on-surface-variant uppercase tracking-wider mb-2">Rol Asignado</label>
+<select class="w-full border border-outline-variant rounded-lg p-2.5 font-body-md text-on-surface focus:ring-primary focus:border-primary">
+<option selected="">Juez</option>
+<option>Asistente</option>
+<option>Analista</option>
+<option>Administrador</option>
+</select>
+</div>
+<div>
+<div class="flex justify-between items-center mb-4">
+<label class="block text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Historial de Actividad</label>
+<button class="text-primary text-[11px] font-semibold hover:underline">Ver todo</button>
+</div>
+<div class="space-y-4 relative">
+<!-- Timeline Vertical Line -->
+<div class="absolute left-[13px] top-2 bottom-2 w-[2px] bg-slate-100"></div>
+<!-- Activity Item 1 -->
+<div class="relative pl-8">
+<div class="absolute left-0 top-1 w-7 h-7 rounded-full bg-blue-50 border-2 border-white shadow-sm flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-blue-600">signature</span>
+</div>
+<p class="text-body-md font-semibold text-on-surface leading-tight">Firmó documento</p>
+<p class="text-[12px] text-on-surface-variant">Expediente 2023-CIV-445</p>
+<p class="text-[10px] text-slate-400 mt-1">Hoy, 09:12 AM</p>
+</div>
+<!-- Activity Item 2 -->
+<div class="relative pl-8">
+<div class="absolute left-0 top-1 w-7 h-7 rounded-full bg-green-50 border-2 border-white shadow-sm flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-green-600">login</span>
+</div>
+<p class="text-body-md font-semibold text-on-surface leading-tight">Inicio de sesión</p>
+<p class="text-[12px] text-on-surface-variant">IP: 190.34.122.11</p>
+<p class="text-[10px] text-slate-400 mt-1">Hoy, 08:30 AM</p>
+</div>
+<!-- Activity Item 3 -->
+<div class="relative pl-8">
+<div class="absolute left-0 top-1 w-7 h-7 rounded-full bg-slate-50 border-2 border-white shadow-sm flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant">edit_note</span>
+</div>
+<p class="text-body-md font-semibold text-on-surface leading-tight">Cambio de estado</p>
+<p class="text-[12px] text-on-surface-variant">Actualizó providencia judicial</p>
+<p class="text-[10px] text-slate-400 mt-1">Ayer, 15:20 PM</p>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-auto pt-6 border-t border-border-muted flex gap-3">
+<button class="flex-1 py-2.5 bg-primary text-on-primary rounded-lg font-semibold hover:bg-opacity-90 transition-all text-body-md" onclick="showFeedback()">Guardar Cambios</button>
+<button class="px-3 py-2.5 border border-outline-variant rounded-lg text-on-surface-variant hover:bg-slate-50 transition-all"><span class="material-symbols-outlined">delete</span></button>
+</div>
+</div>
+</div>
+</main>
+<!-- Feedback Toast Notification -->
+<div class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 transform translate-y-32 opacity-0 transition-all duration-500 z-50" id="feedback-toast">
+<span class="material-symbols-outlined text-green-400">check_circle</span>
+<span class="font-body-md">Usuario actualizado correctamente</span>
+</div>
+<script>
+        function openDetails(name, title) {
+            document.getElementById('detail-name').innerText = name;
+            document.getElementById('detail-title').innerText = title;
+            // Visual feedback for row selection
+            const rows = document.querySelectorAll('tr');
+            rows.forEach(r => r.classList.remove('bg-blue-50/50'));
+            event.currentTarget.classList.add('bg-blue-50/50');
+        }
+
+        function showFeedback() {
+            const toast = document.getElementById('feedback-toast');
+            toast.classList.remove('translate-y-32', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-32', 'opacity-0');
+                toast.classList.remove('translate-y-0', 'opacity-100');
+            }, 3000);
+        }
+    </script>
+</body></html>

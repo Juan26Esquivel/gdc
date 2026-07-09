@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>GDC Panamá - Gestión de Expedientes</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist:wght@400;600;700;800&family=Courier+Prime&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "status-validated": "#EAB308",
+                    "on-tertiary-fixed-variant": "#43474b",
+                    "surface": "#f9f9ff",
+                    "on-tertiary-container": "#8d9296",
+                    "error-container": "#ffdad6",
+                    "inverse-primary": "#b6c7e7",
+                    "tertiary": "#121719",
+                    "surface-container-highest": "#d8e3fb",
+                    "background": "#f9f9ff",
+                    "border-muted": "#E2E8F0",
+                    "secondary-fixed-dim": "#b7c8e1",
+                    "surface-container": "#e7eeff",
+                    "primary": "#04162e",
+                    "tertiary-fixed-dim": "#c3c7cb",
+                    "tertiary-container": "#262b2e",
+                    "surface-container-high": "#dee8ff",
+                    "stone-gray": "#F8FAFC",
+                    "on-background": "#111c2d",
+                    "primary-fixed": "#d5e3ff",
+                    "inverse-on-surface": "#ecf1ff",
+                    "on-primary-fixed-variant": "#374762",
+                    "primary-container": "#1a2b44",
+                    "on-surface": "#111c2d",
+                    "status-confirmed": "#22C55E",
+                    "surface-container-low": "#f0f3ff",
+                    "primary-fixed-dim": "#b6c7e7",
+                    "secondary-fixed": "#d3e4fe",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-bright": "#f9f9ff",
+                    "on-tertiary": "#ffffff",
+                    "status-correction": "#F97316",
+                    "surface-tint": "#4f5f7b",
+                    "tertiary-fixed": "#dfe3e7",
+                    "on-primary-container": "#8292b0",
+                    "on-tertiary-fixed": "#171c1f",
+                    "on-secondary-container": "#54647a",
+                    "on-primary-fixed": "#091c34",
+                    "surface-dim": "#cfdaf2",
+                    "outline-variant": "#c5c6ce",
+                    "on-error": "#ffffff",
+                    "on-secondary-fixed": "#0b1c30",
+                    "on-primary": "#ffffff",
+                    "outline": "#75777e",
+                    "surface-variant": "#d8e3fb",
+                    "secondary-container": "#d0e1fb",
+                    "status-generated": "#3B82F6",
+                    "secondary": "#505f76",
+                    "on-secondary-fixed-variant": "#38485d",
+                    "on-error-container": "#93000a",
+                    "inverse-surface": "#263143",
+                    "on-secondary": "#ffffff",
+                    "on-surface-variant": "#44474d",
+                    "error": "#ba1a1a"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "margin-desktop": "32px",
+                    "gutter": "24px",
+                    "touch-target": "44px",
+                    "unit": "4px",
+                    "margin-mobile": "16px"
+            },
+            "fontFamily": {
+                    "headline-md": ["Geist"],
+                    "body-md": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "label-md": ["Inter"],
+                    "display-lg": ["Geist"],
+                    "headline-sm": ["Geist"],
+                    "mono-sm": ["Courier Prime"]
+            },
+            "fontSize": {
+                    "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "body-lg": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "label-md": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "display-lg": ["36px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-sm": ["20px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                    "mono-sm": ["13px", {"lineHeight": "1.5", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .sidebar-active {
+            font-weight: 700;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+            border-radius: 10px;
+        }
+        .table-container {
+            scrollbar-gutter: stable;
+        }
+    </style>
+</head>
+<body class="bg-stone-gray font-body-md text-on-surface">
+<!-- Shell Layout: SideNavBar -->
+<aside class="hidden lg:flex flex-col h-full border-r border-border-muted dark:border-outline-variant bg-surface dark:bg-inverse-surface h-screen w-64 fixed left-0 top-0 overflow-y-auto z-50">
+<div class="p-6 flex flex-col items-center border-b border-border-muted">
+<div class="w-16 h-16 mb-3">
+<img class="w-full h-full object-contain" data-alt="An official, dignified emblem of the Judicial Branch of Panama featuring the National Coat of Arms in high resolution. The visual style is traditional yet clean, with gold and blue tones reflecting institutional authority and legal transparency." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5nfNG7bpQaPXlaNOzjgT8jDKxEmuPnE1V_2QAcn8hQ9ygfJS_H6L2aZC4sJH4-HaV5Zcqf3S_2tH0RE5ZEg8firjXb5zhGeRFcsmAdT6HZQ1v9zgTW3OQsXkim_UeJ8rOOZpLoKBHVJJzJLN9fp1GzwGPJLx7QC8wdYClEfX7tzqwgXVE1R7egUDZscJm2uHNi59AOqs4SqyGItL8A5pN0igpuTweNNs4S-PSFfdiWnPaQUAugo_aIhNMzuDQoBQQ24F4xolC9chO"/>
+</div>
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary text-center">Órgano Judicial</h1>
+<p class="font-label-md text-label-md text-on-surface-variant">Gestión Documental</p>
+</div>
+<nav class="flex-1 mt-6">
+<!-- Navigation Items with Active Logic: Expedientes is active -->
+<a class="flex items-center gap-3 px-4 py-3 text-primary dark:text-inverse-primary font-bold border-r-4 border-primary dark:border-inverse-primary bg-surface-container-high dark:bg-primary-container scale-[0.99] transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="folder_open">folder_open</span>
+<span class="font-label-md">Expedientes</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-low dark:hover:bg-primary-container/50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="calendar_month">calendar_month</span>
+<span class="font-label-md">Audiencias</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-low dark:hover:bg-primary-container/50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span class="font-label-md">Documentos</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-low dark:hover:bg-primary-container/50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="query_stats">query_stats</span>
+<span class="font-label-md">KPIs</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-low dark:hover:bg-primary-container/50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-md">Administración</span>
+</a>
+</nav>
+<div class="mt-auto border-t border-border-muted p-4">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span class="font-label-md">Ayuda</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="font-label-md">Cerrar Sesión</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-0 lg:ml-64 min-h-screen flex flex-col">
+<!-- TopNavBar -->
+<header class="flex justify-between items-center w-full px-margin-desktop sticky top-0 z-40 bg-surface-container-lowest border-b border-border-muted h-16">
+<div class="flex items-center gap-gutter flex-1">
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" data-icon="search">search</span>
+<input class="w-full bg-surface-container-low border-none rounded-lg pl-10 pr-4 py-2 text-body-md focus:ring-2 focus:ring-primary/20 transition-all" placeholder="Buscar expediente por número o parte..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container transition-all rounded-full relative">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-1 right-1 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<div class="flex items-center gap-3 pl-4 border-l border-border-muted">
+<div class="text-right hidden sm:block">
+<p class="font-label-md text-primary">Magistrado Pérez</p>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-wider">Tribunal Superior</p>
+</div>
+<img class="w-10 h-10 rounded-full object-cover border border-border-muted" data-alt="Professional studio portrait of a judicial official in formal attire, conveying authority and neutrality. The background is a soft, blurred legal office setting with neutral tones. High-end professional photography style with balanced lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAcP8cGX-jhrUlZEMMI48aO0aig-pBUvXyJx5MkTJA6mEYLUeJkaptjgzGtChYH4Ie2iLuudYxzy36LqbDQi3KMXgj2vHI71ua-oOLAUEb22zk5cJZOuYd7BeJjXO7u39zF_ZxmpcuQzLGj8UxX5e1vYwxaag4oPrrkxMrJTyhvJMjCxkq6R_l4rR8v-AS80L-4BOwe9X76krZsc_mxkvytE9fZoHKF3p0urbAIeNNS3o1qaFG6TRvDVv6sLTh8ch51DOETEBms0rb1"/>
+</div>
+</div>
+</header>
+<!-- Page Content -->
+<div class="p-margin-desktop space-y-gutter">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<nav class="flex items-center gap-2 text-on-surface-variant mb-2">
+<span class="font-label-md">Dashboard</span>
+<span class="material-symbols-outlined text-sm" data-icon="chevron_right">chevron_right</span>
+<span class="font-label-md text-primary">Expedientes</span>
+</nav>
+<h2 class="font-headline-md text-headline-md text-primary">Gestión de Expedientes</h2>
+<p class="text-on-surface-variant mt-1">Control de procesos judiciales y plazos de ley según normativa vigente.</p>
+</div>
+<!-- Admin Only CTA -->
+<button class="bg-primary text-on-primary px-6 py-3 rounded-lg flex items-center gap-2 hover:bg-primary-container transition-transform active:scale-[0.98] shadow-sm">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+<span class="font-label-md">NUEVO EXPEDIENTE</span>
+</button>
+</div>
+<!-- Dashboard Stats Brief -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+<div class="bg-surface-container-lowest border border-border-muted p-4 rounded-xl shadow-sm">
+<div class="flex justify-between items-start mb-2">
+<span class="material-symbols-outlined text-primary p-2 bg-primary-fixed rounded-lg" data-icon="folder_zip">folder_zip</span>
+<span class="text-status-confirmed font-bold text-xs">+12%</span>
+</div>
+<p class="text-on-surface-variant text-xs font-label-md uppercase tracking-widest">Total Activos</p>
+<p class="text-2xl font-bold text-primary">1,284</p>
+</div>
+<div class="bg-surface-container-lowest border border-border-muted p-4 rounded-xl shadow-sm">
+<div class="flex justify-between items-start mb-2">
+<span class="material-symbols-outlined text-status-correction p-2 bg-orange-50 rounded-lg" data-icon="warning">warning</span>
+<span class="text-status-correction font-bold text-xs">Urgente</span>
+</div>
+<p class="text-on-surface-variant text-xs font-label-md uppercase tracking-widest">En Plazo Crítico</p>
+<p class="text-2xl font-bold text-primary">18</p>
+</div>
+<div class="bg-surface-container-lowest border border-border-muted p-4 rounded-xl shadow-sm">
+<div class="flex justify-between items-start mb-2">
+<span class="material-symbols-outlined text-status-generated p-2 bg-blue-50 rounded-lg" data-icon="gavel">gavel</span>
+</div>
+<p class="text-on-surface-variant text-xs font-label-md uppercase tracking-widest">En Fase Audiencia</p>
+<p class="text-2xl font-bold text-primary">42</p>
+</div>
+<div class="bg-surface-container-lowest border border-border-muted p-4 rounded-xl shadow-sm">
+<div class="flex justify-between items-start mb-2">
+<span class="material-symbols-outlined text-status-confirmed p-2 bg-green-50 rounded-lg" data-icon="task_alt">task_alt</span>
+</div>
+<p class="text-on-surface-variant text-xs font-label-md uppercase tracking-widest">Resueltos (Mes)</p>
+<p class="text-2xl font-bold text-primary">156</p>
+</div>
+</div>
+<!-- Filters Section -->
+<div class="bg-white border border-border-muted rounded-xl p-4 flex flex-wrap items-center gap-4">
+<div class="flex items-center gap-2 border-r border-border-muted pr-4">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="filter_list">filter_list</span>
+<span class="font-label-md text-on-surface-variant">Filtros:</span>
+</div>
+<div class="flex-1 flex flex-wrap gap-3">
+<select class="bg-stone-gray border border-border-muted rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary outline-none">
+<option>Tipo de Proceso: Todos</option>
+<option>Declarativo</option>
+<option>Ejecución</option>
+<option>Sucesorio</option>
+<option>Arbitraje</option>
+</select>
+<select class="bg-stone-gray border border-border-muted rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary outline-none">
+<option>Fase Actual: Todas</option>
+<option>Admisión</option>
+<option>Pruebas</option>
+<option>Alegatos</option>
+<option>Sentencia</option>
+</select>
+<select class="bg-stone-gray border border-border-muted rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary outline-none">
+<option>Asistente: Todos</option>
+<option>Lic. Arcia</option>
+<option>Lic. Castillo</option>
+<option>Lic. Espinosa</option>
+</select>
+</div>
+<div class="flex gap-2">
+<button class="px-4 py-2 text-on-surface-variant hover:text-primary transition-colors text-sm font-label-md">Limpiar</button>
+<button class="bg-surface-container border border-border-muted px-4 py-2 rounded-lg text-primary text-sm font-label-md hover:bg-primary-container hover:text-white transition-all">Aplicar Filtros</button>
+</div>
+</div>
+<!-- Main Table Section -->
+<div class="bg-white border border-border-muted rounded-xl shadow-sm overflow-hidden">
+<div class="overflow-x-auto table-container">
+<table class="w-full border-collapse text-left">
+<thead class="bg-slate-50 border-b border-border-muted">
+<tr>
+<th class="px-6 py-4 font-headline-sm text-xs uppercase tracking-wider text-on-surface-variant">Número de Expediente</th>
+<th class="px-6 py-4 font-headline-sm text-xs uppercase tracking-wider text-on-surface-variant">Tipo de Proceso</th>
+<th class="px-6 py-4 font-headline-sm text-xs uppercase tracking-wider text-on-surface-variant text-right">Cuantía (B/.)</th>
+<th class="px-6 py-4 font-headline-sm text-xs uppercase tracking-wider text-on-surface-variant">Fase Actual</th>
+<th class="px-6 py-4 font-headline-sm text-xs uppercase tracking-wider text-on-surface-variant">Asistente</th>
+<th class="px-6 py-4 font-headline-sm text-xs uppercase tracking-wider text-on-surface-variant">Estado / Plazos</th>
+<th class="px-6 py-4 font-headline-sm text-xs uppercase tracking-wider text-on-surface-variant"></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-muted">
+<!-- Row 1: High cuantía alert -->
+<tr class="hover:bg-stone-gray transition-colors group">
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-bold text-primary font-mono-sm">2023-000-4592</span>
+<span class="text-[10px] text-on-surface-variant">Entrada: 12/Oct/2023</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="px-2 py-1 bg-blue-50 text-status-generated border-l-2 border-status-generated text-xs font-bold uppercase">Ejecución Simple</span>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex items-center justify-end gap-2">
+<span class="font-mono-sm font-bold text-error">B/. 25,400.00</span>
+<span class="material-symbols-outlined text-error text-sm animate-pulse" data-icon="error" title="Cuantía superior a B/.10,000">error</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-status-validated"></div>
+<span class="text-sm">Pruebas (Art. 395)</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-primary-fixed flex items-center justify-center text-[10px] font-bold text-primary">MA</div>
+<span class="text-sm">Lic. M. Arcia</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex flex-col gap-1">
+<div class="flex justify-between items-center text-[10px] font-label-md mb-1">
+<span class="text-status-correction">VENCE EN 3 DÍAS</span>
+<span class="text-on-surface-variant">Plazo Ley 402</span>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-status-correction h-full" style="width: 85%"></div>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="p-2 hover:bg-surface-container rounded-lg transition-all opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 2: Standard process -->
+<tr class="hover:bg-stone-gray transition-colors group">
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-bold text-primary font-mono-sm">2023-000-8812</span>
+<span class="text-[10px] text-on-surface-variant">Entrada: 05/Nov/2023</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="px-2 py-1 bg-slate-100 text-on-surface-variant border-l-2 border-outline text-xs font-bold uppercase">Declarativo</span>
+</td>
+<td class="px-6 py-4 text-right">
+<span class="font-mono-sm text-on-surface">B/. 4,250.00</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-status-confirmed"></div>
+<span class="text-sm">Admisión</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-secondary-fixed flex items-center justify-center text-[10px] font-bold text-on-secondary-fixed">JC</div>
+<span class="text-sm">Lic. J. Castillo</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex flex-col gap-1">
+<div class="flex justify-between items-center text-[10px] font-label-md mb-1">
+<span class="text-status-confirmed">EN PLAZO</span>
+<span class="text-on-surface-variant">15 días restantes</span>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-status-confirmed h-full" style="width: 30%"></div>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="p-2 hover:bg-surface-container rounded-lg transition-all opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 3: Warning state -->
+<tr class="hover:bg-stone-gray transition-colors group">
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-bold text-primary font-mono-sm">2022-000-1120</span>
+<span class="text-[10px] text-on-surface-variant">Entrada: 18/Dic/2022</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="px-2 py-1 bg-yellow-50 text-status-validated border-l-2 border-status-validated text-xs font-bold uppercase">Sucesorio</span>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex items-center justify-end gap-2">
+<span class="font-mono-sm font-bold text-error">B/. 112,000.00</span>
+<span class="material-symbols-outlined text-error text-sm" data-icon="warning" title="Alta Cuantía">warning</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-status-correction"></div>
+<span class="text-sm">Audiencia Pendiente</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-tertiary-fixed flex items-center justify-center text-[10px] font-bold text-on-tertiary-fixed">RE</div>
+<span class="text-sm">Lic. R. Espinosa</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex flex-col gap-1">
+<div class="flex justify-between items-center text-[10px] font-label-md mb-1">
+<span class="text-error font-bold">VENCIDO (LEY 402)</span>
+<span class="text-on-surface-variant">+2 días mora</span>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-error h-full" style="width: 100%"></div>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="p-2 hover:bg-surface-container rounded-lg transition-all opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="bg-slate-50 border-t border-border-muted px-6 py-4 flex items-center justify-between">
+<p class="text-sm text-on-surface-variant">Mostrando <span class="font-bold">1-10</span> de <span class="font-bold">1,284</span> expedientes</p>
+<div class="flex gap-1">
+<button class="p-2 hover:bg-surface-container rounded transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="chevron_left">chevron_left</span>
+</button>
+<button class="px-3 py-1 bg-primary text-white rounded text-sm font-bold">1</button>
+<button class="px-3 py-1 hover:bg-surface-container rounded text-sm">2</button>
+<button class="px-3 py-1 hover:bg-surface-container rounded text-sm">3</button>
+<span class="px-2">...</span>
+<button class="px-3 py-1 hover:bg-surface-container rounded text-sm">129</button>
+<button class="p-2 hover:bg-surface-container rounded transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Law Reference Tooltip Area (Micro-interaction example) -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter mt-8">
+<div class="col-span-2 bg-surface-container-low p-6 rounded-xl border border-border-muted relative overflow-hidden">
+<div class="relative z-10">
+<h3 class="font-headline-sm text-headline-sm text-primary flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined" data-icon="gavel">gavel</span>
+                            Referencia Legal de Plazos
+                        </h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="bg-white/60 p-4 rounded-lg">
+<p class="font-label-md text-primary mb-1">Art. 395 - Término de Pruebas</p>
+<p class="text-xs text-on-surface-variant">El término ordinario para la práctica de pruebas no podrá exceder de sesenta días en los procesos ordinarios de mayor cuantía.</p>
+</div>
+<div class="bg-white/60 p-4 rounded-lg">
+<p class="font-label-md text-primary mb-1">Ley 402 - Audiencias</p>
+<p class="text-xs text-on-surface-variant">Las audiencias deberán fijarse dentro de los veinte días siguientes a la conclusión de la fase anterior de alegatos.</p>
+</div>
+</div>
+</div>
+<!-- Aesthetic shader background -->
+<div class="absolute top-0 right-0 w-1/3 h-full opacity-10 pointer-events-none">
+<svg class="w-full h-full text-primary fill-current" viewbox="0 0 100 100">
+<path d="M0,100 C20,80 40,80 60,100 C80,120 100,120 120,100" fill="none" stroke="currentColor" stroke-width="0.5"></path>
+<path d="M0,80 C20,60 40,60 60,80 C80,100 100,100 120,80" fill="none" stroke="currentColor" stroke-width="0.5"></path>
+</svg>
+</div>
+</div>
+<div class="bg-primary text-white p-6 rounded-xl shadow-lg relative flex flex-col justify-between overflow-hidden">
+<div class="absolute -right-10 -bottom-10 opacity-10">
+<span class="material-symbols-outlined text-[120px]" data-icon="verified_user">verified_user</span>
+</div>
+<div>
+<h4 class="font-label-md uppercase tracking-widest text-primary-fixed mb-2">Estado del Sistema</h4>
+<p class="text-lg font-bold">Integridad de Firma Digital</p>
+<p class="text-sm opacity-80 mt-2">Todos los documentos cargados hoy cumplen con los protocolos de inmutabilidad del GDC.</p>
+</div>
+<div class="mt-6 flex items-center gap-2">
+<span class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></span>
+<span class="text-xs font-mono-sm">Última validación: 09:42 AM</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer spacing -->
+<footer class="mt-auto py-8 px-margin-desktop text-center text-on-surface-variant text-xs opacity-50">
+            © 2023 Órgano Judicial de la República de Panamá | Sistema GDC v2.4.0
+        </footer>
+</main>
+<script>
+        // Simple micro-interaction for rows
+        document.querySelectorAll('tr').forEach(row => {
+            row.addEventListener('click', () => {
+                const expediente = row.querySelector('.font-mono-sm')?.innerText;
+                if(expediente) {
+                    console.log(`Cargando expediente: ${expediente}`);
+                    // UI reaction: temporary highlight
+                    row.classList.add('bg-primary/5');
+                    setTimeout(() => row.classList.remove('bg-primary/5'), 300);
+                }
+            });
+        });
+
+        // Simulating admin view toggle for the CTA button based on "permissions"
+        // In a real app, this would be reactive state
+        const isAdmin = true; 
+        const ctaBtn = document.querySelector('button.bg-primary');
+        if (!isAdmin) {
+            ctaBtn.style.display = 'none';
+        }
+    </script>
+</body></html>

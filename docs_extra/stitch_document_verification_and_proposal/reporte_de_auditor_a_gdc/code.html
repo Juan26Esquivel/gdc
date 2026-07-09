@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>GDC - Reporte de Auditoría y Trazabilidad</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;600;700&family=Inter:wght@400;500;600;700&family=Courier+Prime&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed-dim": "#c3c7cb",
+                        "on-primary-fixed": "#091c34",
+                        "border-muted": "#E2E8F0",
+                        "surface-container-low": "#f0f3ff",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "secondary": "#505f76",
+                        "on-tertiary-fixed-variant": "#43474b",
+                        "on-primary": "#ffffff",
+                        "secondary-fixed": "#d3e4fe",
+                        "surface-container": "#e7eeff",
+                        "on-error": "#ffffff",
+                        "on-primary-fixed-variant": "#374762",
+                        "on-surface-variant": "#44474d",
+                        "on-tertiary-fixed": "#171c1f",
+                        "on-primary-container": "#8292b0",
+                        "on-error-container": "#93000a",
+                        "outline-variant": "#c5c6ce",
+                        "surface": "#f9f9ff",
+                        "tertiary": "#121719",
+                        "secondary-container": "#d0e1fb",
+                        "surface-variant": "#d8e3fb",
+                        "surface-tint": "#4f5f7b",
+                        "stone-gray": "#F8FAFC",
+                        "primary-container": "#1a2b44",
+                        "error-container": "#ffdad6",
+                        "error": "#ba1a1a",
+                        "on-surface": "#111c2d",
+                        "outline": "#75777e",
+                        "tertiary-fixed": "#dfe3e7",
+                        "tertiary-container": "#262b2e",
+                        "inverse-surface": "#263143",
+                        "on-secondary-fixed": "#0b1c30",
+                        "surface-container-lowest": "#ffffff",
+                        "status-generated": "#3B82F6",
+                        "on-secondary": "#ffffff",
+                        "inverse-primary": "#b6c7e7",
+                        "surface-container-highest": "#d8e3fb",
+                        "primary": "#04162e",
+                        "surface-bright": "#f9f9ff",
+                        "inverse-on-surface": "#ecf1ff",
+                        "surface-dim": "#cfdaf2",
+                        "status-confirmed": "#22C55E",
+                        "status-validated": "#EAB308",
+                        "on-secondary-container": "#54647a",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "background": "#f9f9ff",
+                        "primary-fixed-dim": "#b6c7e7",
+                        "status-correction": "#F97316",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-container": "#8d9296",
+                        "surface-container-high": "#dee8ff",
+                        "on-background": "#111c2d",
+                        "primary-fixed": "#d5e3ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "unit": "4px",
+                        "gutter": "24px",
+                        "margin-desktop": "32px",
+                        "touch-target": "44px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Inter"],
+                        "display-lg": ["Geist"],
+                        "body-md": ["Inter"],
+                        "headline-sm": ["Geist"],
+                        "headline-md": ["Geist"],
+                        "body-lg": ["Inter"],
+                        "mono-sm": ["Courier Prime"]
+                    },
+                    "fontSize": {
+                        "label-md": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "display-lg": ["36px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-md": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "headline-sm": ["20px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "mono-sm": ["13px", {"lineHeight": "1.5", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { background-color: #F8FAFC; color: #111C2D; font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .audit-row:hover { background-color: #F8FAFC; }
+        .token-badge { @apply border-l-4 px-3 py-1 text-xs font-bold uppercase tracking-wider; }
+        .diff-added { background-color: rgba(34, 197, 94, 0.1); color: #15803d; }
+        .diff-removed { background-color: rgba(186, 26, 26, 0.1); color: #ba1a1a; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="flex min-h-screen">
+<!-- SideNavBar (from JSON Authority) -->
+<aside class="fixed left-0 top-0 h-full flex flex-col p-4 space-y-4 bg-primary dark:bg-primary-container docked full-height left-0 w-64 z-40">
+<div class="flex items-center space-x-3 mb-6 px-2">
+<div class="w-10 h-10 bg-white/10 rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary" style="font-variation-settings: 'FILL' 1;">balance</span>
+</div>
+<div>
+<h1 class="font-headline-sm text-headline-sm text-on-primary leading-tight">Órgano Judicial</h1>
+<p class="text-[10px] uppercase tracking-widest text-on-primary/60">República de Panamá</p>
+</div>
+</div>
+<nav class="flex-grow space-y-1">
+<a class="flex items-center space-x-3 px-3 py-2 text-on-primary-fixed-variant hover:text-on-primary hover:bg-primary-fixed-variant transition-all font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined">folder_open</span>
+<span>Expedientes</span>
+</a>
+<a class="flex items-center space-x-3 px-3 py-2 text-on-primary-fixed-variant hover:text-on-primary hover:bg-primary-fixed-variant transition-all font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined">gavel</span>
+<span>Audiencias</span>
+</a>
+<a class="flex items-center space-x-3 px-3 py-2 text-on-primary-fixed-variant hover:text-on-primary hover:bg-primary-fixed-variant transition-all font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined">description</span>
+<span>Documentos</span>
+</a>
+<a class="flex items-center space-x-3 px-3 py-2 text-on-primary-fixed-variant hover:text-on-primary hover:bg-primary-fixed-variant transition-all font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span>KPIs</span>
+</a>
+<a class="flex items-center space-x-3 px-3 py-2 bg-secondary-container text-on-secondary-container rounded-lg font-bold font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span>Administración</span>
+</a>
+</nav>
+<div class="pt-4 border-t border-white/10 space-y-1">
+<a class="flex items-center space-x-3 px-3 py-2 text-on-primary-fixed-variant hover:text-on-primary transition-all font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined">help</span>
+<span>Ayuda</span>
+</a>
+<a class="flex items-center space-x-3 px-3 py-2 text-on-primary-fixed-variant hover:text-on-primary transition-all font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined text-error">logout</span>
+<span class="text-error">Cerrar Sesión</span>
+</a>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="ml-64 flex-grow relative">
+<!-- TopNavBar (from JSON Authority) -->
+<header class="sticky top-0 z-30 flex justify-between items-center px-margin-desktop w-full h-touch-target bg-surface-container-lowest dark:bg-surface-container-low border-b border-border-muted dark:border-outline-variant">
+<div class="flex items-center">
+<span class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed">GDC</span>
+<div class="ml-8 hidden md:flex items-center space-x-6">
+<span class="text-secondary dark:text-secondary-fixed-dim font-label-md text-label-md">Panel de Auditoría</span>
+</div>
+</div>
+<div class="flex items-center space-x-4">
+<button class="material-symbols-outlined p-2 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-full">notifications</button>
+<button class="material-symbols-outlined p-2 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-full">settings</button>
+<div class="h-8 w-px bg-border-muted mx-2"></div>
+<div class="flex items-center space-x-3 cursor-pointer p-1 rounded-lg hover:bg-surface-container-low transition-colors">
+<div class="text-right hidden lg:block">
+<p class="font-label-md text-label-md text-primary leading-none">Perfil</p>
+<p class="text-[10px] text-secondary">Magistrado Admin</p>
+</div>
+<img class="w-8 h-8 rounded-full border border-outline-variant" data-alt="Close up portrait of a senior judicial officer in a professional setting, soft office lighting, authoritative and clean institutional look, neutral colors." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCm760hoXoc8R0RPaZMQX44gOlcRmjfEo1s8tnYksU56618-dF_MbigWUETEqpDpvP_CAlw9KgxTAv6sDUaIKxy5Kdbg2J_g8L-tAHyFzoOCjpkM7yikHi5Vxj_fq0CRJ1O3AsLUJfbFoD9LndgGplOUMbYi6-siLaETtPU6-8XUT62RgNe1a4aYXgH8z9RA2X5kuDC9pb5P3k5IyoShzgU56_bTG88-Nnzg_5RIL9CuSRTrWsK_BYazUmJFAvAvu0HNdK5pV32Rx6q"/>
+</div>
+</div>
+</header>
+<!-- Content Canvas -->
+<div class="p-8 max-w-[1440px] mx-auto">
+<!-- Header Section -->
+<div class="mb-8 flex justify-between items-end">
+<div>
+<h2 class="font-headline-md text-headline-md text-primary mb-1">Reporte de Auditoría y Trazabilidad</h2>
+<p class="font-body-md text-body-md text-secondary">Registro inmutable de acciones realizadas en el despacho judicial según Ley 402/2023.</p>
+</div>
+<div class="flex space-x-3">
+<button class="flex items-center space-x-2 px-4 py-2 bg-stone-gray border border-border-muted rounded text-secondary font-label-md text-label-md hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-sm">download</span>
+<span>Exportar CSV</span>
+</button>
+<button class="flex items-center space-x-2 px-4 py-2 bg-primary text-on-primary rounded font-label-md text-label-md hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-sm">picture_as_pdf</span>
+<span>Descargar PDF</span>
+</button>
+</div>
+</div>
+<!-- Summary Stats (Bento Grid Style) -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-gutter mb-8">
+<div class="bg-white p-5 rounded-lg border border-border-muted shadow-sm flex flex-col justify-between">
+<span class="text-secondary font-label-md text-label-md uppercase">Acciones del Periodo</span>
+<div class="flex items-baseline space-x-2 mt-2">
+<span class="font-display-lg text-display-lg text-primary">1,284</span>
+<span class="text-status-confirmed text-xs font-bold">+12%</span>
+</div>
+<div class="mt-4 h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+<div class="h-full bg-primary" style="width: 75%"></div>
+</div>
+</div>
+<div class="bg-white p-5 rounded-lg border border-border-muted shadow-sm flex flex-col justify-between">
+<span class="text-secondary font-label-md text-label-md uppercase">Usuario más Activo</span>
+<div class="flex items-center space-x-3 mt-2">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-primary font-bold">RM</div>
+<div>
+<p class="font-body-md text-body-md text-primary font-bold">R. Martínez</p>
+<p class="text-xs text-secondary">Asistente Judicial</p>
+</div>
+</div>
+<p class="mt-4 text-xs text-secondary">428 acciones (33% del total)</p>
+</div>
+<div class="bg-white p-5 rounded-lg border border-border-muted shadow-sm flex flex-col justify-between">
+<span class="text-secondary font-label-md text-label-md uppercase">Ediciones Sensibles</span>
+<div class="flex items-baseline space-x-2 mt-2">
+<span class="font-display-lg text-display-lg text-error">12</span>
+<span class="text-secondary text-xs">Eliminaciones</span>
+</div>
+<p class="mt-4 text-xs text-error font-medium flex items-center">
+<span class="material-symbols-outlined text-xs mr-1">warning</span>
+                        Requiere revisión inmediata
+                    </p>
+</div>
+<div class="bg-white p-5 rounded-lg border border-border-muted shadow-sm flex flex-col justify-between">
+<span class="text-secondary font-label-md text-label-md uppercase">Alertas de Seguridad</span>
+<div class="flex items-baseline space-x-2 mt-2">
+<span class="font-display-lg text-display-lg text-status-validated">03</span>
+<span class="text-secondary text-xs">Login fallidos</span>
+</div>
+<p class="mt-4 text-xs text-secondary">Última alerta: Hace 2 horas</p>
+</div>
+</div>
+<!-- Filters Section -->
+<div class="bg-white border border-border-muted rounded-lg p-6 mb-8 shadow-sm">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+<div class="space-y-1">
+<label class="font-label-md text-label-md text-secondary">Usuario</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-2.5 text-outline text-sm">person</span>
+<select class="w-full pl-9 pr-4 py-2 border border-border-muted rounded bg-stone-gray font-body-md text-body-md appearance-none">
+<option>Todos los usuarios</option>
+<option>Magistrado Superior</option>
+<option>Secretario Judicial</option>
+</select>
+</div>
+</div>
+<div class="space-y-1">
+<label class="font-label-md text-label-md text-secondary">Rango de Fecha</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-2.5 text-outline text-sm">calendar_today</span>
+<input class="w-full pl-9 pr-4 py-2 border border-border-muted rounded bg-stone-gray font-body-md text-body-md" type="text" value="01/10/2023 - 31/10/2023"/>
+</div>
+</div>
+<div class="space-y-1">
+<label class="font-label-md text-label-md text-secondary">Tipo de Acción</label>
+<select class="w-full px-4 py-2 border border-border-muted rounded bg-stone-gray font-body-md text-body-md">
+<option>Todas las acciones</option>
+<option>Eliminaciones</option>
+<option>Confirmación de Firma</option>
+<option>Creación de Documento</option>
+</select>
+</div>
+<div class="space-y-1">
+<label class="font-label-md text-label-md text-secondary">Entidad</label>
+<select class="w-full px-4 py-2 border border-border-muted rounded bg-stone-gray font-body-md text-body-md">
+<option>Todas las entidades</option>
+<option>Expediente</option>
+<option>Documento</option>
+<option>Configuración</option>
+</select>
+</div>
+</div>
+</div>
+<!-- Audit Log Table -->
+<div class="bg-white border border-border-muted rounded-lg shadow-sm overflow-hidden flex flex-col lg:flex-row min-h-[600px]">
+<!-- Main Log Table -->
+<div class="flex-grow overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-50 border-b border-border-muted">
+<th class="px-6 py-4 font-label-md text-label-md text-secondary uppercase">Fecha / Hora</th>
+<th class="px-6 py-4 font-label-md text-label-md text-secondary uppercase">Usuario</th>
+<th class="px-6 py-4 font-label-md text-label-md text-secondary uppercase">Acción</th>
+<th class="px-6 py-4 font-label-md text-label-md text-secondary uppercase">ID Entidad</th>
+<th class="px-6 py-4 font-label-md text-label-md text-secondary uppercase">Detalle</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-muted">
+<!-- Row 1: Critical Delete -->
+<tr class="audit-row cursor-pointer transition-colors" onclick="toggleDetail('row-1')">
+<td class="px-6 py-4 font-body-md text-body-md text-primary font-mono whitespace-nowrap">2023-10-31 14:22:05</td>
+<td class="px-6 py-4">
+<div class="flex items-center space-x-3">
+<div class="w-8 h-8 rounded bg-error-container text-on-error-container flex items-center justify-center text-xs font-bold">AD</div>
+<span class="font-body-md text-body-md text-primary">A. Delgado</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="token-badge border-error text-error bg-error-container/20">Eliminó Expediente</span>
+</td>
+<td class="px-6 py-4">
+<a class="text-primary font-bold hover:underline" href="#">EXP-2023-0044</a>
+</td>
+<td class="px-6 py-4 font-body-md text-body-md text-secondary truncate max-w-[200px]">
+                                    Removido por orden administrativa...
+                                </td>
+</tr>
+<!-- Row 2: Signature Confirmation -->
+<tr class="audit-row cursor-pointer transition-colors bg-blue-50/20" onclick="toggleDetail('row-2')">
+<td class="px-6 py-4 font-body-md text-body-md text-primary font-mono whitespace-nowrap">2023-10-31 11:45:12</td>
+<td class="px-6 py-4">
+<div class="flex items-center space-x-3">
+<div class="w-8 h-8 rounded bg-surface-container text-primary flex items-center justify-center text-xs font-bold">JG</div>
+<span class="font-body-md text-body-md text-primary">J. González</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="token-badge border-status-confirmed text-status-confirmed bg-status-confirmed/10">Confirmó Sentencia</span>
+</td>
+<td class="px-6 py-4">
+<a class="text-primary font-bold hover:underline" href="#">DOC-8821-S</a>
+</td>
+<td class="px-6 py-4 font-body-md text-body-md text-secondary truncate max-w-[200px]">
+                                    Firma digital validada (ID: 0x982...)
+                                </td>
+</tr>
+<!-- Row 3: Standard Edit -->
+<tr class="audit-row cursor-pointer transition-colors" onclick="toggleDetail('row-3')">
+<td class="px-6 py-4 font-body-md text-body-md text-primary font-mono whitespace-nowrap">2023-10-31 09:15:44</td>
+<td class="px-6 py-4">
+<div class="flex items-center space-x-3">
+<div class="w-8 h-8 rounded bg-surface-container text-primary flex items-center justify-center text-xs font-bold">RM</div>
+<span class="font-body-md text-body-md text-primary">R. Martínez</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="token-badge border-status-generated text-status-generated bg-status-generated/10">Editó Usuario</span>
+</td>
+<td class="px-6 py-4">
+<a class="text-primary font-bold hover:underline" href="#">USR-992</a>
+</td>
+<td class="px-6 py-4 font-body-md text-body-md text-secondary truncate max-w-[200px]">
+                                    Actualización de permisos...
+                                </td>
+</tr>
+<!-- Row 4: Login -->
+<tr class="audit-row cursor-pointer transition-colors" onclick="toggleDetail('row-4')">
+<td class="px-6 py-4 font-body-md text-body-md text-primary font-mono whitespace-nowrap">2023-10-31 08:00:01</td>
+<td class="px-6 py-4">
+<div class="flex items-center space-x-3">
+<div class="w-8 h-8 rounded bg-surface-container text-primary flex items-center justify-center text-xs font-bold">AD</div>
+<span class="font-body-md text-body-md text-primary">A. Delgado</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="token-badge border-secondary text-secondary bg-stone-gray">Login Exitoso</span>
+</td>
+<td class="px-6 py-4">
+<span class="text-secondary font-label-md text-label-md">N/A</span>
+</td>
+<td class="px-6 py-4 font-body-md text-body-md text-secondary truncate max-w-[200px]">
+                                    IP: 190.16.2.45 (PTY)
+                                </td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Detailed Entry View (Side Panel) -->
+<div class="hidden lg:flex w-[450px] border-l border-border-muted bg-stone-gray flex-col" id="side-panel">
+<div class="p-6 border-b border-border-muted bg-white flex justify-between items-center">
+<h3 class="font-headline-sm text-headline-sm text-primary">Detalle de Registro</h3>
+<button class="material-symbols-outlined text-secondary hover:text-primary" onclick="closePanel()">close</button>
+</div>
+<div class="p-6 overflow-y-auto flex-grow space-y-6">
+<!-- Entity Metadata -->
+<div class="space-y-4">
+<div class="flex justify-between items-center">
+<span class="text-xs font-bold text-secondary uppercase tracking-widest">Metadata General</span>
+<span class="px-2 py-1 bg-primary text-on-primary text-[10px] rounded">RF-33-EXTRA</span>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<p class="text-[10px] text-secondary uppercase">Hash de Transacción</p>
+<p class="font-mono-sm text-mono-sm text-primary break-all">f7a92c34-8b1e-450f-90e2-66513d2f</p>
+</div>
+<div>
+<p class="text-[10px] text-secondary uppercase">IP Origen</p>
+<p class="font-body-md text-body-md text-primary">190.16.2.45</p>
+</div>
+</div>
+</div>
+<!-- Before / After Diff (Visual Mockup) -->
+<div class="space-y-4" id="diff-container">
+<span class="text-xs font-bold text-secondary uppercase tracking-widest">Cambios Realizados</span>
+<div class="border border-border-muted rounded overflow-hidden">
+<div class="bg-slate-50 px-3 py-2 border-b border-border-muted flex justify-between items-center">
+<span class="font-label-md text-label-md text-secondary">Estado Anterior</span>
+<span class="material-symbols-outlined text-sm text-outline">history</span>
+</div>
+<pre class="p-4 font-mono-sm text-mono-sm text-secondary bg-white overflow-x-auto">{
+  "status": "active",
+  "permissions": ["view", "edit"],
+  "last_review": "2023-09-12",
+  "folder": "/legal/archives/C-44"
+}</pre>
+</div>
+<div class="flex justify-center -my-2 relative z-10">
+<div class="bg-primary text-on-primary rounded-full p-1 shadow-lg">
+<span class="material-symbols-outlined text-sm">keyboard_double_arrow_down</span>
+</div>
+</div>
+<div class="border border-border-muted rounded overflow-hidden">
+<div class="bg-slate-50 px-3 py-2 border-b border-border-muted flex justify-between items-center">
+<span class="font-label-md text-label-md text-secondary">Estado Actual</span>
+<span class="material-symbols-outlined text-sm text-status-confirmed">verified</span>
+</div>
+<pre class="p-4 font-mono-sm text-mono-sm text-primary bg-white overflow-x-auto">{
+  <span class="diff-removed line-through">"status": "active",</span>
+  <span class="diff-added">"status": "deleted",</span>
+  "permissions": ["view", "edit"],
+  "last_review": "2023-10-31",
+  <span class="diff-added">"deleted_by": "adm_delgado",</span>
+  "folder": null
+}</pre>
+</div>
+</div>
+</div>
+<!-- Action Footer for Detail -->
+<div class="p-6 bg-white border-t border-border-muted flex space-x-3">
+<button class="flex-grow py-2 px-4 border border-border-muted rounded font-label-md text-label-md text-secondary hover:bg-stone-gray transition-colors">Ver Registro Original</button>
+<button class="flex-grow py-2 px-4 bg-primary text-on-primary rounded font-label-md text-label-md hover:opacity-90">Validar Integridad</button>
+</div>
+</div>
+</div>
+<!-- Empty State / Footer Info -->
+<div class="mt-8 flex items-center space-x-4 p-4 border-l-4 border-primary bg-white rounded shadow-sm">
+<span class="material-symbols-outlined text-primary">info</span>
+<p class="font-body-md text-body-md text-secondary">
+                    Los registros mostrados están protegidos por una arquitectura de persistencia inmutable. Cualquier intento de alteración del log generará una alerta de integridad criptográfica al Consejo de la Magistratura.
+                </p>
+</div>
+</div>
+</main>
+<script>
+        function toggleDetail(rowId) {
+            const panel = document.getElementById('side-panel');
+            panel.classList.remove('hidden');
+            // Simplified logic: for demo purposes just showing/hiding. 
+            // In a real app, we would populate the diff-container based on rowId data.
+        }
+
+        function closePanel() {
+            const panel = document.getElementById('side-panel');
+            panel.classList.add('hidden');
+        }
+
+        // Add some interaction to rows
+        document.querySelectorAll('.audit-row').forEach(row => {
+            row.addEventListener('mouseenter', () => {
+                row.classList.add('shadow-inner');
+            });
+            row.addEventListener('mouseleave', () => {
+                row.classList.remove('shadow-inner');
+            });
+        });
+    </script>
+</body></html>

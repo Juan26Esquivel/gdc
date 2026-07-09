@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>GDC Panamá - Dashboard de Magistrado</title>
+<!-- Fonts & Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist:wght@400;600;700;800&family=Courier+Prime&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "status-validated": "#EAB308",
+                    "on-tertiary-fixed-variant": "#43474b",
+                    "surface": "#f9f9ff",
+                    "on-tertiary-container": "#8d9296",
+                    "error-container": "#ffdad6",
+                    "inverse-primary": "#b6c7e7",
+                    "tertiary": "#121719",
+                    "surface-container-highest": "#d8e3fb",
+                    "background": "#f9f9ff",
+                    "border-muted": "#E2E8F0",
+                    "secondary-fixed-dim": "#b7c8e1",
+                    "surface-container": "#e7eeff",
+                    "primary": "#04162e",
+                    "tertiary-fixed-dim": "#c3c7cb",
+                    "tertiary-container": "#262b2e",
+                    "surface-container-high": "#dee8ff",
+                    "stone-gray": "#F8FAFC",
+                    "on-background": "#111c2d",
+                    "primary-fixed": "#d5e3ff",
+                    "inverse-on-surface": "#ecf1ff",
+                    "on-primary-fixed-variant": "#374762",
+                    "primary-container": "#1a2b44",
+                    "on-surface": "#111c2d",
+                    "status-confirmed": "#22C55E",
+                    "surface-container-low": "#f0f3ff",
+                    "primary-fixed-dim": "#b6c7e7",
+                    "secondary-fixed": "#d3e4fe",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-bright": "#f9f9ff",
+                    "on-tertiary": "#ffffff",
+                    "status-correction": "#F97316",
+                    "surface-tint": "#4f5f7b",
+                    "tertiary-fixed": "#dfe3e7",
+                    "on-primary-container": "#8292b0",
+                    "on-tertiary-fixed": "#171c1f",
+                    "on-secondary-container": "#54647a",
+                    "on-primary-fixed": "#091c34",
+                    "surface-dim": "#cfdaf2",
+                    "outline-variant": "#c5c6ce",
+                    "on-error": "#ffffff",
+                    "on-secondary-fixed": "#0b1c30",
+                    "on-primary": "#ffffff",
+                    "outline": "#75777e",
+                    "surface-variant": "#d8e3fb",
+                    "secondary-container": "#d0e1fb",
+                    "status-generated": "#3B82F6",
+                    "secondary": "#505f76",
+                    "on-secondary-fixed-variant": "#38485d",
+                    "on-error-container": "#93000a",
+                    "inverse-surface": "#263143",
+                    "on-secondary": "#ffffff",
+                    "on-surface-variant": "#44474d",
+                    "error": "#ba1a1a"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "margin-desktop": "32px",
+                    "gutter": "24px",
+                    "touch-target": "44px",
+                    "unit": "4px",
+                    "margin-mobile": "16px"
+            },
+            "fontFamily": {
+                    "headline-md": ["Geist"],
+                    "body-md": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "label-md": ["Inter"],
+                    "display-lg": ["Geist"],
+                    "headline-sm": ["Geist"],
+                    "mono-sm": ["Courier Prime"]
+            },
+            "fontSize": {
+                    "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "body-lg": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "label-md": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "display-lg": ["36px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-sm": ["20px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                    "mono-sm": ["13px", {"lineHeight": "1.5", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { background-color: #F8FAFC; color: #111c2d; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom Table & Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .bento-card {
+            background: #ffffff;
+            border: 1px solid #E2E8F0;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .bento-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body class="font-body-md text-body-md overflow-x-hidden">
+<!-- SideNavBar Anchor -->
+<aside class="hidden lg:flex flex-col h-screen w-64 fixed left-0 top-0 overflow-y-auto bg-surface border-r border-border-muted z-50">
+<div class="p-6">
+<div class="flex items-center gap-3 mb-8">
+<div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-white overflow-hidden shadow-sm">
+<img class="w-8 h-8 object-contain" data-alt="A high-resolution, professional emblem of the Republic of Panama coat of arms. The style is minimalist and corporate, with clean vector lines in white against a deep primary navy blue background. Soft studio lighting highlights the texture of the shield, conveying institutional authority and judicial gravitas." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBDmQQUSQLmRlIB7SPf7Gr5obQE1L29VbzqIxrAIEig96JqKvlK3PUDAGs-mpiw8HGPqSxzLuE_FIb3Y5TeCA6s-BZrLppIhjDjMTUB61hd8MYXV8grvAoUkroOzYJ7XiO7lwaLNXtPkhFuqMS92jHg8z99vpb9AOQSiws2oK-AH3JL7zX8LROmqyOHrQkDvN2wLTLUUj2Y_kTGfiHQJFfSTTBkC_QYHKtsxrpNfgwgZ-u_3xOuCaBmHHssHFHf7DJPqnzB0y5YGg9C"/>
+</div>
+<div>
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary leading-tight">Órgano Judicial</h1>
+<p class="font-label-md text-label-md text-on-surface-variant opacity-70">Gestión Documental</p>
+</div>
+</div>
+<nav class="space-y-1">
+<!-- Active Nav: KPIs is the closest for Dashboard Dashboard -->
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors group" href="#">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">folder_open</span>
+<span class="font-label-md">Expedientes</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors group" href="#">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">calendar_month</span>
+<span class="font-label-md">Audiencias</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors group" href="#">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">description</span>
+<span class="font-label-md">Documentos</span>
+</a>
+<!-- Active State Applied to KPIs (closest to Dashboard) -->
+<a class="flex items-center gap-3 px-4 py-3 text-primary font-bold border-r-4 border-primary bg-surface-container-high scale-[0.99] transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">query_stats</span>
+<span class="font-label-md">KPIs</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors group" href="#">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">settings</span>
+<span class="font-label-md">Administración</span>
+</a>
+</nav>
+<div class="mt-8">
+<button class="w-full bg-primary text-white py-3 px-4 rounded-lg font-label-md flex items-center justify-center gap-2 hover:opacity-90 transition-opacity shadow-sm">
+<span class="material-symbols-outlined text-sm">add_circle</span>
+                    Nuevo Expediente
+                </button>
+</div>
+</div>
+<div class="mt-auto p-6 border-t border-border-muted">
+<a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined text-[20px]">help</span>
+<span class="font-label-md">Ayuda</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-error hover:bg-error-container/10 transition-colors rounded-lg mt-1" href="#">
+<span class="material-symbols-outlined text-[20px]">logout</span>
+<span class="font-label-md">Cerrar Sesión</span>
+</a>
+</div>
+</aside>
+<!-- TopNavBar Anchor -->
+<header class="flex justify-between items-center w-full px-margin-desktop sticky top-0 z-40 bg-surface-container-lowest h-16 ml-0 lg:ml-64 lg:w-[calc(100%-16rem)] border-b border-border-muted">
+<div class="flex items-center flex-1 max-w-xl">
+<div class="relative w-full group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant opacity-60">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-stone-gray border border-border-muted rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm" placeholder="Buscar expedientes, partes o cédulas..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="hidden md:flex flex-col items-end">
+<span class="font-label-md text-primary font-bold">Mag. Ricardo Alvear</span>
+<span class="text-[10px] text-on-surface-variant uppercase tracking-widest">Circuito Judicial I</span>
+</div>
+<div class="flex items-center gap-3">
+<button class="relative p-2 text-on-surface-variant hover:bg-surface-container transition-all rounded-full">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border-2 border-white"></span>
+</button>
+<div class="w-9 h-9 rounded-full overflow-hidden border border-border-muted ring-2 ring-primary-fixed/20 ring-offset-2 cursor-pointer transition-transform hover:scale-105">
+<img class="w-full h-full object-cover" data-alt="A professional close-up studio portrait of a senior male judge in his 50s with a dignified and authoritative expression. He wears a traditional black judicial robe and is framed against a neutral, blurred library background with law books. The lighting is soft and cinematic, highlighting the professional institutional tone of the GDC platform." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHrd1E3LbNGb8kTZAEKGQUotTy9lp3nMR-PmFHUrjU0ugEXS6F3rd0_MuLb-RnKLV-ouAP5dBlpjWrsPlmnYKNf4DFDiO1D2L1bgjL6t5OacWiCD9gu8yVQ2p_cyOHQLui-8NlNJp0gild18lx2GEWwKO8YG_pbMcXkZHF2ivR3vedB3agGF18Pr2ceKOPd_dLtnS_Ne0pddnXdsSXsRP1KBw_vUQTqz5FzOMF-9HM2lJlxKZfnucWzy_CmQMBViboBHoGtURWGAgx"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-0 lg:ml-64 p-margin-mobile md:p-margin-desktop min-h-screen">
+<!-- Header Section -->
+<div class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<nav class="flex items-center gap-2 text-on-surface-variant font-label-md mb-2 opacity-60">
+<span>Sistema GDC</span>
+<span class="material-symbols-outlined text-xs">chevron_right</span>
+<span>Tablero de Control</span>
+</nav>
+<h2 class="font-headline-md text-headline-md text-primary flex items-center gap-3">
+                    Resumen del Despacho
+                    <span class="bg-primary-fixed text-on-primary-fixed text-[10px] px-2 py-0.5 rounded uppercase tracking-tighter">Real-Time</span>
+</h2>
+<p class="text-on-surface-variant mt-1 opacity-70">Monitor de carga laboral y cumplimiento de plazos procesales.</p>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex -space-x-2">
+<div class="w-8 h-8 rounded-full border-2 border-white bg-slate-200 flex items-center justify-center text-[10px] font-bold">J1</div>
+<div class="w-8 h-8 rounded-full border-2 border-white bg-slate-300 flex items-center justify-center text-[10px] font-bold">A2</div>
+<div class="w-8 h-8 rounded-full border-2 border-white bg-slate-400 flex items-center justify-center text-[10px] font-bold">S1</div>
+</div>
+<button class="bg-white border border-border-muted px-4 py-2 rounded-lg font-label-md flex items-center gap-2 hover:bg-stone-gray transition-colors">
+<span class="material-symbols-outlined text-[18px]">filter_list</span>
+                    Filtrar Vista
+                </button>
+</div>
+</div>
+<!-- Quick Metrics Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter mb-gutter">
+<div class="bento-card p-6 rounded-xl relative overflow-hidden">
+<div class="flex justify-between items-start mb-4">
+<span class="material-symbols-outlined text-primary bg-primary-fixed/30 p-2 rounded-lg">folder</span>
+<span class="text-status-confirmed flex items-center font-label-md text-[10px]">
+<span class="material-symbols-outlined text-xs mr-1">trending_up</span>
+                        +4%
+                    </span>
+</div>
+<div class="text-on-surface-variant font-label-md mb-1 uppercase tracking-wide opacity-70">Total Expedientes</div>
+<div class="font-display-lg text-display-lg text-primary">1,284</div>
+<div class="mt-4 w-full h-1.5 bg-stone-gray rounded-full">
+<div class="bg-primary h-full rounded-full" style="width: 75%;"></div>
+</div>
+</div>
+<div class="bento-card p-6 rounded-xl">
+<div class="flex justify-between items-start mb-4">
+<span class="material-symbols-outlined text-status-validated bg-status-validated/10 p-2 rounded-lg" style="font-variation-settings: 'FILL' 1;">calendar_today</span>
+<span class="text-on-surface-variant font-label-md text-[10px]">Octubre</span>
+</div>
+<div class="text-on-surface-variant font-label-md mb-1 uppercase tracking-wide opacity-70">Audiencias Mes</div>
+<div class="font-display-lg text-display-lg text-primary">42</div>
+<div class="mt-2 flex items-center gap-1 text-[11px] text-on-surface-variant">
+<span class="font-bold text-status-confirmed">12</span> pendientes para hoy
+                </div>
+</div>
+<div class="bento-card p-6 rounded-xl">
+<div class="flex justify-between items-start mb-4">
+<span class="material-symbols-outlined text-status-generated bg-status-generated/10 p-2 rounded-lg">edit_document</span>
+<div class="flex -space-x-1">
+<div class="w-4 h-4 rounded-full bg-status-correction border border-white"></div>
+</div>
+</div>
+<div class="text-on-surface-variant font-label-md mb-1 uppercase tracking-wide opacity-70">Documentos por Validar</div>
+<div class="font-display-lg text-display-lg text-primary">15</div>
+<div class="mt-2 text-[11px] text-status-correction font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">priority_high</span>
+                    Requiere Firma Electrónica
+                </div>
+</div>
+<div class="bento-card p-6 rounded-xl bg-primary text-white">
+<div class="flex justify-between items-start mb-4">
+<span class="material-symbols-outlined bg-white/20 p-2 rounded-lg">gavel</span>
+</div>
+<div class="text-white/70 font-label-md mb-1 uppercase tracking-wide">Sentencias Firmadas</div>
+<div class="font-display-lg text-display-lg">118</div>
+<div class="mt-2 text-[11px] text-white/50">Meta Trimestral: 150 (78%)</div>
+</div>
+</div>
+<!-- Dashboard Layout: Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Workload Chart (Bar Graph Simulation) -->
+<div class="lg:col-span-8 bento-card p-8 rounded-xl flex flex-col h-full">
+<div class="flex justify-between items-center mb-8">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-primary">Carga de Trabajo por Fase</h3>
+<p class="font-label-md text-on-surface-variant opacity-60">Distribución de expedientes en flujo procesal</p>
+</div>
+<div class="flex items-center gap-4 text-xs font-label-md">
+<div class="flex items-center gap-1.5"><span class="w-3 h-3 bg-primary rounded-sm"></span> Activos</div>
+<div class="flex items-center gap-1.5"><span class="w-3 h-3 bg-primary-fixed-dim rounded-sm"></span> Suspendidos</div>
+</div>
+</div>
+<div class="flex-1 flex items-end justify-around gap-4 pb-4">
+<!-- Admission -->
+<div class="flex flex-col items-center gap-3 w-full max-w-[80px] group">
+<div class="relative w-full flex flex-col justify-end gap-1 h-[240px]">
+<div class="bg-primary-fixed-dim w-full rounded-t" style="height: 15%"></div>
+<div class="bg-primary w-full rounded-b transition-all group-hover:opacity-80" style="height: 65%">
+<div class="absolute -top-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-inverse-surface text-white text-[10px] px-2 py-1 rounded">214</div>
+</div>
+</div>
+<span class="font-label-md text-on-surface-variant uppercase text-[10px] text-center">Admisión</span>
+</div>
+<!-- Notification -->
+<div class="flex flex-col items-center gap-3 w-full max-w-[80px] group">
+<div class="relative w-full flex flex-col justify-end gap-1 h-[240px]">
+<div class="bg-primary-fixed-dim w-full rounded-t" style="height: 10%"></div>
+<div class="bg-primary w-full rounded-b transition-all group-hover:opacity-80" style="height: 40%">
+<div class="absolute -top-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-inverse-surface text-white text-[10px] px-2 py-1 rounded">156</div>
+</div>
+</div>
+<span class="font-label-md text-on-surface-variant uppercase text-[10px] text-center">Notificación</span>
+</div>
+<!-- Preliminary -->
+<div class="flex flex-col items-center gap-3 w-full max-w-[80px] group">
+<div class="relative w-full flex flex-col justify-end gap-1 h-[240px]">
+<div class="bg-primary-fixed-dim w-full rounded-t" style="height: 25%"></div>
+<div class="bg-primary w-full rounded-b transition-all group-hover:opacity-80" style="height: 50%">
+<div class="absolute -top-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-inverse-surface text-white text-[10px] px-2 py-1 rounded">312</div>
+</div>
+</div>
+<span class="font-label-md text-on-surface-variant uppercase text-[10px] text-center">Preliminar</span>
+</div>
+<!-- Fondo -->
+<div class="flex flex-col items-center gap-3 w-full max-w-[80px] group">
+<div class="relative w-full flex flex-col justify-end gap-1 h-[240px]">
+<div class="bg-primary-fixed-dim w-full rounded-t" style="height: 5%"></div>
+<div class="bg-primary w-full rounded-b transition-all group-hover:opacity-80" style="height: 85%">
+<div class="absolute -top-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-inverse-surface text-white text-[10px] px-2 py-1 rounded">442</div>
+</div>
+</div>
+<span class="font-label-md text-on-surface-variant uppercase text-[10px] text-center">Fondo</span>
+</div>
+</div>
+</div>
+<!-- Critical Cases (Exceeding Art. 395) -->
+<div class="lg:col-span-4 bento-card p-6 rounded-xl flex flex-col">
+<div class="flex items-center gap-2 text-error mb-4">
+<span class="material-symbols-outlined animate-pulse">warning</span>
+<h3 class="font-headline-sm text-headline-sm">Críticos (Art. 395)</h3>
+</div>
+<p class="font-label-md text-on-surface-variant opacity-60 mb-6">Expedientes con términos vencidos o próximos a vencer.</p>
+<div class="space-y-4 flex-1">
+<!-- Critical Item 1 -->
+<div class="p-4 border-l-4 border-error bg-error-container/20 rounded-r-lg group cursor-pointer hover:bg-error-container/30 transition-all">
+<div class="flex justify-between items-start mb-1">
+<span class="font-bold text-sm text-primary">EXP-2023-00452-C</span>
+<span class="text-error font-bold text-[10px] uppercase">Vencido (+5d)</span>
+</div>
+<p class="text-xs text-on-surface-variant mb-2 truncate">Pérez vs. Constructora del Istmo S.A.</p>
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 bg-white text-[9px] font-bold rounded border border-error/30 uppercase">Fondo</span>
+<span class="text-[10px] text-on-surface-variant opacity-60">Último mov: 12/10/2023</span>
+</div>
+</div>
+<!-- Critical Item 2 -->
+<div class="p-4 border-l-4 border-status-correction bg-status-correction/10 rounded-r-lg group cursor-pointer hover:bg-status-correction/20 transition-all">
+<div class="flex justify-between items-start mb-1">
+<span class="font-bold text-sm text-primary">EXP-2024-00129-L</span>
+<span class="text-status-correction font-bold text-[10px] uppercase">Hoy (Límite)</span>
+</div>
+<p class="text-xs text-on-surface-variant mb-2 truncate">Sindicato de Trabajadores Eléctricos</p>
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 bg-white text-[9px] font-bold rounded border border-status-correction/30 uppercase">Notificación</span>
+<span class="text-[10px] text-on-surface-variant opacity-60">Último mov: 24/10/2023</span>
+</div>
+</div>
+<!-- Critical Item 3 -->
+<div class="p-4 border-l-4 border-error bg-error-container/20 rounded-r-lg group cursor-pointer hover:bg-error-container/30 transition-all opacity-80">
+<div class="flex justify-between items-start mb-1">
+<span class="font-bold text-sm text-primary">EXP-2022-09881-A</span>
+<span class="text-error font-bold text-[10px] uppercase">Vencido (+12d)</span>
+</div>
+<p class="text-xs text-on-surface-variant mb-2 truncate">Apelación: Resolución No. 44-22</p>
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 bg-white text-[9px] font-bold rounded border border-error/30 uppercase">Admisión</span>
+<span class="text-[10px] text-on-surface-variant opacity-60">Último mov: 05/10/2023</span>
+</div>
+</div>
+</div>
+<button class="mt-6 w-full text-center py-2 text-primary font-label-md hover:underline decoration-2 underline-offset-4">
+                    Ver todos los críticos
+                </button>
+</div>
+<!-- Upcoming Hearings (Timeline Style) -->
+<div class="lg:col-span-12 bento-card p-8 rounded-xl">
+<div class="flex justify-between items-center mb-8">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-primary">Audiencias para la Semana</h3>
+<p class="font-label-md text-on-surface-variant opacity-60">Calendario del 23 al 27 de Octubre, 2023</p>
+</div>
+<div class="flex gap-2">
+<button class="w-8 h-8 rounded-full bg-stone-gray border border-border-muted flex items-center justify-center hover:bg-white transition-all">
+<span class="material-symbols-outlined text-sm">chevron_left</span>
+</button>
+<button class="w-8 h-8 rounded-full bg-stone-gray border border-border-muted flex items-center justify-center hover:bg-white transition-all">
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+<!-- Day Column: Lunes -->
+<div class="flex flex-col gap-4">
+<div class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant pb-2 border-b border-border-muted">Lunes 23</div>
+<div class="bg-surface-container-low p-3 rounded-lg border border-border-muted/50 hover:border-primary transition-all cursor-pointer">
+<div class="flex justify-between text-[10px] text-primary font-bold mb-1">
+<span>09:00 AM</span>
+<span class="bg-status-confirmed/20 text-status-confirmed px-1 rounded">Virtual</span>
+</div>
+<p class="text-xs font-bold truncate">Preliminar: Caso 4522</p>
+<p class="text-[10px] text-on-surface-variant opacity-70">Salón 4 - Planta Baja</p>
+</div>
+</div>
+<!-- Day Column: Martes (HOY) -->
+<div class="flex flex-col gap-4 bg-primary-fixed/10 p-2 rounded-xl -m-2">
+<div class="text-[10px] font-bold uppercase tracking-widest text-primary pb-2 border-b border-primary/30 flex justify-between">
+<span>Martes 24 (Hoy)</span>
+<span class="w-2 h-2 bg-primary rounded-full"></span>
+</div>
+<div class="bg-white p-3 rounded-lg border-2 border-primary shadow-sm">
+<div class="flex justify-between text-[10px] text-primary font-bold mb-1">
+<span>10:30 AM</span>
+<span class="bg-status-correction/20 text-status-correction px-1 rounded">Presencial</span>
+</div>
+<p class="text-xs font-bold truncate">Fondo: Juicio Civil 101</p>
+<p class="text-[10px] text-on-surface-variant opacity-70">Salón de Audiencias #2</p>
+</div>
+<div class="bg-white p-3 rounded-lg border border-border-muted opacity-50">
+<div class="flex justify-between text-[10px] text-primary font-bold mb-1">
+<span>02:00 PM</span>
+</div>
+<p class="text-xs font-bold truncate">Mediación: Registro Prop.</p>
+</div>
+</div>
+<!-- Day Column: Miércoles -->
+<div class="flex flex-col gap-4">
+<div class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant pb-2 border-b border-border-muted">Miércoles 25</div>
+<div class="text-[10px] text-on-surface-variant italic py-4 opacity-40 text-center">Sin audiencias programadas</div>
+</div>
+<!-- Day Column: Jueves -->
+<div class="flex flex-col gap-4">
+<div class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant pb-2 border-b border-border-muted">Jueves 26</div>
+<div class="bg-surface-container-low p-3 rounded-lg border border-border-muted/50 hover:border-primary transition-all cursor-pointer">
+<div class="flex justify-between text-[10px] text-primary font-bold mb-1">
+<span>11:15 AM</span>
+<span class="bg-status-confirmed/20 text-status-confirmed px-1 rounded">Virtual</span>
+</div>
+<p class="text-xs font-bold truncate">Testimonial: Arrendamiento</p>
+<p class="text-[10px] text-on-surface-variant opacity-70">Enlace Teams</p>
+</div>
+</div>
+<!-- Day Column: Viernes -->
+<div class="flex flex-col gap-4">
+<div class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant pb-2 border-b border-border-muted">Viernes 27</div>
+<div class="bg-surface-container-low p-3 rounded-lg border border-border-muted/50 hover:border-primary transition-all cursor-pointer">
+<div class="flex justify-between text-[10px] text-primary font-bold mb-1">
+<span>08:00 AM</span>
+</div>
+<p class="text-xs font-bold truncate">Lectura de Sentencia</p>
+<p class="text-[10px] text-on-surface-variant opacity-70">EXP-992-23</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer Info -->
+<footer class="mt-12 mb-8 border-t border-border-muted pt-8 flex flex-col md:flex-row justify-between items-center opacity-60">
+<div class="flex items-center gap-2 mb-4 md:mb-0">
+<div class="w-6 h-6 bg-primary rounded flex items-center justify-center">
+<span class="text-[10px] text-white font-bold">OJ</span>
+</div>
+<span class="font-label-md">© 2023 Órgano Judicial de Panamá. Todos los derechos reservados.</span>
+</div>
+<div class="flex items-center gap-6 font-label-md">
+<a class="hover:text-primary transition-colors" href="#">Política de Seguridad</a>
+<a class="hover:text-primary transition-colors" href="#">Trazabilidad Blockchain</a>
+<span class="text-[10px] bg-stone-gray px-2 py-1 rounded">v2.4.1-stable</span>
+</div>
+</footer>
+</main>
+<!-- Contextual FAB - Dashboard Level -->
+<button class="fixed bottom-8 right-8 w-14 h-14 bg-primary text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all z-50 group">
+<span class="material-symbols-outlined text-3xl">add</span>
+<div class="absolute right-16 bg-inverse-surface text-white px-3 py-1.5 rounded-lg text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+            Nuevo Expediente
+        </div>
+</button>
+<script>
+        // Simple Interaction: Update metrics periodically (faking real-time)
+        setInterval(() => {
+            const indicators = document.querySelectorAll('.animate-pulse');
+            indicators.forEach(ind => {
+                ind.classList.remove('animate-pulse');
+                setTimeout(() => ind.classList.add('animate-pulse'), 100);
+            });
+        }, 5000);
+
+        // Sidebar responsive toggle logic could go here for mobile
+    </script>
+</body></html>

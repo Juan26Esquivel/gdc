@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>GDC Panamá - Gestión de Documentos</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=Geist:wght@400;600;700&amp;family=Courier+Prime&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "secondary-container": "#d0e1fb",
+                      "surface-container-highest": "#d8e3fb",
+                      "tertiary-container": "#262b2e",
+                      "surface-container-low": "#f0f3ff",
+                      "secondary": "#505f76",
+                      "on-tertiary-fixed": "#171c1f",
+                      "on-background": "#111c2d",
+                      "on-secondary-fixed-variant": "#38485d",
+                      "on-tertiary-container": "#8d9296",
+                      "on-secondary-fixed": "#0b1c30",
+                      "on-surface": "#111c2d",
+                      "on-tertiary-fixed-variant": "#43474b",
+                      "status-generated": "#3B82F6",
+                      "outline-variant": "#c5c6ce",
+                      "status-correction": "#F97316",
+                      "inverse-surface": "#263143",
+                      "status-validated": "#EAB308",
+                      "on-secondary": "#ffffff",
+                      "border-muted": "#E2E8F0",
+                      "on-primary-fixed": "#091c34",
+                      "surface-variant": "#d8e3fb",
+                      "background": "#f9f9ff",
+                      "tertiary": "#121719",
+                      "primary": "#04162e",
+                      "on-primary": "#ffffff",
+                      "surface-tint": "#4f5f7b",
+                      "surface-bright": "#f9f9ff",
+                      "on-tertiary": "#ffffff",
+                      "tertiary-fixed": "#dfe3e7",
+                      "on-surface-variant": "#44474d",
+                      "on-primary-fixed-variant": "#374762",
+                      "surface-container-lowest": "#ffffff",
+                      "outline": "#75777e",
+                      "error": "#ba1a1a",
+                      "on-primary-container": "#8292b0",
+                      "surface-dim": "#cfdaf2",
+                      "error-container": "#ffdad6",
+                      "inverse-on-surface": "#ecf1ff",
+                      "on-error-container": "#93000a",
+                      "secondary-fixed-dim": "#b7c8e1",
+                      "surface-container": "#e7eeff",
+                      "primary-fixed-dim": "#b6c7e7",
+                      "primary-container": "#1a2b44",
+                      "surface": "#f9f9ff",
+                      "primary-fixed": "#d5e3ff",
+                      "secondary-fixed": "#d3e4fe",
+                      "on-secondary-container": "#54647a",
+                      "on-error": "#ffffff",
+                      "inverse-primary": "#b6c7e7",
+                      "status-confirmed": "#22C55E",
+                      "tertiary-fixed-dim": "#c3c7cb",
+                      "surface-container-high": "#dee8ff",
+                      "stone-gray": "#F8FAFC"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "touch-target": "44px",
+                      "margin-mobile": "16px",
+                      "margin-desktop": "32px",
+                      "unit": "4px",
+                      "gutter": "24px"
+              },
+              "fontFamily": {
+                      "display-lg": ["Geist"],
+                      "body-lg": ["Inter"],
+                      "label-md": ["Inter"],
+                      "headline-sm": ["Geist"],
+                      "mono-sm": ["Courier Prime"],
+                      "headline-md": ["Geist"],
+                      "body-md": ["Inter"]
+              },
+              "fontSize": {
+                      "display-lg": ["36px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "body-lg": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "label-md": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "headline-sm": ["20px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                      "mono-sm": ["13px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                      "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                      "body-md": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+    </script>
+</head>
+<body class="bg-background font-body-md text-on-surface h-screen flex flex-col overflow-hidden">
+<!-- Top Navigation Bar -->
+<header class="flex justify-between items-center w-full px-margin-desktop sticky top-0 z-50 bg-surface-container-lowest border-b border-border-muted h-16 ml-0 lg:ml-64 lg:w-[calc(100%-16rem)]">
+<div class="flex items-center gap-4">
+<span class="font-headline-sm text-headline-sm font-bold text-primary">GDC Panamá</span>
+<div class="h-6 w-px bg-outline-variant mx-2"></div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">folder_open</span>
+<span class="font-label-md text-label-md uppercase text-on-surface-variant">Expediente 2023-000-4592</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative group">
+<button class="p-2 hover:bg-surface-container rounded-full transition-all">
+<span class="material-symbols-outlined text-on-surface-variant">notifications</span>
+<span class="absolute top-1 right-1 w-2 h-2 bg-error rounded-full"></span>
+</button>
+</div>
+<div class="flex items-center gap-3 pl-4 border-l border-outline-variant">
+<div class="text-right">
+<p class="font-label-md text-label-md text-primary">Magistrado Pérez</p>
+<p class="text-[10px] text-on-surface-variant">SALA TERCERA</p>
+</div>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a middle-aged male magistrate in a judicial black robe, standing against a neutral gray background. The lighting is soft and corporate, conveying authority and calmness. High-resolution digital photography with sharp details on the facial features and the texture of the robe." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBqOaE5ij7EAFjvOl9yyk8h-zFTCI7C-JJpiag2OB1X_Vp6iNvSd-g8r77w90MTFord-TdoMMu3BjdypZCK6A-ppd6OaJ8HDduZ3N9nv8djSZKv_gOxh1Bm5YFQ8nHBu9jIM01-m2zRaUly2ymJM-0F3dAK_YMQ_n0NUo_D9o3YipR8_vJ1eYygwIgqkGKbfetZjDNQ5dXOnKGnvezs1VE6NYj_Ajd6VJhioLOEt16ThLIV6pIcXCpejkn4hxmkURBLOOdEptDkIboT"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Side Navigation Bar -->
+<aside class="hidden lg:flex flex-col h-full border-r border-border-muted bg-surface h-screen w-64 fixed left-0 top-0 overflow-y-auto">
+<div class="p-6">
+<div class="flex items-center gap-3 mb-8">
+<div class="w-10 h-10 bg-primary flex items-center justify-center rounded-lg shadow-lg">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">balance</span>
+</div>
+<div>
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary">Órgano Judicial</h1>
+<p class="text-[10px] text-on-surface-variant tracking-wider uppercase">Gestión Documental</p>
+</div>
+</div>
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">folder_open</span>
+<span class="font-label-md text-label-md">Expedientes</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">calendar_month</span>
+<span class="font-label-md text-label-md">Audiencias</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-primary font-bold border-r-4 border-primary bg-surface-container-high rounded-r-none rounded-l-lg" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">description</span>
+<span class="font-label-md text-label-md">Documentos</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">query_stats</span>
+<span class="font-label-md text-label-md">KPIs</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Administración</span>
+</a>
+</nav>
+<button class="w-full mt-8 bg-primary text-white py-3 px-4 rounded-lg flex items-center justify-center gap-2 hover:bg-primary-container transition-all shadow-md">
+<span class="material-symbols-outlined">add</span>
+<span class="font-label-md text-label-md">Nuevo Expediente</span>
+</button>
+</div>
+<div class="mt-auto p-6 border-t border-border-muted">
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined text-[20px]">help</span>
+<span class="font-label-md text-label-md">Ayuda</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-error hover:bg-error-container/20 transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined text-[20px]">logout</span>
+<span class="font-label-md text-label-md">Cerrar Sesión</span>
+</a>
+</nav>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-0 lg:ml-64 pt-4 flex-1 flex flex-col overflow-hidden">
+<!-- Document Page Header -->
+<div class="px-margin-desktop mb-6">
+<h2 class="font-display-lg text-display-lg text-primary">Documentos del Expediente 2023-000-4592</h2>
+<p class="font-body-lg text-body-lg text-secondary mt-1">Generación de resoluciones judiciales y comunicaciones administrativas según Ley 402</p>
+</div>
+<!-- Three-Panel Layout -->
+<div class="flex-1 flex px-margin-desktop gap-gutter overflow-hidden pb-margin-desktop">
+<!-- 1. Document List Sidebar -->
+<section class="w-1/4 flex flex-col bg-white border border-border-muted rounded-xl shadow-sm overflow-hidden">
+<div class="p-4 border-b border-border-muted flex justify-between items-center bg-stone-gray">
+<span class="font-label-md text-label-md text-primary uppercase">Historial del Caso</span>
+<span class="material-symbols-outlined text-secondary text-[18px]">filter_list</span>
+</div>
+<div class="flex-1 overflow-y-auto no-scrollbar">
+<div class="divide-y divide-border-muted">
+<!-- Item Validated -->
+<div class="p-4 hover:bg-surface-container-low cursor-pointer transition-all border-l-4 border-status-validated">
+<div class="flex justify-between items-start mb-1">
+<span class="text-[10px] font-bold text-status-validated uppercase tracking-tighter">Validado</span>
+<span class="text-[10px] text-on-surface-variant">12 OCT, 14:20</span>
+</div>
+<h4 class="font-headline-sm text-[14px] text-primary mb-1">Auto de Admisión</h4>
+<p class="text-[12px] text-on-surface-variant truncate">Se admite la demanda presentada por...</p>
+</div>
+<!-- Item In Correction (Active Mock) -->
+<div class="p-4 bg-surface-container border-l-4 border-status-correction">
+<div class="flex justify-between items-start mb-1">
+<span class="text-[10px] font-bold text-status-correction uppercase tracking-tighter">En Corrección</span>
+<span class="text-[10px] text-on-surface-variant">HOY, 09:15</span>
+</div>
+<h4 class="font-headline-sm text-[14px] text-primary mb-1">Providencia de Trámite</h4>
+<p class="text-[12px] text-on-surface-variant truncate">Corregir fundamento legal en párrafo 2...</p>
+</div>
+<!-- Item Generated -->
+<div class="p-4 hover:bg-surface-container-low cursor-pointer transition-all border-l-4 border-status-generated">
+<div class="flex justify-between items-start mb-1">
+<span class="text-[10px] font-bold text-status-generated uppercase tracking-tighter">Generado</span>
+<span class="text-[10px] text-on-surface-variant">HOY, 11:30</span>
+</div>
+<h4 class="font-headline-sm text-[14px] text-primary mb-1">Oficio de Notificación</h4>
+<p class="text-[12px] text-on-surface-variant truncate">Dirigido al Registro Público de Panamá...</p>
+</div>
+<!-- Item Confirmed -->
+<div class="p-4 hover:bg-surface-container-low cursor-pointer transition-all border-l-4 border-status-confirmed">
+<div class="flex justify-between items-start mb-1">
+<span class="text-[10px] font-bold text-status-confirmed uppercase tracking-tighter">Confirmado</span>
+<span class="text-[10px] text-on-surface-variant">08 OCT, 16:45</span>
+</div>
+<h4 class="font-headline-sm text-[14px] text-primary mb-1">Sentencia Definitiva</h4>
+<p class="text-[12px] text-on-surface-variant truncate">Resuelve el conflicto de tierras en...</p>
+</div>
+</div>
+</div>
+</section>
+<!-- 2. Document Creation/Edit Area -->
+<section class="flex-1 flex flex-col gap-4 overflow-hidden">
+<!-- Metadata & Controls -->
+<div class="bg-white p-5 border border-border-muted rounded-xl shadow-sm grid grid-cols-3 gap-6">
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1 uppercase tracking-wider">Tipo de Documento</label>
+<select class="w-full border-border-muted rounded-lg text-body-md focus:ring-primary focus:border-primary">
+<option>Providencia</option>
+<option selected="">Auto</option>
+<option>Sentencia</option>
+<option>Oficio</option>
+<option>Proveído</option>
+</select>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1 uppercase tracking-wider">Base Legal</label>
+<div class="relative">
+<input class="w-full border-border-muted rounded-lg text-body-md focus:ring-primary focus:border-primary" type="text" value="Art. 265"/>
+<span class="absolute right-3 top-2.5 material-symbols-outlined text-on-surface-variant text-[18px]">gavel</span>
+</div>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1 uppercase tracking-wider">Fecha de Actuación</label>
+<input class="w-full border-border-muted rounded-lg text-body-md focus:ring-primary focus:border-primary" type="date"/>
+</div>
+</div>
+<!-- Rich Text Editor Mock -->
+<div class="flex-1 bg-white border border-border-muted rounded-xl shadow-sm flex flex-col overflow-hidden">
+<div class="p-2 border-b border-border-muted flex items-center justify-between bg-stone-gray">
+<div class="flex gap-1">
+<button class="p-2 hover:bg-surface-container rounded transition-all"><span class="material-symbols-outlined text-[20px]">format_bold</span></button>
+<button class="p-2 hover:bg-surface-container rounded transition-all"><span class="material-symbols-outlined text-[20px]">format_italic</span></button>
+<button class="p-2 hover:bg-surface-container rounded transition-all"><span class="material-symbols-outlined text-[20px]">format_list_bulleted</span></button>
+<div class="w-px h-6 bg-outline-variant mx-1"></div>
+<button class="p-2 hover:bg-surface-container rounded transition-all"><span class="material-symbols-outlined text-[20px]">format_align_left</span></button>
+<button class="p-2 hover:bg-surface-container rounded transition-all"><span class="material-symbols-outlined text-[20px]">format_align_center</span></button>
+<button class="p-2 hover:bg-surface-container rounded transition-all"><span class="material-symbols-outlined text-[20px]">format_align_right</span></button>
+</div>
+<div class="flex gap-2">
+<button class="flex items-center gap-2 px-3 py-1.5 border border-primary text-primary hover:bg-primary/5 rounded-lg transition-all text-[12px] font-bold" onclick="copyToClipboard()">
+<span class="material-symbols-outlined text-[18px]">content_copy</span>
+                                RF-38: COPY FOR PLUGIN
+                            </button>
+</div>
+</div>
+<div class="flex-1 p-10 overflow-y-auto no-scrollbar font-serif">
+<div class="max-w-3xl mx-auto space-y-6 text-[15px] leading-relaxed text-on-surface">
+<p class="text-center font-bold text-[18px] mb-8">REPÚBLICA DE PANAMÁ<br/>ÓRGANO JUDICIAL<br/>JUZGADO TERCERO DE CIRCUITO</p>
+<p class="font-bold">PANAMÁ, VEINTIDÓS (22) DE OCTUBRE DE DOS MIL VEINTITRÉS (2023).</p>
+<p>VISTOS: El presente proceso ordinario de mayor cuantía interpuesto por la parte actora, se procede a resolver la solicitud de suspensión de términos presentada por la defensa técnica.</p>
+<p>En atención a lo dispuesto en el <span class="bg-primary-fixed/30 px-1 rounded">Art. 265 del Código Judicial</span>, este despacho observa que concurren las causales necesarias para acceder a lo peticionado, toda vez que se ha acreditado la imposibilidad material de comparecencia por causa de fuerza mayor.</p>
+<p>Por lo expuesto, el Suscrito Juez, administrando justicia en nombre de la República y por autoridad de la Ley, <span class="font-bold">RESUELVE</span>:</p>
+<p class="pl-8"><span class="font-bold">PRIMERO:</span> DECLARAR la suspensión de los términos procesales dentro del presente expediente por un término de tres (3) días hábiles contados a partir de la notificación del presente auto.</p>
+<p class="pl-8"><span class="font-bold">SEGUNDO:</span> ORDENAR la fijación del edicto correspondiente para la notificación a las partes involucradas.</p>
+</div>
+</div>
+</div>
+<!-- Footer Actions -->
+<div class="flex justify-between items-center py-2">
+<div class="flex gap-3">
+<button class="flex items-center gap-2 px-5 py-2.5 bg-stone-gray border border-border-muted text-on-surface hover:bg-surface-container transition-all rounded-lg font-label-md">
+<span class="material-symbols-outlined text-[20px]">save</span>
+                            Guardar Borrador
+                        </button>
+<button class="flex items-center gap-2 px-5 py-2.5 bg-stone-gray border border-border-muted text-on-surface hover:bg-surface-container transition-all rounded-lg font-label-md">
+<span class="material-symbols-outlined text-[20px]">description</span>
+                            Generar .docx
+                        </button>
+</div>
+<button class="flex items-center gap-2 px-8 py-2.5 bg-primary text-white hover:opacity-90 transition-all rounded-lg font-headline-sm shadow-md">
+<span class="material-symbols-outlined">send</span>
+                        Enviar a Revisión
+                    </button>
+</div>
+</section>
+<!-- 3. Judge's Review Panel (Contextual) -->
+<section class="w-80 flex flex-col gap-4">
+<!-- Observations Panel -->
+<div class="bg-status-correction/5 border border-status-correction/30 rounded-xl overflow-hidden flex flex-col shadow-sm">
+<div class="px-4 py-3 bg-status-correction/10 border-b border-status-correction/30 flex items-center gap-2 text-status-correction">
+<span class="material-symbols-outlined text-[20px]">edit_note</span>
+<span class="font-label-md text-label-md uppercase font-bold">Observaciones del Juez</span>
+</div>
+<div class="p-4 space-y-4">
+<div class="bg-white p-3 rounded-lg border border-status-correction/20 shadow-sm relative">
+<div class="flex items-center gap-2 mb-2">
+<div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-[10px] text-white">JP</div>
+<span class="text-[11px] font-bold text-primary">Magistrado Pérez</span>
+<span class="text-[10px] text-on-surface-variant ml-auto">09:15 AM</span>
+</div>
+<p class="text-[13px] text-on-surface leading-snug italic border-l-2 border-status-correction pl-3">
+                                "El fundamento en el Artículo 265 debe ser más específico respecto a la causal de suspensión. Favor citar jurisprudencia de la Sala Primera sobre plazos perentorios."
+                            </p>
+</div>
+<textarea class="w-full text-[13px] border-border-muted rounded-lg p-3 h-24 focus:ring-status-correction focus:border-status-correction" placeholder="Responder al Magistrado..."></textarea>
+<button class="w-full py-2 bg-status-correction text-white rounded-lg font-label-md hover:opacity-90 transition-all">
+                            Marcar como Corregido
+                        </button>
+</div>
+</div>
+<!-- Traceability Timeline -->
+<div class="flex-1 bg-white border border-border-muted rounded-xl p-4 shadow-sm">
+<span class="font-label-md text-label-md text-primary uppercase block mb-6">Trazabilidad de Firma</span>
+<div class="relative space-y-8 pl-8">
+<!-- Vertical line -->
+<div class="absolute left-[15px] top-2 bottom-2 w-0.5 bg-slate-200"></div>
+<!-- Confirmed Step -->
+<div class="relative">
+<div class="absolute -left-[23px] top-0.5 w-4 h-4 rounded-full border-2 border-status-confirmed bg-status-confirmed/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-[10px] text-status-confirmed font-bold">done</span>
+</div>
+<div>
+<p class="text-[12px] font-bold text-on-surface">Confirmación de Sala</p>
+<p class="text-[10px] text-on-surface-variant">Pendiente</p>
+</div>
+</div>
+<!-- Validated Step -->
+<div class="relative">
+<div class="absolute -left-[23px] top-0.5 w-4 h-4 rounded-full border-2 border-status-validated bg-status-validated/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-[10px] text-status-validated font-bold">priority_high</span>
+</div>
+<div>
+<p class="text-[12px] font-bold text-on-surface">Validación de Firma Digital</p>
+<p class="text-[10px] text-on-surface-variant">En proceso de revisión técnica</p>
+</div>
+</div>
+<!-- Generated Step (Active) -->
+<div class="relative">
+<div class="absolute -left-[23px] top-0.5 w-4 h-4 rounded-full border-2 border-status-generated bg-status-generated flex items-center justify-center ring-4 ring-status-generated/20">
+<div class="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
+</div>
+<div>
+<p class="text-[12px] font-bold text-status-generated">Generación del Borrador</p>
+<p class="text-[10px] text-on-surface-variant">Iniciado por: Asistente Legal V. Ortega</p>
+</div>
+</div>
+<!-- Base Step -->
+<div class="relative">
+<div class="absolute -left-[23px] top-0.5 w-4 h-4 rounded-full border-2 border-slate-300 bg-slate-100 flex items-center justify-center">
+<span class="material-symbols-outlined text-[10px] text-slate-400 font-bold">check</span>
+</div>
+<div>
+<p class="text-[12px] font-bold text-on-surface-variant">Asignación de Reparto</p>
+<p class="text-[10px] text-on-surface-variant">05 OCT 2023</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- Micro-interaction Toast -->
+<div class="fixed bottom-8 right-8 bg-primary text-white px-6 py-3 rounded-lg shadow-2xl flex items-center gap-3 translate-y-24 transition-transform duration-300 z-[100]" id="toast">
+<span class="material-symbols-outlined">check_circle</span>
+<span class="font-label-md">Contenido copiado para plugin GDC</span>
+</div>
+<script>
+        function copyToClipboard() {
+            const toast = document.getElementById('toast');
+            toast.classList.remove('translate-y-24');
+            toast.classList.add('translate-y-0');
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-24');
+                toast.classList.remove('translate-y-0');
+            }, 3000);
+        }
+    </script>
+</body></html>

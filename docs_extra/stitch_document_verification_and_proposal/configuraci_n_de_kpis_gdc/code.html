@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Configuración de KPIs | GDC Panamá</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&amp;family=Inter:wght@100..900&amp;family=Courier+Prime&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #E2E8F0;
+            border-radius: 10px;
+        }
+        /* Custom transitions for high-end feel */
+        .card-hover-effect {
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card-hover-effect:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "primary-fixed": "#d5e3ff",
+                      "secondary": "#505f76",
+                      "on-tertiary-container": "#8d9296",
+                      "primary": "#04162e",
+                      "primary-fixed-dim": "#b6c7e7",
+                      "status-confirmed": "#22C55E",
+                      "on-secondary-container": "#54647a",
+                      "tertiary": "#121719",
+                      "surface-dim": "#cfdaf2",
+                      "on-background": "#111c2d",
+                      "surface-tint": "#4f5f7b",
+                      "error": "#ba1a1a",
+                      "surface-variant": "#d8e3fb",
+                      "on-primary-fixed-variant": "#374762",
+                      "inverse-primary": "#b6c7e7",
+                      "on-surface": "#111c2d",
+                      "surface-container-high": "#dee8ff",
+                      "secondary-container": "#d0e1fb",
+                      "outline": "#75777e",
+                      "stone-gray": "#F8FAFC",
+                      "on-tertiary": "#ffffff",
+                      "surface-container-low": "#f0f3ff",
+                      "tertiary-fixed-dim": "#c3c7cb",
+                      "status-validated": "#EAB308",
+                      "on-error": "#ffffff",
+                      "surface-container-highest": "#d8e3fb",
+                      "surface-container": "#e7eeff",
+                      "status-correction": "#F97316",
+                      "tertiary-fixed": "#dfe3e7",
+                      "secondary-fixed-dim": "#b7c8e1",
+                      "error-container": "#ffdad6",
+                      "outline-variant": "#c5c6ce",
+                      "surface-bright": "#f9f9ff",
+                      "surface": "#f9f9ff",
+                      "on-error-container": "#93000a",
+                      "background": "#f9f9ff",
+                      "tertiary-container": "#262b2e",
+                      "secondary-fixed": "#d3e4fe",
+                      "status-generated": "#3B82F6",
+                      "on-secondary": "#ffffff",
+                      "on-secondary-fixed": "#0b1c30",
+                      "border-muted": "#E2E8F0",
+                      "surface-container-lowest": "#ffffff",
+                      "primary-container": "#1a2b44",
+                      "on-surface-variant": "#44474d",
+                      "on-primary": "#ffffff",
+                      "on-primary-fixed": "#091c34",
+                      "on-primary-container": "#8292b0",
+                      "on-tertiary-fixed": "#171c1f",
+                      "on-secondary-fixed-variant": "#38485d",
+                      "inverse-on-surface": "#ecf1ff",
+                      "inverse-surface": "#263143",
+                      "on-tertiary-fixed-variant": "#43474b"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "margin-mobile": "16px",
+                      "unit": "4px",
+                      "gutter": "24px",
+                      "margin-desktop": "32px",
+                      "touch-target": "44px"
+              },
+              "fontFamily": {
+                      "headline-sm": ["Geist"],
+                      "headline-md": ["Geist"],
+                      "label-md": ["Inter"],
+                      "display-lg": ["Geist"],
+                      "body-md": ["Inter"],
+                      "mono-sm": ["Courier Prime"],
+                      "body-lg": ["Inter"]
+              },
+              "fontSize": {
+                      "headline-sm": ["20px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                      "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                      "label-md": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "display-lg": ["36px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "body-md": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                      "mono-sm": ["13px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                      "body-lg": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+    </script>
+</head>
+<body class="bg-stone-gray font-body-md text-on-surface overflow-hidden">
+<!-- SideNavBar (Authority: JSON) -->
+<aside class="hidden lg:flex flex-col h-screen w-64 fixed left-0 top-0 overflow-y-auto bg-surface border-r border-border-muted z-40">
+<div class="p-6">
+<div class="flex items-center gap-3 mb-8">
+<div class="w-10 h-10 bg-primary-container flex items-center justify-center rounded-lg shadow-sm">
+<span class="material-symbols-outlined text-on-primary" data-icon="balance" style="font-variation-settings: 'FILL' 1;">balance</span>
+</div>
+<div>
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary">Órgano Judicial</h1>
+<p class="font-label-md text-label-md text-on-surface-variant opacity-70">Gestión Documental</p>
+</div>
+</div>
+<nav class="space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined text-xl group-hover:text-primary" data-icon="folder_open">folder_open</span>
+<span class="font-label-md">Expedientes</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined text-xl group-hover:text-primary" data-icon="calendar_month">calendar_month</span>
+<span class="font-label-md">Audiencias</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined text-xl group-hover:text-primary" data-icon="description">description</span>
+<span class="font-label-md">Documentos</span>
+</a>
+<!-- Active Item: KPIs -->
+<a class="flex items-center gap-3 px-4 py-3 text-primary font-bold border-r-4 border-primary bg-surface-container-high transition-all" href="#">
+<span class="material-symbols-outlined text-xl" data-icon="query_stats" style="font-variation-settings: 'FILL' 1;">query_stats</span>
+<span class="font-label-md">KPIs</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined text-xl group-hover:text-primary" data-icon="settings">settings</span>
+<span class="font-label-md">Administración</span>
+</a>
+</nav>
+</div>
+<div class="mt-auto p-6 space-y-4">
+<button class="w-full bg-primary py-3 rounded-lg text-on-primary font-label-md flex items-center justify-center gap-2 hover:opacity-90 transition-opacity shadow-lg">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+                Nuevo Expediente
+            </button>
+<div class="pt-4 border-t border-border-muted space-y-1">
+<a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-lg text-sm" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="help">help</span>
+                    Ayuda
+                </a>
+<a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-lg text-sm text-error" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="logout">logout</span>
+                    Cerrar Sesión
+                </a>
+</div>
+</div>
+</aside>
+<!-- TopNavBar (Authority: JSON) -->
+<header class="flex justify-between items-center px-margin-desktop sticky top-0 z-30 bg-surface-container-lowest h-16 ml-0 lg:ml-64 w-full lg:w-[calc(100%-16rem)] shadow-sm">
+<div class="flex items-center gap-8 w-1/2">
+<h2 class="font-headline-sm text-headline-sm font-bold text-primary">GDC Panamá</h2>
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50" data-icon="search">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-stone-gray border border-border-muted rounded-full text-sm focus:outline-none focus:ring-1 focus:ring-primary" placeholder="Buscar métricas o reportes..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container rounded-full transition-all relative">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border-2 border-surface"></span>
+</button>
+<div class="h-8 w-px bg-border-muted mx-2"></div>
+<div class="flex items-center gap-3">
+<div class="text-right hidden sm:block">
+<p class="font-label-md text-primary">Analista Judicial</p>
+<p class="text-[10px] text-on-surface-variant font-mono-sm">ID: 8842-PAN</p>
+</div>
+<div class="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center overflow-hidden border border-border-muted">
+<img class="w-full h-full object-cover" data-alt="Official portrait of a professional Panamanian court data analyst, wearing a dark professional suit against a neutral institutional background, subtle corporate lighting, photorealistic high-end office aesthetic with professional gravitas." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBVbU5d88t3VAMHA0HKgG_c21vuxRVb0ano2kO2l_6ltsHpoVi7o2CPjizAB6iPHiOHT6KDUyXpxyab8W4_Q3l4L64dSpev6TM9qZE3Qgwb90PNG4m2ePhmBQK-PYdIwZlQQu4UG8D_0fakc9bFJIA-vthWVSbMqdcUvZqeIKZjpzUFZTRVFlJfNdpTahzcX0klfKkUm6Q6uPN7d1bOHC9J3ZNE1Y_OTPvuORxNzG5dQ3lc58JOL_rCEuxeom2Ws4Wrpq4_F99WFtso"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="ml-0 lg:ml-64 pt-6 px-margin-desktop min-h-[calc(100vh-64px)] overflow-y-auto custom-scrollbar bg-stone-gray">
+<!-- Header & Breadcrumbs -->
+<div class="mb-8 flex justify-between items-end">
+<div>
+<nav class="flex text-xs text-on-surface-variant/60 mb-2 font-label-md uppercase tracking-wider">
+<span>Panel de Control</span>
+<span class="mx-2">/</span>
+<span class="text-primary font-bold">Configuración de KPIs</span>
+</nav>
+<h1 class="font-headline-md text-headline-md text-primary">Gestión de Indicadores de Desempeño</h1>
+<p class="text-on-surface-variant max-w-2xl mt-1">Configure y monitoree los parámetros críticos de eficiencia del sistema judicial nacional.</p>
+</div>
+<div class="flex gap-3">
+<button class="px-4 py-2 bg-surface-container-lowest border border-border-muted rounded text-on-surface-variant font-label-md flex items-center gap-2 hover:bg-surface transition-all">
+<span class="material-symbols-outlined text-lg" data-icon="file_download">file_download</span>
+                    Exportar Configuración
+                </button>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter pb-margin-desktop">
+<!-- Section 1: Listado de KPIs Activos (Authority: Task) -->
+<section class="lg:col-span-8 space-y-6">
+<div class="bg-white border border-border-muted rounded shadow-sm overflow-hidden flex flex-col">
+<div class="px-6 py-4 border-b border-border-muted bg-stone-gray flex justify-between items-center">
+<h3 class="font-headline-sm text-[16px] text-primary flex items-center gap-2">
+<span class="material-symbols-outlined" data-icon="list_alt">list_alt</span>
+                            Catálogo de Indicadores Activos
+                        </h3>
+<span class="bg-primary-container text-on-primary-container px-3 py-1 rounded-full text-[10px] font-bold">4 KPIs CONFIGURADOS</span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead>
+<tr class="bg-stone-gray/50 text-on-surface-variant text-[11px] font-headline-sm border-b border-border-muted">
+<th class="px-6 py-3 uppercase tracking-wider">Nombre del KPI</th>
+<th class="px-6 py-3 uppercase tracking-wider">Entidad / Cálculo</th>
+<th class="px-6 py-3 uppercase tracking-wider">Estado</th>
+<th class="px-6 py-3 uppercase tracking-wider text-right">Acciones</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-muted">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-headline-sm text-sm text-primary">Efectividad de Resoluciones</span>
+<span class="text-xs text-on-surface-variant line-clamp-1">Porcentaje de expedientes que finalizan con sentencia firme.</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="text-xs font-mono-sm text-primary uppercase">Expediente</span>
+<span class="text-[11px] text-on-tertiary-container">Porcentaje de cumplimiento</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 bg-status-confirmed rounded-full"></span>
+<span class="text-xs font-bold text-status-confirmed">Activo</span>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="p-1 hover:text-primary transition-colors"><span class="material-symbols-outlined text-lg" data-icon="edit">edit</span></button>
+<button class="p-1 hover:text-error transition-colors"><span class="material-symbols-outlined text-lg" data-icon="delete">delete</span></button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-headline-sm text-sm text-primary">Mora en Admisión</span>
+<span class="text-xs text-on-surface-variant line-clamp-1">Tiempo promedio transcurrido desde el reparto hasta la admisión.</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="text-xs font-mono-sm text-primary uppercase">Documento</span>
+<span class="text-[11px] text-on-tertiary-container">Promedio de días</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 bg-status-confirmed rounded-full"></span>
+<span class="text-xs font-bold text-status-confirmed">Activo</span>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="p-1 hover:text-primary transition-colors"><span class="material-symbols-outlined text-lg" data-icon="edit">edit</span></button>
+<button class="p-1 hover:text-error transition-colors"><span class="material-symbols-outlined text-lg" data-icon="delete">delete</span></button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-headline-sm text-sm text-primary">Volumen de Audiencias</span>
+<span class="text-xs text-on-surface-variant line-clamp-1">Conteo total de audiencias realizadas por mes calendario.</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="text-xs font-mono-sm text-primary uppercase">Audiencia</span>
+<span class="text-[11px] text-on-tertiary-container">Conteo</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 bg-status-correction rounded-full"></span>
+<span class="text-xs font-bold text-status-correction">En Revisión</span>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="p-1 hover:text-primary transition-colors"><span class="material-symbols-outlined text-lg" data-icon="edit">edit</span></button>
+<button class="p-1 hover:text-error transition-colors"><span class="material-symbols-outlined text-lg" data-icon="delete">delete</span></button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-low transition-colors group border-b-transparent">
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-headline-sm text-sm text-primary">Cumplimiento de Plazos</span>
+<span class="text-xs text-on-surface-variant line-clamp-1">Proporción de providencias emitidas dentro del término legal.</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="text-xs font-mono-sm text-primary uppercase">Expediente</span>
+<span class="text-[11px] text-on-tertiary-container">Porcentaje de cumplimiento</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 bg-status-confirmed rounded-full"></span>
+<span class="text-xs font-bold text-status-confirmed">Activo</span>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="p-1 hover:text-primary transition-colors"><span class="material-symbols-outlined text-lg" data-icon="edit">edit</span></button>
+<button class="p-1 hover:text-error transition-colors"><span class="material-symbols-outlined text-lg" data-icon="delete">delete</span></button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Section 3: Vista Previa de Datos (Authority: Task) -->
+<div class="bg-white border border-border-muted rounded shadow-sm overflow-hidden p-6">
+<div class="flex items-center justify-between mb-6">
+<h4 class="font-headline-sm text-[16px] text-primary flex items-center gap-2">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+                            Simulación de Visualización
+                        </h4>
+<div class="flex items-center gap-2 text-[11px] font-bold text-on-surface-variant">
+<span class="material-symbols-outlined text-sm" data-icon="schedule">schedule</span>
+                            DATOS TIEMPO REAL
+                        </div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<!-- Preview 1: Gauge/Numeric -->
+<div class="border border-border-muted rounded-xl p-6 bg-stone-gray/30 flex items-center gap-6 card-hover-effect">
+<div class="relative w-24 h-24 flex items-center justify-center">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-surface-container-high" cx="48" cy="48" fill="transparent" r="40" stroke="currentColor" stroke-width="8"></circle>
+<circle class="text-primary" cx="48" cy="48" fill="transparent" r="40" stroke="currentColor" stroke-dasharray="251.2" stroke-dashoffset="62.8" stroke-width="8"></circle>
+</svg>
+<span class="absolute text-xl font-bold text-primary">75%</span>
+</div>
+<div>
+<h5 class="font-label-md text-primary text-xs uppercase mb-1">Efectividad Global</h5>
+<p class="text-2xl font-display-lg text-primary tracking-tighter">Promedio: 0.82</p>
+<p class="text-[11px] text-status-confirmed flex items-center gap-1 font-bold">
+<span class="material-symbols-outlined text-sm" data-icon="trending_up">trending_up</span>
+                                    +4.2% desde el mes anterior
+                                </p>
+</div>
+</div>
+<!-- Preview 2: Mini Bar Chart -->
+<div class="border border-border-muted rounded-xl p-6 bg-stone-gray/30 flex flex-col justify-between card-hover-effect">
+<div class="flex justify-between items-start mb-4">
+<h5 class="font-label-md text-primary text-xs uppercase">Tendencia de Mora</h5>
+<span class="text-[10px] bg-white border border-border-muted px-2 py-0.5 rounded text-on-surface-variant">Últimos 6 meses</span>
+</div>
+<div class="flex items-end justify-between h-16 gap-1 px-2">
+<div class="w-full bg-secondary-container rounded-t h-[40%]"></div>
+<div class="w-full bg-secondary-container rounded-t h-[60%]"></div>
+<div class="w-full bg-secondary-container rounded-t h-[80%]"></div>
+<div class="w-full bg-secondary-container rounded-t h-[55%]"></div>
+<div class="w-full bg-primary rounded-t h-[90%]"></div>
+<div class="w-full bg-secondary-container rounded-t h-[70%]"></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 2: Formulario de Configuración (Authority: Task) -->
+<aside class="lg:col-span-4">
+<div class="bg-white border border-border-muted rounded shadow-md sticky top-24">
+<div class="p-6 border-b border-border-muted bg-primary text-on-primary rounded-t">
+<h3 class="font-headline-sm text-[18px] flex items-center gap-2">
+<span class="material-symbols-outlined" data-icon="tune">tune</span>
+                            Configurador de KPI
+                        </h3>
+<p class="text-on-primary/60 text-xs mt-1">Cree un nuevo indicador personalizado para el dashboard judicial.</p>
+</div>
+<div class="p-6 space-y-6">
+<!-- KPI Identity -->
+<div class="space-y-4">
+<div class="space-y-1">
+<label class="text-[11px] font-bold text-primary uppercase tracking-wide">Nombre del Indicador</label>
+<input class="w-full border-border-muted rounded p-3 text-sm focus:border-primary focus:ring-0" placeholder="Ej. Tasa de Admisión Mensual" type="text"/>
+</div>
+<div class="space-y-1">
+<label class="text-[11px] font-bold text-primary uppercase tracking-wide">Descripción del Propósito</label>
+<textarea class="w-full border-border-muted rounded p-3 text-sm focus:border-primary focus:ring-0" placeholder="Defina qué mide este KPI y por qué es relevante..." rows="3"></textarea>
+</div>
+</div>
+<!-- Data Source & Metric -->
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-1">
+<label class="text-[11px] font-bold text-primary uppercase tracking-wide">Entidad Base</label>
+<select class="w-full border-border-muted rounded p-2 text-sm bg-white">
+<option>Expediente</option>
+<option>Documento</option>
+<option>Audiencia</option>
+</select>
+</div>
+<div class="space-y-1">
+<label class="text-[11px] font-bold text-primary uppercase tracking-wide">Métrica</label>
+<select class="w-full border-border-muted rounded p-2 text-sm bg-white">
+<option>Conteo</option>
+<option>Promedio de días</option>
+<option>Porcentaje</option>
+</select>
+</div>
+</div>
+<!-- Thresholds -->
+<div class="space-y-3">
+<label class="text-[11px] font-bold text-primary uppercase tracking-wide block">Umbrales de Rendimiento (%)</label>
+<div class="flex items-center gap-3">
+<div class="flex-1 space-y-1">
+<span class="text-[10px] text-status-confirmed font-bold">Óptimo</span>
+<input class="w-full border-border-muted rounded p-2 text-xs" type="number" value="90"/>
+</div>
+<div class="flex-1 space-y-1">
+<span class="text-[10px] text-status-correction font-bold">Alerta</span>
+<input class="w-full border-border-muted rounded p-2 text-xs" type="number" value="70"/>
+</div>
+<div class="flex-1 space-y-1">
+<span class="text-[10px] text-error font-bold">Crítico</span>
+<input class="w-full border-border-muted rounded p-2 text-xs" type="number" value="50"/>
+</div>
+</div>
+</div>
+<!-- Visibility -->
+<div class="pt-4 border-t border-border-muted">
+<div class="flex items-center justify-between">
+<span class="text-sm font-headline-sm text-primary">Estado del KPI</span>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border-muted after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+<div class="flex flex-col gap-3 pt-4">
+<button class="w-full bg-primary text-on-primary py-3 rounded-lg font-bold text-sm shadow-md hover:bg-primary-container transition-all active:scale-[0.98]">
+                                Guardar y Sincronizar
+                            </button>
+<button class="w-full bg-white text-on-surface-variant border border-border-muted py-3 rounded-lg font-bold text-sm hover:bg-stone-gray transition-all">
+                                Cancelar Cambios
+                            </button>
+</div>
+</div>
+</div>
+</aside>
+</div>
+</main>
+<!-- Contextual Toast/Notification -->
+<div class="fixed bottom-8 right-8 bg-inverse-surface text-inverse-on-surface px-6 py-4 rounded-xl shadow-2xl flex items-center gap-4 border border-outline-variant transform translate-y-24 transition-transform duration-500 z-50" id="toast">
+<span class="material-symbols-outlined text-status-confirmed" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<div>
+<p class="font-bold text-sm">Cambios Guardados</p>
+<p class="text-xs opacity-70">El KPI ha sido actualizado en todos los juzgados.</p>
+</div>
+<button class="ml-4 hover:opacity-50" onclick="document.getElementById('toast').classList.add('translate-y-24')">
+<span class="material-symbols-outlined text-lg" data-icon="close">close</span>
+</button>
+</div>
+<script>
+        // Micro-interaction: Show toast after 2 seconds for demo
+        setTimeout(() => {
+            const toast = document.getElementById('toast');
+            toast.classList.remove('translate-y-24');
+        }, 2000);
+
+        // Active Navigation Logic
+        const navItems = document.querySelectorAll('nav a');
+        navItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                navItems.forEach(i => {
+                    i.classList.remove('text-primary', 'font-bold', 'border-r-4', 'border-primary', 'bg-surface-container-high');
+                    i.classList.add('text-on-surface-variant', 'hover:bg-surface-container-low');
+                    const icon = i.querySelector('.material-symbols-outlined');
+                    if (icon) icon.style.fontVariationSettings = "'FILL' 0";
+                });
+                item.classList.add('text-primary', 'font-bold', 'border-r-4', 'border-primary', 'bg-surface-container-high');
+                item.classList.remove('text-on-surface-variant', 'hover:bg-surface-container-low');
+                const icon = item.querySelector('.material-symbols-outlined');
+                if (icon) icon.style.fontVariationSettings = "'FILL' 1";
+            });
+        });
+    </script>
+</body></html>
