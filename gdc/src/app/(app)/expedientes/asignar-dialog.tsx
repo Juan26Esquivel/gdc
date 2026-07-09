@@ -62,7 +62,7 @@ export function AsignarDialog({
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Selecciona un Asistente">
                 {(value: string | null) =>
-                  asistentes.find((a) => a.id === value)?.nombre_completo ?? null
+                  asistentes.find((a) => a.id === value)?.nombre_completo ?? "Selecciona un Asistente"
                 }
               </SelectValue>
             </SelectTrigger>

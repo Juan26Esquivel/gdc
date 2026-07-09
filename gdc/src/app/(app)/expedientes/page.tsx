@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Folder, AlertTriangle, Gavel } from "lucide-react";
 import { getUsuarioActual } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
@@ -138,7 +139,14 @@ export default async function ExpedientesPage({ searchParams }: Props) {
                 );
                 return (
                   <TableRow key={exp.id}>
-                    <TableCell>{exp.numero_expediente}</TableCell>
+                    <TableCell>
+                      <Link
+                        href={`/expedientes/${exp.id}/documentos`}
+                        className="underline underline-offset-2"
+                      >
+                        {exp.numero_expediente}
+                      </Link>
+                    </TableCell>
                     <TableCell>{exp.tipos_proceso?.nombre}</TableCell>
                     <TableCell>{exp.subtipos_proceso?.nombre ?? "—"}</TableCell>
                     <TableCell>

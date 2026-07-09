@@ -81,7 +81,8 @@ export function NuevoExpedienteDialog({
               <SelectTrigger id="tipo_proceso_id" className="w-full">
                 <SelectValue placeholder="Selecciona un tipo de proceso">
                   {(value: string | null) =>
-                    tiposProceso.find((t) => String(t.id) === value)?.nombre ?? null
+                    tiposProceso.find((t) => String(t.id) === value)?.nombre ??
+                    "Selecciona un tipo de proceso"
                   }
                 </SelectValue>
               </SelectTrigger>
@@ -102,7 +103,8 @@ export function NuevoExpedienteDialog({
                 <SelectTrigger id="subtipo_proceso_id" className="w-full">
                   <SelectValue placeholder="Selecciona un subtipo">
                     {(value: string | null) =>
-                      subtiposDisponibles.find((s) => String(s.id) === value)?.nombre ?? null
+                      subtiposDisponibles.find((s) => String(s.id) === value)?.nombre ??
+                      "Selecciona un subtipo"
                     }
                   </SelectValue>
                 </SelectTrigger>

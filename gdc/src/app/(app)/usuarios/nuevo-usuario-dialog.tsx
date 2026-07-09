@@ -69,7 +69,7 @@ export function NuevoUsuarioDialog() {
               <SelectTrigger id="rol" className="w-full">
                 <SelectValue placeholder="Selecciona un rol">
                   {(value: string | null) =>
-                    (ROL_LABEL as Record<string, string>)[value ?? ""] ?? null
+                    (ROL_LABEL as Record<string, string>)[value ?? ""] ?? "Selecciona un rol"
                   }
                 </SelectValue>
               </SelectTrigger>
