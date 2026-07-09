@@ -16,12 +16,19 @@ import type { RolGdc } from "@/lib/auth/current-user";
 
 type Usuario = {
   id: string;
+  auth_user_id: string;
   nombre_completo: string;
   rol: RolGdc;
   activo: boolean;
 };
 
-export function UsuariosTabla({ usuarios }: { usuarios: Usuario[] }) {
+export function UsuariosTabla({
+  usuarios,
+  usuarioActualId,
+}: {
+  usuarios: Usuario[];
+  usuarioActualId: string;
+}) {
   const [seleccionado, setSeleccionado] = useState<Usuario | null>(null);
 
   return (
@@ -57,6 +64,7 @@ export function UsuariosTabla({ usuarios }: { usuarios: Usuario[] }) {
       </Table>
       <DetalleUsuarioSheet
         usuario={seleccionado}
+        esCuentaPropia={seleccionado?.id === usuarioActualId}
         open={seleccionado !== null}
         onOpenChange={(open) => {
           if (!open) setSeleccionado(null);

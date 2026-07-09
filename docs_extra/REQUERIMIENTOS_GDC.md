@@ -545,17 +545,58 @@ create policy audiencias_analista_select on audiencias for select
 
 > El campo `tipo_calculo` original (texto libre) nunca fue consumido por ninguna UI — se reemplaza por `entidad_base` + `metrica`, dos enums que el motor de cálculo (`gdc/src/lib/kpis.ts`) sabe interpretar sin ambigüedad. Solo 9 combinaciones son válidas (3 entidades × 3 métricas) y cada una mapea a una consulta real y documentada en el código (conteo mensual, tasa de cumplimiento de plazos/celebración, o promedio de días), nunca a una cifra inventada. Los umbrales (óptimo/alerta/crítico, en %) solo tienen efecto visual sobre KPIs de métrica "porcentaje de cumplimiento".
 
+### 021 — Desactivar usuario bloquea acceso real (RF-01/RF-31)
+
+```sql
+create or replace function fn_usuario_rol() returns rol_gdc
+language sql security definer stable set search_path = public
+as $$
+  select rol from usuarios where auth_user_id = auth.uid() and activo = true;
+$$;
+
+create or replace function fn_usuario_id() returns uuid
+language sql security definer stable set search_path = public
+as $$
+  select id from usuarios where auth_user_id = auth.uid() and activo = true;
+$$;
+```
+
+> Hallazgo durante la construcción del Módulo 7: `usuarios.activo` nunca tuvo ningún efecto real — ni el login, ni el middleware, ni las funciones de RLS lo revisaban, así que "desactivar" a alguien solo cambiaba un valor cosmético. Se corrige en la capa de RLS (defensa en profundidad): un usuario inactivo deja de resolver rol/id, por lo que **toda** política que dependa de estas dos funciones falla de forma cerrada para él. Además, `gdc/src/lib/supabase/middleware.ts` ahora consulta `usuarios.activo` en cada request a una ruta protegida y cierra la sesión (`supabase.auth.signOut()`) apenas la detecta desactivada, redirigiendo a `/login` con un mensaje claro.
+>
+> **Bug encontrado y corregido durante la verificación en navegador:** la primera versión de ese cambio en el middleware llamaba a `signOut()` (que limpia las cookies de sesión en el response rastreado por `@supabase/ssr`) pero luego devolvía un `NextResponse.redirect()` **nuevo**, descartando esas cookies — la sesión nunca se cerraba de verdad y el usuario desactivado seguía entrando. Se corrigió trasladando explícitamente las cookies del response rastreado al response de redirección antes de devolverlo.
+
+### 022 — Borrado en cascada de expedientes + auditoría completa (RF-33-EXTRA)
+
+```sql
+-- expediente_fases, asignaciones, audiencias, documentos → expedientes pasan
+-- a ON DELETE CASCADE (antes ON DELETE NO ACTION por defecto: ningún
+-- expediente real podía borrarse, ya que la fase "admisión" se crea
+-- automáticamente al crearlo). documentos ya tenía su propio trigger de
+-- auditoría de borrado (migración 013); se agregan los mismos para
+-- expediente_fases y audiencias, para que el borrado en cascada no elimine
+-- esas filas en silencio (violaría RNF-03/RNF-09).
+create trigger trg_auditoria_borrado_fases
+  before delete on expediente_fases
+  for each row execute function fn_auditoria_borrado_fases();
+
+create trigger trg_auditoria_borrado_audiencias
+  before delete on audiencias
+  for each row execute function fn_auditoria_borrado_audiencias();
+```
+
+> Decisión tomada con el usuario: `asignaciones` sí queda en cascada pero **sin** trigger de auditoría propio (menor riesgo/valor que fases y audiencias). El nombre exacto de cada restricción de llave foránea se busca dinámicamente en la migración (`pg_constraint`) en vez de asumirlo, para no depender de cómo Postgres las nombró automáticamente.
+
 ---
 
 ## 4. Requerimientos Funcionales
 
 ### Módulo 1 — Gestión de Roles y Usuarios
 
-**RF-01.** El sistema debe permitir al Administrador crear, editar, desactivar y restablecer usuarios, asignándoles uno de los 4 roles: Juez, Asistente, Analista de Datos, Administrador. **Parcialmente implementado**: creación de usuarios y listado (`/usuarios`, migración de código en `gdc/src/app/(app)/usuarios/`), usando el cliente admin de Supabase (`gdc/src/lib/supabase/admin.ts`, requiere `SUPABASE_SECRET_KEY` server-side). Falta editar/desactivar/restablecer.
+**RF-01.** El sistema debe permitir al Administrador crear, editar, desactivar y restablecer usuarios, asignándoles uno de los 4 roles: Juez, Asistente, Analista de Datos, Administrador. **Implementado por completo** (Módulo 7): crear/listar (`/usuarios`, cliente admin de Supabase en `gdc/src/lib/supabase/admin.ts`, requiere `SUPABASE_SECRET_KEY` server-side), editar nombre/rol, activar/desactivar (con efecto real de bloqueo, ver RF-31 y migración 021) y restablecer contraseña, todo desde el panel lateral de detalle del usuario.
 
 **RF-02.** El sistema debe restringir el acceso a cada módulo según la tabla de permisos de la sección 2, validando el rol en cada request (RLS de Supabase + validación en el backend). **Implementado** en las migraciones 014–015 (funciones helper + políticas por tabla).
 
-**RF-03.** El sistema debe registrar en la tabla `auditoria` cualquier cambio de rol o desactivación de usuario.
+**RF-03.** El sistema debe registrar en la tabla `auditoria` cualquier cambio de rol o desactivación de usuario. **Implementado** (Módulo 7): `editar_usuario` registra cambios de rol/nombre; `activar_usuario`/`desactivar_usuario` registran cada cambio de estado — ver `gdc/src/lib/auditoria.ts` y `/auditoria`.
 
 ### Módulo 2 — Gestión de Expedientes y Procesos
 
@@ -613,7 +654,7 @@ create policy audiencias_analista_select on audiencias for select
 
  **Implementado**: al avanzar a `audiencia_fondo`, el ancla usada como "cierre de la preliminar" es la `fecha_programada` de la audiencia preliminar existente (el esquema no tiene un campo `fecha_cierre` separado); `fecha_limite_calculada = esa fecha + plazo_audiencia_fondo_max_dias`. Verificado con datos reales.
 
-**RF-23.** El sistema debe permitir al Administrador configurar (agregar/editar) los plazos de `subtipos_proceso` para nuevos subtipos o tipos de proceso a medida que se definan (ver decisiones abiertas). **No implementado todavía** — hoy solo se edita por SQL directo; queda pendiente para el panel de Administración (Módulo 7).
+**RF-23.** El sistema debe permitir al Administrador configurar (agregar/editar) los plazos de `subtipos_proceso` para nuevos subtipos o tipos de proceso a medida que se definan (ver decisiones abiertas). **Implementado** en el panel de Administración (Módulo 7, `/administracion`) — ver RF-30.
 
 **RF-24.** El sistema debe alertar al Juez y al Asistente cuando un expediente se acerque o exceda la ventana de plazo calculada para su audiencia. **Implementado parcialmente**: la barra de plazo en `/expedientes` (`gdc/src/lib/plazo-audiencia.ts`) colorea en rojo cuando faltan ≤3 días o está vencido, ámbar cuando lleva ≥70% del plazo transcurrido, verde en el resto — verificado con datos reales (audiencia Ordinario mostrando "20d restantes" en verde). Falta una alerta activa (notificación/banner), hoy es solo visual en la tabla.
 
@@ -631,25 +672,29 @@ create policy audiencias_analista_select on audiencias for select
 
 ### Módulo 7 — Administración y Seguridad
 
-**RF-29.** El sistema debe permitir al Administrador definir campos específicos del expediente o del documento que no pueden cargarse por ser información sensible (tabla `campos_restringidos`), bloqueando su ingreso en los formularios correspondientes. *(Pendiente de definición final de campos — ver sección 6.)*
+**RF-29.** El sistema debe permitir al Administrador definir campos específicos del expediente o del documento que no pueden cargarse por ser información sensible (tabla `campos_restringidos`), bloqueando su ingreso en los formularios correspondientes. **Pospuesto explícitamente por el usuario**: el modelo actual de `expedientes` no guarda ningún dato personal de las partes (solo número, tipo/subtipo, cuantía y fechas), así que hoy no existe un campo sensible real que restringir. Se retoma cuando se modelen datos de partes (nombres, cédula, etc.).
 
-**RF-30.** El sistema debe permitir al Administrador gestionar el catálogo de procesos y números de expediente disponibles para asignación.
+**RF-30.** El sistema debe permitir al Administrador gestionar el catálogo de procesos y números de expediente disponibles para asignación. **Implementado** (`/administracion`, `gdc/src/app/(app)/administracion/`): tabla de subtipos de proceso con sus 4 plazos (audiencia preliminar mín/máx, audiencia de fondo mín/máx) editables desde un panel lateral — esto también resuelve el RF-23 que había quedado pendiente en el Módulo 5 (antes solo se editaba por SQL directo).
 
-**RF-31.** El sistema debe permitir al Administrador administrar usuarios y roles con permisos completos (lectura, modificación, ingreso, eliminación, restablecimiento).
+**RF-31.** El sistema debe permitir al Administrador administrar usuarios y roles con permisos completos (lectura, modificación, ingreso, eliminación, restablecimiento). **Implementado**: el panel lateral de `/usuarios` ahora permite editar nombre/rol, activar/desactivar la cuenta y restablecer la contraseña (`gdc/src/app/(app)/usuarios/actions.ts`). **Hallazgo de seguridad corregido en el camino**: `usuarios.activo` nunca había tenido ningún efecto real (ni en RLS ni en el login) — ver migración 021 — una cuenta "desactivada" seguía funcionando con total normalidad antes de este módulo.
 
-**RF-32.** El sistema debe estar diseñado de forma que la incorporación futura de un campo `despacho_id`/`tenant_id` no requiera reestructurar las tablas existentes (preparación multi-tenant).
+**RF-32.** El sistema debe estar diseñado de forma que la incorporación futura de un campo `despacho_id`/`tenant_id` no requiera reestructurar las tablas existentes (preparación multi-tenant). **Satisfecho por diseño, sin cambios de código**: ninguna tabla ni política RLS asume un único despacho de forma que impida agregar esa columna después (ver nota en migración 011).
 
-**RF-33.** El sistema debe registrar en `auditoria` cualquier acción de creación, modificación o eliminación realizada por el Administrador sobre configuración, usuarios o catálogos.
+**RF-33.** El sistema debe registrar en `auditoria` cualquier acción de creación, modificación o eliminación realizada por el Administrador sobre configuración, usuarios o catálogos. **Implementado** vía `gdc/src/lib/auditoria.ts` (`registrarAuditoria`), llamado desde crear/editar/activar/desactivar/restablecer usuario, editar subtipo de proceso y editar configuración general. Consultable en `/auditoria`.
 
-**RF-33-EXTRA.** El sistema debe permitir la eliminación de expedientes y documentos, pero cada eliminación debe quedar registrada automáticamente en `auditoria` (garantizado a nivel de base de datos mediante trigger — `fn_auditoria_borrado_expedientes` / `fn_auditoria_borrado_documentos`, migración 013 — no solo por convención de la capa de aplicación).
+**RF-33-EXTRA.** El sistema debe permitir la eliminación de expedientes y documentos, pero cada eliminación debe quedar registrada automáticamente en `auditoria` (garantizado a nivel de base de datos mediante trigger — `fn_auditoria_borrado_expedientes` / `fn_auditoria_borrado_documentos`, migración 013 — no solo por convención de la capa de aplicación). **Implementado**: botón de eliminar (solo Administrador) en `/expedientes` (con confirmación escribiendo el número de expediente, dado que borra en cascada fases/asignaciones/audiencias/documentos — migración 022) y en el workspace de documentos (`/expedientes/[id]/documentos`, con confirmación simple). Verificado en navegador que la eliminación aparece en `/auditoria` con las acciones `eliminar_expediente`, `eliminar_documento` y `eliminar_fase_expediente`.
+
+### Módulo Transversal — Visor de Auditoría (RNF-03)
+
+**Implementado**: `/auditoria` (solo Administrador) — tabla de solo lectura de los últimos 200 registros, con filtros por usuario y entidad, y panel de detalle mostrando el `detalle` (jsonb) completo de cada acción.
 
 ### Módulo 8 — Reglas de Negocio: Montos y Cuantía
 
-**RF-34.** El sistema debe limitar el registro de la cuantía de un expediente a un máximo de **B/.10,000.00**, salvo cuando el expediente esté marcado como `es_lanzamiento = true`, en cuyo caso no habrá límite.
+**RF-34.** El sistema debe limitar el registro de la cuantía de un expediente a un máximo de **B/.10,000.00**, salvo cuando el expediente esté marcado como `es_lanzamiento = true`, en cuyo caso no habrá límite. **Implementado** desde el Módulo 2 (`crearExpediente`, `gdc/src/app/(app)/expedientes/actions.ts`).
 
-**RF-35.** El sistema debe alertar o bloquear el registro de un monto que exceda el tope, si el expediente no es un lanzamiento, según el valor de `configuracion_sistema.modo_validacion_cuantia` ('bloquear' | 'alertar').
+**RF-35.** El sistema debe alertar o bloquear el registro de un monto que exceda el tope, si el expediente no es un lanzamiento, según el valor de `configuracion_sistema.modo_validacion_cuantia` ('bloquear' | 'alertar'). **Implementado** desde el Módulo 2, ambos modos verificados.
 
-**RF-36.** El sistema debe permitir al Administrador consultar y ajustar el valor del tope de cuantía (`configuracion_sistema.tope_cuantia`) y su modo de validación, sin necesidad de despliegue de código (fila única editable en `configuracion_sistema`).
+**RF-36.** El sistema debe permitir al Administrador consultar y ajustar el valor del tope de cuantía (`configuracion_sistema.tope_cuantia`) y su modo de validación, sin necesidad de despliegue de código (fila única editable en `configuracion_sistema`). **Implementado** (Módulo 7, `/administracion`): formulario que edita `tope_cuantia`, `modo_validacion_cuantia` y `plazo_admision_dias` directamente, sin tocar código.
 
 ### Módulo 9 — No Integración con el Órgano Judicial
 
@@ -696,7 +741,7 @@ create policy audiencias_analista_select on audiencias for select
   - Matrimonio: fuera del Código Procesal Civil (Código de Familia), sigue sin parametrizar.
   - Se agregó en cambio un plazo transversal de **admisión** (30 días hábiles, Art. 395) aplicable a los 6 tipos de proceso por igual, vía `configuracion_sistema.plazo_admision_dias`.
   - **Investigado y descartado:** no existe en el Código una norma general de "10 días para trámites varios" — es simplemente el plazo específico más repetido entre decenas de artículos puntuales y no relacionados entre sí (cada uno con su propio trámite y artículo). El verdadero mecanismo supletorio del Código es discrecional (Art. 195: "términos judiciales" fijados por el juez cuando la ley no señala plazo), no automatizable por el sistema.
-- **Campos restringidos:** falta que el Administrador defina la lista concreta de campos sensibles que alimentarán la tabla `campos_restringidos`.
+- **Campos restringidos:** pospuesto explícitamente por el usuario durante el Módulo 7 — el modelo de `expedientes` no guarda hoy ningún dato personal de las partes (solo número, tipo/subtipo, cuantía, fechas), así que no hay un campo sensible real que restringir todavía. Se retoma cuando se decida modelar datos de partes (nombres, cédula, etc.).
 - **Plantilla `.docx` oficial:** por ahora la generación es por código; si en el futuro se define una plantilla oficial, se migraría a `docxtemplater` (el modelo de datos ya lo soporta sin cambios).
 - **Repositorio Git/GitHub:** ✅ resuelto — repo privado creado en https://github.com/Juan26Esquivel/gdc, con commits regulares por avance.
 - **RF-15 — "quién revisó" un documento:** la tabla `documentos` no tiene un campo `revisado_por` separado; solo se infiere de `observaciones_juez` (si tiene texto, alguien lo revisó y rechazó) y de `confirmado_por` (si fue aprobado directamente). Si se necesita trazabilidad explícita de cada revisión (incluyendo aprobaciones sin observaciones), se requeriría una tabla `documento_revisiones` separada — no implementada por ahora.
@@ -722,11 +767,11 @@ create policy audiencias_analista_select on audiencias for select
 
 ## 8. Checklist de Estado de Implementación
 
-- [x] Migraciones 001–020 aplicadas en Supabase (proyecto "GDC", vía `gdc/supabase/migrations/` + `supabase db push`)
+- [x] Migraciones 001–022 aplicadas en Supabase (proyecto "GDC", vía `gdc/supabase/migrations/` + `supabase db push`)
 - [x] Seed de catálogo (`gdc/supabase/seed.sql`: tipos_proceso, subtipos_proceso, tipos_documento) aplicado y verificado
 - [x] RLS configurado por rol para cada tabla (migraciones 014–015, corrección en 017), verificado con `pg_class`/`pg_policies` en las 13 tablas y con usuarios reales de cada rol
 - [x] Proyecto Next.js inicializado (`gdc/`, App Router, TypeScript, Tailwind 4, shadcn/ui) con Supabase Auth conectado (`src/lib/supabase/{client,server,middleware}.ts`) y verificado end-to-end en navegador: login real → middleware protege `/dashboard` → lectura de `usuarios` vía RLS muestra rol correcto
-- [~] Módulo 1 — Roles y Usuarios (RF-01 a RF-03): creación/listado de usuarios implementado; falta editar/desactivar/restablecer (RF-01) y RF-03 (auditoría de cambios de rol)
+- [x] Módulo 1 — Roles y Usuarios (RF-01 a RF-03): crear/listar/editar/activar-desactivar/restablecer contraseña (RF-01), RLS por rol (RF-02) y auditoría de cambios de rol/desactivación (RF-03) — todo implementado y verificado end-to-end
 - [x] Módulo 2 — Expedientes y Procesos (RF-04 a RF-08): alta, fases, asignaciones — verificado end-to-end con usuario Asistente real
 - [x] Módulo 3 — Documentos y Ciclo de Vida (RF-09 a RF-15): generación de `.docx` real (Storage), ciclo generado→validado→en_corrección→confirmado verificado end-to-end con usuarios Asistente y Juez reales
 - [x] Sistema de diseño "Iustitia GDC" (`docs_extra/stitch_document_verification_and_proposal/`) aplicado retroactivamente — Fases 0 a 3 completas:
@@ -738,8 +783,8 @@ create policy audiencias_analista_select on audiencias for select
 - [x] Módulo 4 — Dashboard del Juez (RF-16 a RF-19): stat cards, gráficas Recharts, panel de críticos (RF-24-EXTRA) y Realtime (Broadcast from Database) verificados end-to-end con datos reales
 - [~] Módulo 5 — Calendario y Plazos (RF-20 a RF-24, RF-22-EXTRA, RF-24-EXTRA): calendario y cálculo de plazos implementados y verificados con datos reales; RF-24-EXTRA implementado en el Dashboard del Juez; falta RF-23 (UI de configuración de plazos por subtipo, Módulo 7)
 - [x] Módulo 6 — Reportería y KPIs (RF-25 a RF-28): configurador de KPIs, consulta de solo lectura para el Juez, exportación CSV de volumen de documentos y tendencia mensual calculada en tiempo real — sin snapshots históricos ni comparativo año a año (ver limitación documentada en RF-28). Verificado end-to-end con Analista de Prueba (crear/editar/eliminar) y Juez de Prueba (solo consulta)
-- [ ] Módulo 7 — Administración y Seguridad (RF-29 a RF-33, RF-33-EXTRA)
-- [ ] Módulo 8 — Reglas de Montos y Cuantía (RF-34 a RF-36)
-- [ ] Módulo 9 — Validación de no-integración con Órgano Judicial (RF-37 a RF-38)
-- [ ] Trigger de auditoría de borrado verificado en entorno de prueba (migración 013)
-- [ ] Decisiones abiertas de la sección 6 resueltas (campos restringidos, plantilla oficial, repositorio Git/GitHub pendientes)
+- [~] Módulo 7 — Administración y Seguridad (RF-29 a RF-33, RF-33-EXTRA): usuarios (editar/desactivar/restablecer), catálogo de procesos y plazos, configuración general (tope de cuantía, plazo de admisión), visor de auditoría (RNF-03) y eliminación de expedientes/documentos con auditoría automática — todo implementado y verificado end-to-end. RF-29 (campos restringidos) pospuesto explícitamente por el usuario (sin datos de partes que restringir todavía)
+- [x] Módulo 8 — Reglas de Montos y Cuantía (RF-34 a RF-36): validación de tope (Módulo 2) + UI de administración del tope/modo (Módulo 7), todo verificado
+- [~] Módulo 9 — Validación de no-integración con Órgano Judicial (RF-37 a RF-38): RF-37 satisfecho por diseño (ninguna integración técnica existe); falta el botón dedicado de "copiar texto plano" de RF-38
+- [x] Trigger de auditoría de borrado verificado en entorno de prueba (migración 013, ampliado en 022 a fases/audiencias) — confirmado end-to-end: eliminar un expediente de prueba generó entradas `eliminar_expediente`, `eliminar_documento` y `eliminar_fase_expediente` visibles en `/auditoria`
+- [~] Decisiones abiertas de la sección 6 resueltas: repositorio Git/GitHub ✅; campos restringidos pospuesto explícitamente (RF-29); plantilla oficial `.docx` sigue pendiente

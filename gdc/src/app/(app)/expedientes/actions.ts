@@ -247,3 +247,25 @@ export async function asignarExpediente(
   revalidatePath("/expedientes");
   return { ok: true };
 }
+
+export type EstadoEliminarExpediente = { error?: string; ok?: boolean };
+
+// RF-33-EXTRA: el borrado en sí queda registrado automáticamente en `auditoria`
+// por el trigger de base de datos (migración 013) — junto con sus fases y
+// audiencias en cascada (migración 20260709150001) — no hace falta duplicarlo
+// aquí a mano.
+export async function eliminarExpediente(id: string): Promise<EstadoEliminarExpediente> {
+  const actual = await getUsuarioActual();
+  if (actual?.rol !== "administrador") {
+    return { error: "No tienes permiso para realizar esta acción" };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("expedientes").delete().eq("id", id);
+  if (error) return { error: `No se pudo eliminar el expediente: ${error.message}` };
+
+  revalidatePath("/expedientes");
+  revalidatePath("/calendario");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}

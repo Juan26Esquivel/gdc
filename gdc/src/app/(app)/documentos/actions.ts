@@ -209,3 +209,32 @@ export async function rehacerDocumento(
   revalidatePath("/documentos");
   return { ok: true };
 }
+
+export type EstadoEliminarDocumento = { error?: string; ok?: boolean };
+
+// RF-33-EXTRA: el borrado en sí queda registrado automáticamente en `auditoria`
+// por el trigger de base de datos (migración 013) — no hace falta duplicarlo aquí.
+export async function eliminarDocumento(documentoId: string): Promise<EstadoEliminarDocumento> {
+  const actual = await getUsuarioActual();
+  if (actual?.rol !== "administrador") {
+    return { error: "No tienes permiso para realizar esta acción" };
+  }
+
+  const supabase = await createClient();
+
+  const { data: documento } = await supabase
+    .from("documentos")
+    .select("expediente_id, archivo_docx_path")
+    .eq("id", documentoId)
+    .single();
+
+  const { error } = await supabase.from("documentos").delete().eq("id", documentoId);
+  if (error) return { error: `No se pudo eliminar el documento: ${error.message}` };
+
+  if (documento?.archivo_docx_path) {
+    await supabase.storage.from("documentos-docx").remove([documento.archivo_docx_path]);
+  }
+
+  revalidatePath("/documentos");
+  return { ok: true };
+}

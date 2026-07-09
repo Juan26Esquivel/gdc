@@ -7,9 +7,11 @@ import {
   rehacerDocumento,
   dejarObservaciones,
   confirmarDocumento,
+  eliminarDocumento,
   type EstadoGenerarDocumento,
   type EstadoRevisarDocumento,
 } from "@/app/(app)/documentos/actions";
+import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -131,7 +133,11 @@ export function DocumentoWorkspace({
       {/* Columna 2: Editor */}
       <div>
         {seleccionado ? (
-          <DocumentoExistente documento={seleccionado} puedeGenerar={puedeGenerar} />
+          <DocumentoExistente
+            documento={seleccionado}
+            puedeGenerar={puedeGenerar}
+            esAdmin={rol === "administrador"}
+          />
         ) : puedeGenerar ? (
           <NuevoDocumentoForm expedienteId={expedienteId} tiposDocumento={tiposDocumento} />
         ) : (
@@ -208,14 +214,32 @@ function NuevoDocumentoForm({
 function DocumentoExistente({
   documento,
   puedeGenerar,
+  esAdmin,
 }: {
   documento: Documento;
   puedeGenerar: boolean;
+  esAdmin: boolean;
 }) {
   const puedeRehacer = puedeGenerar && documento.estado === "en_correccion";
   const [contenido, setContenido] = useState(documento.contenido_texto ?? "");
   const [estado, formAction, pending] = useActionState(rehacerDocumento, ESTADO_INICIAL_GENERAR);
+  const [eliminando, setEliminando] = useState(false);
+  const router = useRouter();
   useRefrescarAlExito(estado.ok);
+
+  async function alEliminar() {
+    if (
+      !confirm(
+        `¿Eliminar el documento "${documento.tipos_documento?.nombre}"? Esta acción es irreversible y queda registrada en Auditoría.`,
+      )
+    ) {
+      return;
+    }
+    setEliminando(true);
+    const resultado = await eliminarDocumento(documento.id);
+    setEliminando(false);
+    if (!resultado.error) router.refresh();
+  }
 
   return (
     <Card>
@@ -228,16 +252,29 @@ function DocumentoExistente({
               {formatearFecha(documento.created_at)}
             </p>
           </div>
-          {documento.urlDescarga && (
-            <a
-              href={documento.urlDescarga}
-              target="_blank"
-              rel="noreferrer"
-              className="text-sm underline"
-            >
-              Descargar .docx
-            </a>
-          )}
+          <div className="flex items-center gap-3">
+            {documento.urlDescarga && (
+              <a
+                href={documento.urlDescarga}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm underline"
+              >
+                Descargar .docx
+              </a>
+            )}
+            {esAdmin && (
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Eliminar documento"
+                onClick={alEliminar}
+                disabled={eliminando}
+              >
+                <Trash2 className="size-4 text-destructive" />
+              </Button>
+            )}
+          </div>
         </div>
 
         {puedeRehacer ? (

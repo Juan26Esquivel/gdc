@@ -16,6 +16,7 @@ import { NuevoExpedienteDialog } from "./nuevo-expediente-dialog";
 import { AvanzarFaseForm } from "./avanzar-fase-form";
 import { AsignarDialog } from "./asignar-dialog";
 import { FiltrosExpedientes } from "./filtros-expedientes";
+import { EliminarExpedienteBoton } from "./eliminar-expediente-boton";
 import { FASE_LABEL } from "@/lib/fases";
 import { StatCard } from "@/components/stat-card";
 import { PlazoBar } from "@/components/plazo-bar";
@@ -126,6 +127,7 @@ export default async function ExpedientesPage({ searchParams }: Props) {
                 <TableHead>Plazo</TableHead>
                 {esAdmin && <TableHead>Asignado a</TableHead>}
                 {esAdmin && <TableHead>Acción</TableHead>}
+                {esAdmin && <TableHead className="text-right">Eliminar</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -175,6 +177,14 @@ export default async function ExpedientesPage({ searchParams }: Props) {
                         {faseActual && faseActual.fase !== "audiencia_fondo" && (
                           <AvanzarFaseForm expedienteId={exp.id} faseActual={faseActual.fase} />
                         )}
+                      </TableCell>
+                    )}
+                    {esAdmin && (
+                      <TableCell className="text-right">
+                        <EliminarExpedienteBoton
+                          expedienteId={exp.id}
+                          numeroExpediente={exp.numero_expediente}
+                        />
                       </TableCell>
                     )}
                   </TableRow>

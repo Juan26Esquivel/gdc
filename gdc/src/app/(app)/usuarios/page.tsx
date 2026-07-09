@@ -15,7 +15,7 @@ export default async function UsuariosPage() {
   const supabase = await createClient();
   const { data: usuarios } = await supabase
     .from("usuarios")
-    .select("id, nombre_completo, rol, activo, created_at")
+    .select("id, auth_user_id, nombre_completo, rol, activo, created_at")
     .order("created_at", { ascending: true });
 
   return (
@@ -29,7 +29,7 @@ export default async function UsuariosPage() {
           <CardTitle>Usuarios del despacho</CardTitle>
         </CardHeader>
         <CardContent>
-          <UsuariosTabla usuarios={usuarios ?? []} />
+          <UsuariosTabla usuarios={usuarios ?? []} usuarioActualId={usuarioActual.id} />
         </CardContent>
       </Card>
     </div>
