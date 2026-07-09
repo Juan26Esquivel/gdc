@@ -1,11 +1,14 @@
 import { redirect } from "next/navigation";
-import { Scale, Search, Bell } from "lucide-react";
+import { Scale } from "lucide-react";
 import { getUsuarioActual } from "@/lib/auth/current-user";
 import { ROL_LABEL } from "@/lib/roles";
+import { obtenerNotificaciones } from "@/lib/notificaciones";
 import { logout } from "@/app/login/actions";
 import { Button } from "@/components/ui/button";
 import { SidebarNav } from "@/components/sidebar-nav";
 import { AvatarIniciales } from "@/components/avatar-iniciales";
+import { GlobalSearch } from "@/components/global-search";
+import { NotificacionesBell } from "@/components/notificaciones-bell";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const usuario = await getUsuarioActual();
@@ -17,6 +20,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!usuario.activo) {
     redirect("/login?error=Tu cuenta está desactivada, contacta al Administrador");
   }
+
+  const notificaciones = await obtenerNotificaciones(usuario.rol);
 
   return (
     <div className="flex min-h-screen">
@@ -51,16 +56,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </aside>
       <div className="flex flex-1 flex-col">
         <header className="flex h-16 items-center gap-4 border-b border-border bg-card px-6">
-          <div className="relative max-w-md flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="search"
-              placeholder="Buscar expedientes, documentos…"
-              disabled
-              className="w-full rounded-md border border-input bg-background py-2 pl-9 pr-3 text-sm text-muted-foreground outline-none disabled:cursor-not-allowed disabled:opacity-60"
-            />
-          </div>
-          <Bell className="size-5 text-muted-foreground" />
+          <GlobalSearch />
+          <NotificacionesBell items={notificaciones} />
           <div className="flex items-center gap-2">
             <div className="text-right">
               <p className="text-sm font-medium leading-tight">{usuario.nombre_completo}</p>

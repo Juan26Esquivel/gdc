@@ -586,6 +586,10 @@ create trigger trg_auditoria_borrado_audiencias
 
 > Decisión tomada con el usuario: `asignaciones` sí queda en cascada pero **sin** trigger de auditoría propio (menor riesgo/valor que fases y audiencias). El nombre exacto de cada restricción de llave foránea se busca dinámicamente en la migración (`pg_constraint`) en vez de asumirlo, para no depender de cómo Postgres las nombró automáticamente.
 
+### 023 — Intento de respaldo en los triggers de fases/audiencias (limitación conocida)
+
+> Al limpiar expedientes de prueba con un script que usa la `service_role key` (sin sesión de usuario autenticada), los triggers de `fn_auditoria_borrado_fases`/`fn_auditoria_borrado_audiencias` fallaban por violar el `not null` de `auditoria.usuario_id` — sin `auth.uid()`, no tenían de dónde tomar un usuario de respaldo. Se intentó agregar un respaldo consultando `expedientes.created_by` vía `expediente_id`, pero **no funciona para el caso de cascada** (que es el caso real de uso de RF-33-EXTRA): para cuando el trigger de `expediente_fases`/`audiencias` se ejecuta, la fila padre en `expedientes` **ya fue borrada** por el trigger `BEFORE DELETE` de esa tabla, así que la sub-consulta no encuentra nada. **Limitación aceptada**: estos dos triggers solo funcionan de forma completa dentro de una sesión autenticada real (que es como los usa la aplicación — el Administrador siempre tiene una sesión al eliminar desde `/expedientes`); un borrado hecho directamente con la `service_role key` fuera de la app fallaría. No afecta el flujo real del producto, solo scripts de mantenimiento fuera de la aplicación.
+
 ---
 
 ## 4. Requerimientos Funcionales
@@ -700,7 +704,7 @@ create trigger trg_auditoria_borrado_audiencias
 
 **RF-37.** El sistema no debe establecer ninguna integración técnica (API, base de datos compartida, webhook, etc.) con la plataforma oficial del Órgano Judicial ni con su plugin de Open Office/Word.
 
-**RF-38.** El sistema debe facilitar al Asistente la copia/exportación del contenido generado (texto plano y/o `.docx`) para que sea trasladado manualmente al plugin oficial. **Parcialmente implementado**: descarga del `.docx` vía enlace firmado en `/documentos`. Falta un botón de "copiar texto plano" explícito (el `contenido_texto` ya se almacena y se muestra al rehacer, pero no hay un botón de copia dedicado en el listado).
+**RF-38.** El sistema debe facilitar al Asistente la copia/exportación del contenido generado (texto plano y/o `.docx`) para que sea trasladado manualmente al plugin oficial. **Implementado por completo**: además de la descarga del `.docx`, el workspace de documentos (`/expedientes/[id]/documentos`) tiene un botón "Copiar texto" que copia `contenido_texto` al portapapeles (`navigator.clipboard.writeText`), con confirmación visual. Verificado en navegador.
 
 ---
 
@@ -745,8 +749,8 @@ create trigger trg_auditoria_borrado_audiencias
 - **Plantilla `.docx` oficial:** por ahora la generación es por código; si en el futuro se define una plantilla oficial, se migraría a `docxtemplater` (el modelo de datos ya lo soporta sin cambios).
 - **Repositorio Git/GitHub:** ✅ resuelto — repo privado creado en https://github.com/Juan26Esquivel/gdc, con commits regulares por avance.
 - **RF-15 — "quién revisó" un documento:** la tabla `documentos` no tiene un campo `revisado_por` separado; solo se infiere de `observaciones_juez` (si tiene texto, alguien lo revisó y rechazó) y de `confirmado_por` (si fue aprobado directamente). Si se necesita trazabilidad explícita de cada revisión (incluyendo aprobaciones sin observaciones), se requeriría una tabla `documento_revisiones` separada — no implementada por ahora.
-- **RF-01 — edición/desactivación/restablecimiento de usuarios:** solo se implementó creación y listado; falta la UI para editar, desactivar y restablecer usuarios existentes.
-- **RF-38 — botón de copiar texto plano:** el contenido se puede descargar como `.docx`, pero falta un botón dedicado de "copiar al portapapeles" en el listado de `/documentos`.
+- **RF-01 — edición/desactivación/restablecimiento de usuarios:** ✅ resuelto en el Módulo 7.
+- **RF-38 — botón de copiar texto plano:** ✅ resuelto — botón "Copiar texto" en el workspace de documentos.
 
 ---
 
@@ -767,7 +771,7 @@ create trigger trg_auditoria_borrado_audiencias
 
 ## 8. Checklist de Estado de Implementación
 
-- [x] Migraciones 001–022 aplicadas en Supabase (proyecto "GDC", vía `gdc/supabase/migrations/` + `supabase db push`)
+- [x] Migraciones 001–023 aplicadas en Supabase (proyecto "GDC", vía `gdc/supabase/migrations/` + `supabase db push`)
 - [x] Seed de catálogo (`gdc/supabase/seed.sql`: tipos_proceso, subtipos_proceso, tipos_documento) aplicado y verificado
 - [x] RLS configurado por rol para cada tabla (migraciones 014–015, corrección en 017), verificado con `pg_class`/`pg_policies` en las 13 tablas y con usuarios reales de cada rol
 - [x] Proyecto Next.js inicializado (`gdc/`, App Router, TypeScript, Tailwind 4, shadcn/ui) con Supabase Auth conectado (`src/lib/supabase/{client,server,middleware}.ts`) y verificado end-to-end en navegador: login real → middleware protege `/dashboard` → lectura de `usuarios` vía RLS muestra rol correcto
@@ -785,6 +789,7 @@ create trigger trg_auditoria_borrado_audiencias
 - [x] Módulo 6 — Reportería y KPIs (RF-25 a RF-28): configurador de KPIs, consulta de solo lectura para el Juez, exportación CSV de volumen de documentos y tendencia mensual calculada en tiempo real — sin snapshots históricos ni comparativo año a año (ver limitación documentada en RF-28). Verificado end-to-end con Analista de Prueba (crear/editar/eliminar) y Juez de Prueba (solo consulta)
 - [~] Módulo 7 — Administración y Seguridad (RF-29 a RF-33, RF-33-EXTRA): usuarios (editar/desactivar/restablecer), catálogo de procesos y plazos, configuración general (tope de cuantía, plazo de admisión), visor de auditoría (RNF-03) y eliminación de expedientes/documentos con auditoría automática — todo implementado y verificado end-to-end. RF-29 (campos restringidos) pospuesto explícitamente por el usuario (sin datos de partes que restringir todavía)
 - [x] Módulo 8 — Reglas de Montos y Cuantía (RF-34 a RF-36): validación de tope (Módulo 2) + UI de administración del tope/modo (Módulo 7), todo verificado
-- [~] Módulo 9 — Validación de no-integración con Órgano Judicial (RF-37 a RF-38): RF-37 satisfecho por diseño (ninguna integración técnica existe); falta el botón dedicado de "copiar texto plano" de RF-38
+- [x] Módulo 9 — Validación de no-integración con Órgano Judicial (RF-37 a RF-38): RF-37 satisfecho por diseño; RF-38 con botón de "Copiar texto" en el workspace de documentos, verificado en navegador (portapapeles)
+- [x] Barra de búsqueda global y campana de notificaciones (header, antes decorativas — Fase 0 del sistema de diseño Iustitia): búsqueda multidato (expedientes + documentos) insensible a tildes/mayúsculas vía `gdc/src/app/(app)/busqueda-actions.ts`; notificaciones reales por rol (documentos pendientes de revisión/corrección, expedientes que exceden el plazo de admisión) vía `gdc/src/lib/notificaciones.ts` — sin tabla de notificaciones nueva, reutiliza datos ya existentes. Verificado con las 4 cuentas de prueba (Administrador, Juez, Asistente, Analista)
 - [x] Trigger de auditoría de borrado verificado en entorno de prueba (migración 013, ampliado en 022 a fases/audiencias) — confirmado end-to-end: eliminar un expediente de prueba generó entradas `eliminar_expediente`, `eliminar_documento` y `eliminar_fase_expediente` visibles en `/auditoria`
 - [~] Decisiones abiertas de la sección 6 resueltas: repositorio Git/GitHub ✅; campos restringidos pospuesto explícitamente (RF-29); plantilla oficial `.docx` sigue pendiente

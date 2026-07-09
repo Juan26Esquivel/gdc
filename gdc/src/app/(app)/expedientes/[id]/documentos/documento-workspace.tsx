@@ -224,8 +224,19 @@ function DocumentoExistente({
   const [contenido, setContenido] = useState(documento.contenido_texto ?? "");
   const [estado, formAction, pending] = useActionState(rehacerDocumento, ESTADO_INICIAL_GENERAR);
   const [eliminando, setEliminando] = useState(false);
+  const [copiado, setCopiado] = useState(false);
   const router = useRouter();
   useRefrescarAlExito(estado.ok);
+
+  // RF-38: el Asistente traslada el contenido manualmente al plugin oficial
+  // del Órgano Judicial (GDC no se integra con él) — copiar el texto plano
+  // es más rápido que seleccionarlo a mano dentro del editor.
+  async function alCopiarTexto() {
+    if (!documento.contenido_texto) return;
+    await navigator.clipboard.writeText(documento.contenido_texto);
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 2000);
+  }
 
   async function alEliminar() {
     if (
@@ -253,6 +264,15 @@ function DocumentoExistente({
             </p>
           </div>
           <div className="flex items-center gap-3">
+            {documento.contenido_texto && (
+              <button
+                type="button"
+                onClick={alCopiarTexto}
+                className="text-sm underline"
+              >
+                {copiado ? "¡Copiado!" : "Copiar texto"}
+              </button>
+            )}
             {documento.urlDescarga && (
               <a
                 href={documento.urlDescarga}
