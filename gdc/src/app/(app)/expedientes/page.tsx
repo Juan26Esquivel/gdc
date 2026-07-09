@@ -1,3 +1,4 @@
+import { Folder, AlertTriangle, Gavel } from "lucide-react";
 import { getUsuarioActual } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
 import { getTiposProceso, getSubtiposProceso } from "@/lib/catalogos";
@@ -13,9 +14,18 @@ import {
 import { NuevoExpedienteDialog } from "./nuevo-expediente-dialog";
 import { AvanzarFaseForm } from "./avanzar-fase-form";
 import { AsignarDialog } from "./asignar-dialog";
+import { FiltrosExpedientes } from "./filtros-expedientes";
 import { FASE_LABEL } from "@/lib/fases";
+import { StatCard } from "@/components/stat-card";
+import { PlazoBar } from "@/components/plazo-bar";
+import { calcularEstadoPlazo } from "@/lib/plazo-audiencia";
 
-export default async function ExpedientesPage() {
+type Props = {
+  searchParams: Promise<{ tipo?: string; fase?: string }>;
+};
+
+export default async function ExpedientesPage({ searchParams }: Props) {
+  const { tipo: tipoFiltro, fase: faseFiltro } = await searchParams;
   const usuario = await getUsuarioActual();
   const esAdmin = usuario?.rol === "administrador";
 
@@ -25,11 +35,13 @@ export default async function ExpedientesPage() {
       supabase
         .from("expedientes")
         .select(
-          `id, numero_expediente, cuantia, es_lanzamiento, created_at,
+          `id, numero_expediente, tipo_proceso_id, cuantia, es_lanzamiento,
+           fecha_notificacion_demanda, created_at,
            tipos_proceso(nombre),
            subtipos_proceso(nombre),
            expediente_fases(fase, fecha_fin),
-           asignaciones(activa, usuarios!asistente_id(id, nombre_completo))`,
+           asignaciones(activa, usuarios!asistente_id(id, nombre_completo)),
+           audiencias(tipo, fecha_limite_calculada, estado)`,
         )
         .order("created_at", { ascending: false }),
       getTiposProceso(),
@@ -43,14 +55,60 @@ export default async function ExpedientesPage() {
         : Promise.resolve({ data: [] }),
     ]);
 
+  const todos = expedientes ?? [];
+
+  // Stat cards: se calculan sobre el total visible por RLS, sin aplicar los filtros de la tabla.
+  const totalExpedientes = todos.length;
+  const enFaseAudiencia = todos.filter((exp) => {
+    const activa = exp.expediente_fases.find((f) => f.fecha_fin === null);
+    return activa?.fase === "audiencia_preliminar" || activa?.fase === "audiencia_fondo";
+  }).length;
+  const enPlazoCritico = todos.filter((exp) => {
+    const audienciaActiva = exp.audiencias.find((a) => a.estado === "programada");
+    const estadoPlazo = calcularEstadoPlazo(
+      exp.fecha_notificacion_demanda,
+      audienciaActiva?.fecha_limite_calculada ?? null,
+    );
+    return estadoPlazo?.color === "red";
+  }).length;
+
+  const filas = todos.filter((exp) => {
+    if (tipoFiltro && exp.tipo_proceso_id !== Number(tipoFiltro)) return false;
+    if (faseFiltro) {
+      const activa = exp.expediente_fases.find((f) => f.fecha_fin === null);
+      if (activa?.fase !== faseFiltro) return false;
+    }
+    return true;
+  });
+
   return (
     <div className="flex flex-col gap-4">
+      <p className="text-sm text-muted-foreground">Panel principal / Expedientes</p>
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Expedientes</h1>
+        <div>
+          <h1 className="font-heading text-xl font-semibold">Gestión de Expedientes</h1>
+          <p className="text-sm text-muted-foreground">
+            Control de procesos judiciales y plazos según la Ley 402.
+          </p>
+        </div>
         {esAdmin && (
           <NuevoExpedienteDialog tiposProceso={tiposProceso} subtiposProceso={subtiposProceso} />
         )}
       </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <StatCard icono={Folder} label="Total expedientes" valor={totalExpedientes} />
+        <StatCard
+          icono={AlertTriangle}
+          label="En plazo crítico"
+          valor={enPlazoCritico}
+          destacado={enPlazoCritico > 0}
+        />
+        <StatCard icono={Gavel} label="En fase audiencia" valor={enFaseAudiencia} />
+      </div>
+
+      <FiltrosExpedientes tiposProceso={tiposProceso} />
+
       <Card>
         <CardHeader>
           <CardTitle>Listado</CardTitle>
@@ -64,14 +122,20 @@ export default async function ExpedientesPage() {
                 <TableHead>Subtipo</TableHead>
                 <TableHead>Cuantía</TableHead>
                 <TableHead>Fase actual</TableHead>
+                <TableHead>Plazo</TableHead>
                 {esAdmin && <TableHead>Asignado a</TableHead>}
                 {esAdmin && <TableHead>Acción</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {expedientes?.map((exp) => {
+              {filas.map((exp) => {
                 const faseActual = exp.expediente_fases.find((f) => f.fecha_fin === null);
                 const asignacionActual = exp.asignaciones.find((a) => a.activa);
+                const audienciaActiva = exp.audiencias.find((a) => a.estado === "programada");
+                const estadoPlazo = calcularEstadoPlazo(
+                  exp.fecha_notificacion_demanda,
+                  audienciaActiva?.fecha_limite_calculada ?? null,
+                );
                 return (
                   <TableRow key={exp.id}>
                     <TableCell>{exp.numero_expediente}</TableCell>
@@ -84,8 +148,9 @@ export default async function ExpedientesPage() {
                           ? `B/.${exp.cuantia}`
                           : "Indeterminada"}
                     </TableCell>
+                    <TableCell>{faseActual ? FASE_LABEL[faseActual.fase] : "—"}</TableCell>
                     <TableCell>
-                      {faseActual ? FASE_LABEL[faseActual.fase] : "—"}
+                      <PlazoBar estado={estadoPlazo} />
                     </TableCell>
                     {esAdmin && (
                       <TableCell>
@@ -100,10 +165,7 @@ export default async function ExpedientesPage() {
                     {esAdmin && (
                       <TableCell>
                         {faseActual && faseActual.fase !== "audiencia_fondo" && (
-                          <AvanzarFaseForm
-                            expedienteId={exp.id}
-                            faseActual={faseActual.fase}
-                          />
+                          <AvanzarFaseForm expedienteId={exp.id} faseActual={faseActual.fase} />
                         )}
                       </TableCell>
                     )}

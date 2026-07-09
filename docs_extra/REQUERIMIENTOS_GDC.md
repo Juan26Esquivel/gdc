@@ -654,6 +654,7 @@ create policy usuarios_select on usuarios for select
 - [~] Módulo 1 — Roles y Usuarios (RF-01 a RF-03): creación/listado de usuarios implementado; falta editar/desactivar/restablecer (RF-01) y RF-03 (auditoría de cambios de rol)
 - [x] Módulo 2 — Expedientes y Procesos (RF-04 a RF-08): alta, fases, asignaciones — verificado end-to-end con usuario Asistente real
 - [x] Módulo 3 — Documentos y Ciclo de Vida (RF-09 a RF-15): generación de `.docx` real (Storage), ciclo generado→validado→en_corrección→confirmado verificado end-to-end con usuarios Asistente y Juez reales
+- [~] Sistema de diseño "Iustitia GDC" (`docs_extra/stitch_document_verification_and_proposal/`) aplicado retroactivamente: Fase 0 (tema navy/stone-gray, tipografía Geist+Inter, sidebar oscuro + header, componentes `EstadoBadge`/`RolBadge`/`AvatarIniciales`/`StatCard`), Fase 1 (Usuarios: panel lateral en vez de diálogo), Fase 2 (Expedientes: stat cards, filtros por tipo/fase, barra de plazo — sin datos de audiencias reales todavía, ya que el módulo de Audiencias no está construido). Falta Fase 3 (Documentos: vista por expediente con editor de texto enriquecido) y los 3 módulos nuevos (Dashboard del Juez, KPIs, Auditoría) en este mismo estilo.
 - [ ] Módulo 4 — Dashboard del Juez (RF-16 a RF-19)
 - [ ] Módulo 5 — Calendario y Plazos (RF-20 a RF-24, RF-22-EXTRA, RF-24-EXTRA)
 - [ ] Módulo 6 — Reportería y KPIs (RF-25 a RF-28)
