@@ -526,23 +526,27 @@ create policy usuarios_select on usuarios for select
 
 ### Módulo 5 — Calendario y Plazos de Audiencias
 
-**RF-20.** El sistema debe mostrar al Juez un calendario con los expedientes que tienen audiencia programada para el mes siguiente.
+**RF-20.** El sistema debe mostrar al Juez un calendario con los expedientes que tienen audiencia programada para el mes siguiente. **Implementado** (`/calendario`, `react-big-calendar`): vista mensual con navegación, por defecto abre en el mes siguiente al actual.
 
-**RF-21.** El sistema debe distinguir claramente qué expediente corresponde a cada audiencia mostrada en el calendario.
+**RF-21.** El sistema debe distinguir claramente qué expediente corresponde a cada audiencia mostrada en el calendario. **Implementado**: cada evento muestra número de expediente + tipo de audiencia; al hacer clic se abre un panel con el detalle completo.
 
 **RF-22.** El sistema debe calcular automáticamente la ventana de fecha límite para la audiencia preliminar de un expediente Declarativo, a partir de la `fecha_notificacion_demanda`, usando el plazo configurado según el subtipo:
  - Ordinario: entre 20 y 60 días después de la notificación.
  - Sumario: entre 10 y 20 días después de la notificación.
 
+ **Implementado**: al avanzar un expediente a la fase `audiencia_preliminar` (`gdc/src/app/(app)/expedientes/actions.ts`, `avanzarFase`), el sistema pide la fecha programada y calcula `fecha_limite_calculada = fecha_notificacion_demanda + plazo_audiencia_max_dias` del subtipo, verificado con datos reales (Ordinario: notificación + 60 días).
+
 **RF-22-EXTRA.** El sistema debe calcular automáticamente la ventana de fecha límite para la audiencia de **fondo/final** de un expediente Declarativo Ordinario, a partir de la fecha real de **cierre** de su audiencia preliminar (no de `fecha_notificacion_demanda`), usando `plazo_audiencia_fondo_min_dias`/`max_dias` del subtipo:
  - Ordinario: entre 20 y 40 días después del cierre de la audiencia preliminar. `[VERIFICAR ARTÍCULO EXACTO — aparenta ser Art. 255 núm. 8, no confirmado con certeza por errores de OCR conocidos en la transcripción del Código]`
  - Sumario: sin plazo de audiencia de fondo confirmado por ahora (columnas quedan `null`).
 
-**RF-23.** El sistema debe permitir al Administrador configurar (agregar/editar) los plazos de `subtipos_proceso` para nuevos subtipos o tipos de proceso a medida que se definan (ver decisiones abiertas).
+ **Implementado**: al avanzar a `audiencia_fondo`, el ancla usada como "cierre de la preliminar" es la `fecha_programada` de la audiencia preliminar existente (el esquema no tiene un campo `fecha_cierre` separado); `fecha_limite_calculada = esa fecha + plazo_audiencia_fondo_max_dias`. Verificado con datos reales.
 
-**RF-24.** El sistema debe alertar al Juez y al Asistente cuando un expediente se acerque o exceda la ventana de plazo calculada para su audiencia.
+**RF-23.** El sistema debe permitir al Administrador configurar (agregar/editar) los plazos de `subtipos_proceso` para nuevos subtipos o tipos de proceso a medida que se definan (ver decisiones abiertas). **No implementado todavía** — hoy solo se edita por SQL directo; queda pendiente para el panel de Administración (Módulo 7).
 
-**RF-24-EXTRA.** El sistema debe alertar al Juez y al Asistente cuando un expediente lleve más de `plazo_admision_dias` (30 días hábiles por defecto, Art. 395, `configuracion_sistema`) en fase `admision` sin haber pasado a `notificacion_demanda`. Esta regla es transversal a los 6 tipos de proceso, ya que el Art. 395 no distingue por tipo.
+**RF-24.** El sistema debe alertar al Juez y al Asistente cuando un expediente se acerque o exceda la ventana de plazo calculada para su audiencia. **Implementado parcialmente**: la barra de plazo en `/expedientes` (`gdc/src/lib/plazo-audiencia.ts`) colorea en rojo cuando faltan ≤3 días o está vencido, ámbar cuando lleva ≥70% del plazo transcurrido, verde en el resto — verificado con datos reales (audiencia Ordinario mostrando "20d restantes" en verde). Falta una alerta activa (notificación/banner), hoy es solo visual en la tabla.
+
+**RF-24-EXTRA.** El sistema debe alertar al Juez y al Asistente cuando un expediente lleve más de `plazo_admision_dias` (30 días hábiles por defecto, Art. 395, `configuracion_sistema`) en fase `admision` sin haber pasado a `notificacion_demanda`. Esta regla es transversal a los 6 tipos de proceso, ya que el Art. 395 no distingue por tipo. **No implementado todavía** — queda para el Dashboard del Juez (Módulo 4), donde tiene más sentido mostrar esta alerta agregada.
 
 ### Módulo 6 — Reportería y KPIs
 
@@ -661,7 +665,7 @@ create policy usuarios_select on usuarios for select
   - Fase 3: Documentos — nueva vista por expediente (`/expedientes/[id]/documentos`) de 3 columnas (historial, editor Tiptap, observaciones + trazabilidad adaptada a los 4 estados reales sin ningún paso de firma, preservando RF-14); el listado global `/documentos` quedó como resumen de solo lectura con enlace "Ver expediente". Verificado end-to-end con los 3 roles reales: generar → observar → rehacer → confirmar.
   - Faltan los 3 módulos nuevos (Dashboard del Juez, KPIs, Auditoría) en este mismo estilo, que se construyen directamente así cuando les toque el turno.
 - [ ] Módulo 4 — Dashboard del Juez (RF-16 a RF-19)
-- [ ] Módulo 5 — Calendario y Plazos (RF-20 a RF-24, RF-22-EXTRA, RF-24-EXTRA)
+- [~] Módulo 5 — Calendario y Plazos (RF-20 a RF-24, RF-22-EXTRA, RF-24-EXTRA): calendario y cálculo de plazos implementados y verificados con datos reales; faltan RF-23 (UI de configuración de plazos) y RF-24-EXTRA (alerta de plazo de admisión, se hará en el Dashboard del Juez)
 - [ ] Módulo 6 — Reportería y KPIs (RF-25 a RF-28)
 - [ ] Módulo 7 — Administración y Seguridad (RF-29 a RF-33, RF-33-EXTRA)
 - [ ] Módulo 8 — Reglas de Montos y Cuantía (RF-34 a RF-36)

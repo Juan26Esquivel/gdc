@@ -31,6 +31,9 @@ export function AvanzarFaseForm({
           className="h-8 w-36"
         />
       )}
+      {(proxima === "audiencia_preliminar" || proxima === "audiencia_fondo") && (
+        <Input type="date" name="fecha_audiencia" required className="h-8 w-36" />
+      )}
       <Button type="submit" size="sm" variant="outline" disabled={pending}>
         {pending ? "..." : `Avanzar a ${FASE_LABEL[proxima]}`}
       </Button>

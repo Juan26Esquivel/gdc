@@ -89,6 +89,7 @@ export async function avanzarFase(
 
   const expedienteId = formData.get("expediente_id") as string;
   const fechaNotificacion = formData.get("fecha_notificacion_demanda") as string;
+  const fechaAudiencia = formData.get("fecha_audiencia") as string;
 
   const supabase = await createClient();
   const { data: faseActual, error: errorFaseActual } = await supabase
@@ -113,6 +114,45 @@ export async function avanzarFase(
 
   if (siguienteFase === "notificacion_demanda" && !fechaNotificacion) {
     return { error: "Debes indicar la fecha de notificación de la demanda para avanzar a esta fase" };
+  }
+
+  const esAudienciaPreliminar = siguienteFase === "audiencia_preliminar";
+  const esAudienciaFondo = siguienteFase === "audiencia_fondo";
+
+  if ((esAudienciaPreliminar || esAudienciaFondo) && !fechaAudiencia) {
+    return { error: "Debes indicar la fecha programada de la audiencia para avanzar a esta fase" };
+  }
+
+  let fechaLimiteCalculada: string | null = null;
+
+  if (esAudienciaPreliminar || esAudienciaFondo) {
+    const { data: expediente } = await supabase
+      .from("expedientes")
+      .select(
+        "fecha_notificacion_demanda, subtipos_proceso(plazo_audiencia_max_dias, plazo_audiencia_fondo_max_dias)",
+      )
+      .eq("id", expedienteId)
+      .single();
+
+    if (esAudienciaPreliminar) {
+      const maxDias = expediente?.subtipos_proceso?.plazo_audiencia_max_dias;
+      if (expediente?.fecha_notificacion_demanda && maxDias) {
+        fechaLimiteCalculada = sumarDias(expediente.fecha_notificacion_demanda, maxDias);
+      }
+    } else {
+      const maxDiasFondo = expediente?.subtipos_proceso?.plazo_audiencia_fondo_max_dias;
+      const { data: audienciaPreliminar } = await supabase
+        .from("audiencias")
+        .select("fecha_programada")
+        .eq("expediente_id", expedienteId)
+        .eq("tipo", "preliminar")
+        .order("fecha_programada", { ascending: false })
+        .limit(1)
+        .single();
+      if (audienciaPreliminar?.fecha_programada && maxDiasFondo) {
+        fechaLimiteCalculada = sumarDias(audienciaPreliminar.fecha_programada, maxDiasFondo);
+      }
+    }
   }
 
   const { error: errorCierre } = await supabase
@@ -140,8 +180,27 @@ export async function avanzarFase(
       .eq("id", expedienteId);
   }
 
+  if ((esAudienciaPreliminar || esAudienciaFondo) && fechaAudiencia) {
+    const { error: errorAudiencia } = await supabase.from("audiencias").insert({
+      expediente_id: expedienteId,
+      tipo: esAudienciaPreliminar ? "preliminar" : "fondo",
+      fecha_programada: fechaAudiencia,
+      fecha_limite_calculada: fechaLimiteCalculada,
+    });
+    if (errorAudiencia) {
+      return { error: `Fase avanzada, pero falló programar la audiencia: ${errorAudiencia.message}` };
+    }
+  }
+
   revalidatePath("/expedientes");
+  revalidatePath("/calendario");
   return { ok: true };
+}
+
+function sumarDias(fechaBase: string, dias: number): string {
+  const fecha = new Date(fechaBase);
+  fecha.setDate(fecha.getDate() + dias);
+  return fecha.toISOString();
 }
 
 export type EstadoAsignarExpediente = { error?: string; ok?: boolean };
