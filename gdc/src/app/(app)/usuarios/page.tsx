@@ -2,16 +2,8 @@ import { redirect } from "next/navigation";
 import { getUsuarioActual } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { NuevoUsuarioDialog } from "./nuevo-usuario-dialog";
-import { ROL_LABEL } from "@/lib/roles";
+import { UsuariosTabla } from "./usuarios-tabla";
 
 export default async function UsuariosPage() {
   const usuarioActual = await getUsuarioActual();
@@ -37,24 +29,7 @@ export default async function UsuariosPage() {
           <CardTitle>Usuarios del despacho</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Rol</TableHead>
-                <TableHead>Estado</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {usuarios?.map((u) => (
-                <TableRow key={u.id}>
-                  <TableCell>{u.nombre_completo}</TableCell>
-                  <TableCell>{ROL_LABEL[u.rol]}</TableCell>
-                  <TableCell>{u.activo ? "Activo" : "Desactivado"}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <UsuariosTabla usuarios={usuarios ?? []} />
         </CardContent>
       </Card>
     </div>
