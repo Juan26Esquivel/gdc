@@ -474,6 +474,48 @@ create policy usuarios_select on usuarios for select
 
 > **Bug real detectado al verificar el Módulo 3 (Documentos) en navegador**: con la política original (solo fila propia o Administrador), el Juez no podía ver el nombre del Asistente que generó un documento — el `join` embebido `documentos → usuarios (generado_por)` se resolvía en `null` (RLS bloquea el embed silenciosamente, sin lanzar error). Nombre y rol no son datos sensibles y se necesitan para mostrar "generado por", "asignado a", etc. a cualquier rol; la escritura sobre `usuarios` se mantiene restringida a Administrador (`usuarios_admin_write`, sin cambios).
 
+### 018 — Realtime vía Postgres Changes (RF-19, intento inicial — reemplazado por la migración 019)
+
+```sql
+alter publication supabase_realtime add table expedientes;
+alter publication supabase_realtime add table documentos;
+alter publication supabase_realtime add table audiencias;
+```
+
+> Habilita las tablas para Postgres Changes. **No fue suficiente**: en pruebas, insertar una fila directamente en la base de datos nunca disparó el evento hacia el navegador (confirmado inspeccionando el WebSocket), incluso con la suscripción exitosa ("Subscribed to PostgreSQL"). Con una prueba autorizada de desactivar RLS temporalmente en `expedientes`, el evento sí llegó de inmediato — confirmando que el bloqueo es una limitación conocida del motor de Postgres Changes de Supabase con políticas RLS que dependen de funciones `SECURITY DEFINER` con sub-consultas (exactamente `fn_usuario_rol()`/`fn_expediente_asignado()`, migración 014). Se mantiene esta migración aplicada (no hace daño dejar las tablas en la publicación) pero el mecanismo real usado es el de la migración 019.
+
+### 019 — Realtime vía Broadcast from Database (RF-19, solución real)
+
+```sql
+create policy "autenticados_escuchan_broadcast" on "realtime"."messages"
+  for select
+  to authenticated
+  using (true);
+
+create or replace function fn_broadcast_cambio() returns trigger
+language plpgsql security definer
+as $$
+begin
+  perform realtime.send(
+    jsonb_build_object('table', TG_TABLE_NAME, 'type', TG_OP),
+    'cambio',
+    'dashboard-cambios',
+    true
+  );
+  return coalesce(NEW, OLD);
+end;
+$$;
+
+create trigger trg_broadcast_expedientes
+  after insert or update or delete on expedientes
+  for each row execute function fn_broadcast_cambio();
+-- (mismo patrón para documentos y audiencias)
+```
+
+> Patrón recomendado por Supabase para evitar la limitación de la migración 018: el trigger envía una señal ligera (solo tabla + tipo de operación, **sin** el contenido de la fila) a un canal privado; el cliente la recibe y vuelve a pedir los datos por la vía normal (que sí respeta RLS con normalidad, ya que es una consulta `SELECT` corriente vía PostgREST, no una evaluación de RLS dentro del motor de Realtime). La autorización del canal usa una condición simple (`using (true)` para cualquier `authenticated`) que no depende de las funciones `SECURITY DEFINER` problemáticas.
+>
+> Incluso con esto, el canal seguía devolviendo `Unauthorized` hasta corregir un segundo problema, esta vez del lado del cliente: `@supabase/ssr` no sincroniza automáticamente el JWT de sesión con `supabase.realtime` (a diferencia del cliente estándar de `supabase-js`). Hubo que llamar `supabase.realtime.setAuth(session.access_token)` explícitamente antes de suscribirse (`gdc/src/app/(app)/dashboard/realtime-refresh.tsx`). Diagnosticado en conjunto con el usuario usando el **Realtime Inspector** del dashboard de Supabase, que permitió confirmar que el canal sí era accesible en general (aislando el problema al cliente de la app, no al proyecto).
+
 ---
 
 ## 4. Requerimientos Funcionales
@@ -516,13 +558,13 @@ create policy usuarios_select on usuarios for select
 
 ### Módulo 4 — Panel de Control del Juez (Dashboard)
 
-**RF-16.** El sistema debe mostrar al Juez una gráfica mensual del volumen de documentos remitidos, desglosada por tipo (Proveído, Providencia, Auto, Sentencia, Oficio).
+**RF-16.** El sistema debe mostrar al Juez una gráfica mensual del volumen de documentos remitidos, desglosada por tipo (Proveído, Providencia, Auto, Sentencia, Oficio). **Implementado** (`/dashboard`, Recharts): "Documentos Emitidos Este Mes", conteo real por `tipo_documento`.
 
-**RF-17.** El sistema debe permitir al Juez comparar el volumen de expedientes trabajados en el mes actual contra el mes y el año anterior (expedientes ingresados vs. resueltos).
+**RF-17.** El sistema debe permitir al Juez comparar el volumen de expedientes trabajados en el mes actual contra el mes y el año anterior (expedientes ingresados vs. resueltos). **Implementado parcialmente**: comparativo de expedientes *ingresados* mes actual vs. mes anterior. No hay comparativo contra el año anterior todavía (poca antigüedad de datos para probarlo con sentido), y "resueltos" se aproxima con documentos confirmados en vez de un estado de expediente cerrado (el modelo no tiene ese concepto).
 
-**RF-18.** El sistema debe mostrar al Juez un resumen consolidado y actualizado al día del total de expedientes pendientes, agrupado por tipo de proceso y fase.
+**RF-18.** El sistema debe mostrar al Juez un resumen consolidado y actualizado al día del total de expedientes pendientes, agrupado por tipo de proceso y fase. **Implementado parcialmente**: "Carga de Trabajo por Fase" agrupa por fase (Recharts); el agrupado adicional por tipo de proceso no se implementó todavía (con un solo tipo de proceso con datos reales — Declarativo — un desglose 2D no aporta información distinta por ahora).
 
-**RF-19.** El sistema debe actualizar el dashboard del Juez en tiempo real (o near real-time) usando Supabase Realtime cuando cambie el estado de un expediente o documento.
+**RF-19.** El sistema debe actualizar el dashboard del Juez en tiempo real (o near real-time) usando Supabase Realtime cuando cambie el estado de un expediente o documento. **Implementado y verificado end-to-end**, con una vuelta larga: la primera implementación (Postgres Changes, migración 20260709110001) nunca entregaba eventos — bug real de la plataforma, confirmado insertando datos directamente en la base mientras se inspeccionaba el WebSocket del navegador, y aislado con una prueba autorizada de desactivar/reactivar RLS (el evento sí llegaba sin RLS). Postgres Changes de Supabase no entrega eventos de forma confiable cuando la política RLS depende de funciones `SECURITY DEFINER` con sub-consultas (`fn_usuario_rol()`, `fn_expediente_asignado()`), que es exactamente nuestro caso. Se migró al patrón "Broadcast from Database" (migración 20260709120001: trigger que envía una señal ligera — solo tabla + tipo de operación, sin contenido de la fila — a un canal privado autorizado por una política simple en `realtime.messages`). Aun así, el canal seguía rechazando la conexión con `Unauthorized` hasta corregir un segundo problema: `@supabase/ssr` no sincroniza automáticamente el JWT de sesión con el cliente de Realtime (a diferencia del cliente estándar de `supabase-js`) — hubo que llamar `supabase.realtime.setAuth(session.access_token)` explícitamente antes de suscribirse (`gdc/src/app/(app)/dashboard/realtime-refresh.tsx`).
 
 ### Módulo 5 — Calendario y Plazos de Audiencias
 
@@ -546,7 +588,7 @@ create policy usuarios_select on usuarios for select
 
 **RF-24.** El sistema debe alertar al Juez y al Asistente cuando un expediente se acerque o exceda la ventana de plazo calculada para su audiencia. **Implementado parcialmente**: la barra de plazo en `/expedientes` (`gdc/src/lib/plazo-audiencia.ts`) colorea en rojo cuando faltan ≤3 días o está vencido, ámbar cuando lleva ≥70% del plazo transcurrido, verde en el resto — verificado con datos reales (audiencia Ordinario mostrando "20d restantes" en verde). Falta una alerta activa (notificación/banner), hoy es solo visual en la tabla.
 
-**RF-24-EXTRA.** El sistema debe alertar al Juez y al Asistente cuando un expediente lleve más de `plazo_admision_dias` (30 días hábiles por defecto, Art. 395, `configuracion_sistema`) en fase `admision` sin haber pasado a `notificacion_demanda`. Esta regla es transversal a los 6 tipos de proceso, ya que el Art. 395 no distingue por tipo. **No implementado todavía** — queda para el Dashboard del Juez (Módulo 4), donde tiene más sentido mostrar esta alerta agregada.
+**RF-24-EXTRA.** El sistema debe alertar al Juez y al Asistente cuando un expediente lleve más de `plazo_admision_dias` (30 días hábiles por defecto, Art. 395, `configuracion_sistema`) en fase `admision` sin haber pasado a `notificacion_demanda`. Esta regla es transversal a los 6 tipos de proceso, ya que el Art. 395 no distingue por tipo. **Implementado** en el Dashboard del Juez (`/dashboard`, panel "Críticos (Art. 395)"), verificado con la regla de negocio (no con un expediente vencido real todavía, ya que ningún expediente de prueba supera los 30 días).
 
 ### Módulo 6 — Reportería y KPIs
 
@@ -651,7 +693,7 @@ create policy usuarios_select on usuarios for select
 
 ## 8. Checklist de Estado de Implementación
 
-- [x] Migraciones 001–017 aplicadas en Supabase (proyecto "GDC", vía `gdc/supabase/migrations/` + `supabase db push`)
+- [x] Migraciones 001–019 aplicadas en Supabase (proyecto "GDC", vía `gdc/supabase/migrations/` + `supabase db push`)
 - [x] Seed de catálogo (`gdc/supabase/seed.sql`: tipos_proceso, subtipos_proceso, tipos_documento) aplicado y verificado
 - [x] RLS configurado por rol para cada tabla (migraciones 014–015, corrección en 017), verificado con `pg_class`/`pg_policies` en las 13 tablas y con usuarios reales de cada rol
 - [x] Proyecto Next.js inicializado (`gdc/`, App Router, TypeScript, Tailwind 4, shadcn/ui) con Supabase Auth conectado (`src/lib/supabase/{client,server,middleware}.ts`) y verificado end-to-end en navegador: login real → middleware protege `/dashboard` → lectura de `usuarios` vía RLS muestra rol correcto
@@ -663,8 +705,8 @@ create policy usuarios_select on usuarios for select
   - Fase 1: Usuarios — panel lateral (`Sheet`) en vez de diálogo para ver detalle.
   - Fase 2: Expedientes — stat cards, filtros por tipo/fase, barra de plazo (sin datos de audiencias reales todavía, ya que el módulo de Audiencias no está construido).
   - Fase 3: Documentos — nueva vista por expediente (`/expedientes/[id]/documentos`) de 3 columnas (historial, editor Tiptap, observaciones + trazabilidad adaptada a los 4 estados reales sin ningún paso de firma, preservando RF-14); el listado global `/documentos` quedó como resumen de solo lectura con enlace "Ver expediente". Verificado end-to-end con los 3 roles reales: generar → observar → rehacer → confirmar.
-  - Faltan los 3 módulos nuevos (Dashboard del Juez, KPIs, Auditoría) en este mismo estilo, que se construyen directamente así cuando les toque el turno.
-- [ ] Módulo 4 — Dashboard del Juez (RF-16 a RF-19)
+  - Dashboard del Juez: construido directamente en este estilo (stat cards, tarjeta oscura destacada, panel de críticos con borde rojo). Faltan KPIs y Auditoría, que se construirán igual cuando les toque el turno.
+- [x] Módulo 4 — Dashboard del Juez (RF-16 a RF-19): stat cards, gráficas Recharts, panel de críticos (RF-24-EXTRA) y Realtime (Broadcast from Database) verificados end-to-end con datos reales
 - [~] Módulo 5 — Calendario y Plazos (RF-20 a RF-24, RF-22-EXTRA, RF-24-EXTRA): calendario y cálculo de plazos implementados y verificados con datos reales; faltan RF-23 (UI de configuración de plazos) y RF-24-EXTRA (alerta de plazo de admisión, se hará en el Dashboard del Juez)
 - [ ] Módulo 6 — Reportería y KPIs (RF-25 a RF-28)
 - [ ] Módulo 7 — Administración y Seguridad (RF-29 a RF-33, RF-33-EXTRA)
