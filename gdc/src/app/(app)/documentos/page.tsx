@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ESTADO_DOCUMENTO_LABEL } from "@/lib/estado-documento";
+import { EstadoBadge } from "@/components/estado-badge";
 import { GenerarDocumentoDialog } from "./generar-documento-dialog";
 import { RevisarDocumentoAcciones } from "./revisar-documento-acciones";
 import { RehacerDocumentoDialog } from "./rehacer-documento-dialog";
@@ -86,7 +86,9 @@ export default async function DocumentosPage() {
                 <TableRow key={doc.id}>
                   <TableCell>{doc.expedientes?.numero_expediente}</TableCell>
                   <TableCell>{doc.tipos_documento?.nombre}</TableCell>
-                  <TableCell>{ESTADO_DOCUMENTO_LABEL[doc.estado]}</TableCell>
+                  <TableCell>
+                    <EstadoBadge estado={doc.estado} />
+                  </TableCell>
                   <TableCell>{doc.generado_por_usuario?.nombre_completo}</TableCell>
                   <TableCell>{doc.confirmado_por_usuario?.nombre_completo ?? "—"}</TableCell>
                   <TableCell>
