@@ -454,7 +454,7 @@ RLS habilitado en las 13 tablas de negocio. Resumen por tabla (SQL completo en `
 
 **RF-04.** El sistema debe permitir al Administrador registrar un expediente indicando: número de expediente, tipo de proceso (de los 6 catalogados), subtipo (cuando aplique, ej. Ordinario/Sumario dentro de Declarativo), cuantía (o indicar que es indeterminada), y si corresponde a un lanzamiento. **Implementado** (`gdc/src/app/(app)/expedientes/`), incluyendo la validación del tope de cuantía (RF-35/36) al momento de crear el expediente.
 
-**RF-05.** El sistema debe permitir al Administrador asignar un expediente como tarea a un Asistente específico.
+**RF-05.** El sistema debe permitir al Administrador asignar un expediente como tarea a un Asistente específico. **Implementado** (columna "Asignado a" en `/expedientes`): una sola asignación activa por expediente (se desactiva la anterior al reasignar). Verificado que un Asistente autenticado solo ve, vía RLS, los expedientes que tiene asignados.
 
 **RF-06.** El sistema debe mostrar al Juez la cantidad de expedientes pendientes de admisión, agrupados por tipo de proceso.
 

@@ -143,3 +143,48 @@ export async function avanzarFase(
   revalidatePath("/expedientes");
   return { ok: true };
 }
+
+export type EstadoAsignarExpediente = { error?: string; ok?: boolean };
+
+export async function asignarExpediente(
+  _prevState: EstadoAsignarExpediente,
+  formData: FormData,
+): Promise<EstadoAsignarExpediente> {
+  const actual = await getUsuarioActual();
+  if (actual?.rol !== "administrador") {
+    return { error: "No tienes permiso para realizar esta acción" };
+  }
+
+  const expedienteId = formData.get("expediente_id") as string;
+  const asistenteId = formData.get("asistente_id") as string;
+
+  if (!expedienteId || !asistenteId) {
+    return { error: "Selecciona un Asistente" };
+  }
+
+  const supabase = await createClient();
+
+  // Solo puede haber una asignación activa por expediente: se desactiva la anterior (si existe).
+  const { error: errorDesactivar } = await supabase
+    .from("asignaciones")
+    .update({ activa: false })
+    .eq("expediente_id", expedienteId)
+    .eq("activa", true);
+
+  if (errorDesactivar) {
+    return { error: `No se pudo actualizar la asignación anterior: ${errorDesactivar.message}` };
+  }
+
+  const { error: errorInsert } = await supabase.from("asignaciones").insert({
+    expediente_id: expedienteId,
+    asistente_id: asistenteId,
+    asignado_por: actual.id,
+  });
+
+  if (errorInsert) {
+    return { error: `No se pudo asignar el expediente: ${errorInsert.message}` };
+  }
+
+  revalidatePath("/expedientes");
+  return { ok: true };
+}
