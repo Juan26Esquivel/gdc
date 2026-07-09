@@ -424,7 +424,7 @@ RLS habilitado en las 13 tablas de negocio. Resumen por tabla (SQL completo en `
 
 | Tabla | Regla |
 |---|---|
-| `usuarios` | Cada quien ve su propia fila; Administrador ve/edita todo. |
+| `usuarios` | Lectura para cualquier autenticado (ver migración 017 — corrección); escritura solo Administrador. |
 | `tipos_proceso`, `subtipos_proceso`, `tipos_documento` | Lectura para cualquier autenticado (catálogos); escritura solo Administrador. |
 | `expedientes` | Juez y Administrador ven todos; Asistente solo los asignados (`fn_expediente_asignado`); escritura solo Administrador. |
 | `expediente_fases` | Visibilidad heredada del expediente; escritura solo Administrador (no asignada a nadie más en la matriz). |
@@ -437,6 +437,42 @@ RLS habilitado en las 13 tablas de negocio. Resumen por tabla (SQL completo en `
 | `configuracion_sistema` | Lectura para cualquier autenticado; solo Administrador actualiza. |
 
 > **Nota:** aunque las políticas fallen o estén mal, el editor SQL del dashboard de Supabase y el CLI usan una conexión que no está sujeta a RLS (rol `postgres`/`service_role`) — RLS solo afecta a la futura app Next.js conectada como usuario autenticado. Tres decisiones no cubiertas explícitamente por la matriz de la sección 2 (marcadas arriba) se resolvieron con el criterio más conservador y quedan abiertas a ajuste: acceso de lectura a `auditoria` restringido a Administrador, lectura de `campos_restringidos` abierta a cualquier autenticado, y escritura de `expediente_fases`/`audiencias` restringida a Administrador.
+
+### 016 — Storage: bucket de `.docx` (RF-11)
+
+```sql
+-- Bucket privado. Convención de ruta: {expediente_id}/{documento_id}.docx
+insert into storage.buckets (id, name, public)
+values ('documentos-docx', 'documentos-docx', false)
+on conflict (id) do nothing;
+
+create policy documentos_docx_select on storage.objects for select
+  using (
+    bucket_id = 'documentos-docx'
+    and (
+      fn_usuario_rol() in ('administrador', 'juez')
+      or (
+        fn_usuario_rol() = 'asistente'
+        and fn_expediente_asignado(((storage.foldername(name))[1])::uuid)
+      )
+    )
+  );
+
+-- (insert/update con la misma regla; ver gdc/supabase/migrations/20260709100001_storage_documentos.sql)
+```
+
+> El primer segmento de la ruta del archivo es el `expediente_id`, lo que permite reutilizar `fn_expediente_asignado` (migración 014) también para el acceso a Storage.
+
+### 017 — Corrección de RLS: lectura de `usuarios` (bug encontrado en pruebas)
+
+```sql
+drop policy usuarios_select_propio_o_admin on usuarios;
+
+create policy usuarios_select on usuarios for select
+  using (auth.role() = 'authenticated');
+```
+
+> **Bug real detectado al verificar el Módulo 3 (Documentos) en navegador**: con la política original (solo fila propia o Administrador), el Juez no podía ver el nombre del Asistente que generó un documento — el `join` embebido `documentos → usuarios (generado_por)` se resolvía en `null` (RLS bloquea el embed silenciosamente, sin lanzar error). Nombre y rol no son datos sensibles y se necesitan para mostrar "generado por", "asignado a", etc. a cualquier rol; la escritura sobre `usuarios` se mantiene restringida a Administrador (`usuarios_admin_write`, sin cambios).
 
 ---
 
@@ -464,19 +500,19 @@ RLS habilitado en las 13 tablas de negocio. Resumen por tabla (SQL completo en `
 
 ### Módulo 3 — Generación y Ciclo de Vida de Documentos
 
-**RF-09.** El sistema debe permitir al Asistente generar por código (sin plantilla `.docx` predefinida) un documento del tipo correspondiente (Proveído, Providencia, Auto, Sentencia u Oficio), asociado al expediente correcto.
+**RF-09.** El sistema debe permitir al Asistente generar por código (sin plantilla `.docx` predefinida) un documento del tipo correspondiente (Proveído, Providencia, Auto, Sentencia u Oficio), asociado al expediente correcto. **Implementado** (`gdc/src/app/(app)/documentos/`), restringido a expedientes asignados al Asistente (vía RLS).
 
-**RF-10.** El sistema debe distinguir internamente que Proveído, Providencia, Auto y Sentencia son **resoluciones judiciales**, mientras que Oficio es un **documento de comunicación** aparte (`categoria_documento`).
+**RF-10.** El sistema debe distinguir internamente que Proveído, Providencia, Auto y Sentencia son **resoluciones judiciales**, mientras que Oficio es un **documento de comunicación** aparte (`categoria_documento`). **Implementado** desde la migración 003; el catálogo se usa tal cual en el selector de tipo de documento.
 
-**RF-11.** El sistema debe generar el archivo `.docx` usando la librería `docx` (construcción por código), incluyendo como mínimo: tipo de documento, número de expediente, tipo de proceso, fecha, y espacio para el contenido redactado por el Asistente.
+**RF-11.** El sistema debe generar el archivo `.docx` usando la librería `docx` (construcción por código), incluyendo como mínimo: tipo de documento, número de expediente, tipo de proceso, fecha, y espacio para el contenido redactado por el Asistente. **Implementado** (`gdc/src/lib/documentos/generar-docx.ts`), subido a Supabase Storage (bucket privado `documentos-docx`, migración 016) y descargable vía URL firmada.
 
-**RF-12.** El sistema debe permitir al Juez revisar el documento **validado** (la validación de completitud ocurre automáticamente al generarse el `.docx`, no es una acción de rol) y dejar observaciones cuando no esté correcto, cambiando su estado a `en_correccion`.
+**RF-12.** El sistema debe permitir al Juez revisar el documento **validado** (la validación de completitud ocurre automáticamente al generarse el `.docx`, no es una acción de rol) y dejar observaciones cuando no esté correcto, cambiando su estado a `en_correccion`. **Implementado y verificado end-to-end** con un usuario Juez real.
 
-**RF-13.** El sistema debe llevar el documento por el siguiente ciclo de estados: `generado` → `validado` (al momento de generarse el `.docx`) → (`en_correccion` si el Juez lo rechaza, regresando a `generado` tras la corrección) → `confirmado` (cuando el Juez confirma que la firma se realizó en el sistema oficial del Órgano Judicial).
+**RF-13.** El sistema debe llevar el documento por el siguiente ciclo de estados: `generado` → `validado` (al momento de generarse el `.docx`) → (`en_correccion` si el Juez lo rechaza, regresando a `generado` tras la corrección) → `confirmado` (cuando el Juez confirma que la firma se realizó en el sistema oficial del Órgano Judicial). **Implementado**: la transición a `validado` es automática (en el mismo insert/update, sin pasar visiblemente por `generado`), consistente con la redacción de RF-12.
 
-**RF-14.** El sistema **no debe** ejecutar, generar ni almacenar ninguna firma digital o física; únicamente modela el estado del documento y permite al Juez **confirmar** (cerrar el ciclo) o solicitar **rehacer** (regresar a corrección).
+**RF-14.** El sistema **no debe** ejecutar, generar ni almacenar ninguna firma digital o física; únicamente modela el estado del documento y permite al Juez **confirmar** (cerrar el ciclo) o solicitar **rehacer** (regresar a corrección). **Implementado**: sin ningún campo ni lógica de firma; solo estado + metadata.
 
-**RF-15.** El sistema debe registrar quién generó, quién revisó y quién confirmó cada documento, con las fechas correspondientes.
+**RF-15.** El sistema debe registrar quién generó, quién revisó y quién confirmó cada documento, con las fechas correspondientes. **Implementado**: `generado_por`/`confirmado_por`/`fecha_confirmacion` en la tabla; "quién revisó" se infiere de `observaciones_juez` + `updated_at` (no hay un campo `revisado_por` separado — ver Decisiones Abiertas).
 
 ### Módulo 4 — Panel de Control del Juez (Dashboard)
 
@@ -544,7 +580,7 @@ RLS habilitado en las 13 tablas de negocio. Resumen por tabla (SQL completo en `
 
 **RF-37.** El sistema no debe establecer ninguna integración técnica (API, base de datos compartida, webhook, etc.) con la plataforma oficial del Órgano Judicial ni con su plugin de Open Office/Word.
 
-**RF-38.** El sistema debe facilitar al Asistente la copia/exportación del contenido generado (texto plano y/o `.docx`) para que sea trasladado manualmente al plugin oficial.
+**RF-38.** El sistema debe facilitar al Asistente la copia/exportación del contenido generado (texto plano y/o `.docx`) para que sea trasladado manualmente al plugin oficial. **Parcialmente implementado**: descarga del `.docx` vía enlace firmado en `/documentos`. Falta un botón de "copiar texto plano" explícito (el `contenido_texto` ya se almacena y se muestra al rehacer, pero no hay un botón de copia dedicado en el listado).
 
 ---
 
@@ -587,7 +623,10 @@ RLS habilitado en las 13 tablas de negocio. Resumen por tabla (SQL completo en `
   - **Investigado y descartado:** no existe en el Código una norma general de "10 días para trámites varios" — es simplemente el plazo específico más repetido entre decenas de artículos puntuales y no relacionados entre sí (cada uno con su propio trámite y artículo). El verdadero mecanismo supletorio del Código es discrecional (Art. 195: "términos judiciales" fijados por el juez cuando la ley no señala plazo), no automatizable por el sistema.
 - **Campos restringidos:** falta que el Administrador defina la lista concreta de campos sensibles que alimentarán la tabla `campos_restringidos`.
 - **Plantilla `.docx` oficial:** por ahora la generación es por código; si en el futuro se define una plantilla oficial, se migraría a `docxtemplater` (el modelo de datos ya lo soporta sin cambios).
-- **Repositorio Git/GitHub:** pendiente de confirmar con el usuario si se inicializa ahora o en un paso posterior (acción visible/compartida que requiere autorización explícita antes de ejecutarse).
+- **Repositorio Git/GitHub:** ✅ resuelto — repo privado creado en https://github.com/Juan26Esquivel/gdc, con commits regulares por avance.
+- **RF-15 — "quién revisó" un documento:** la tabla `documentos` no tiene un campo `revisado_por` separado; solo se infiere de `observaciones_juez` (si tiene texto, alguien lo revisó y rechazó) y de `confirmado_por` (si fue aprobado directamente). Si se necesita trazabilidad explícita de cada revisión (incluyendo aprobaciones sin observaciones), se requeriría una tabla `documento_revisiones` separada — no implementada por ahora.
+- **RF-01 — edición/desactivación/restablecimiento de usuarios:** solo se implementó creación y listado; falta la UI para editar, desactivar y restablecer usuarios existentes.
+- **RF-38 — botón de copiar texto plano:** el contenido se puede descargar como `.docx`, pero falta un botón dedicado de "copiar al portapapeles" en el listado de `/documentos`.
 
 ---
 
@@ -608,13 +647,13 @@ RLS habilitado en las 13 tablas de negocio. Resumen por tabla (SQL completo en `
 
 ## 8. Checklist de Estado de Implementación
 
-- [x] Migraciones 001–015 aplicadas en Supabase (proyecto "GDC", vía `gdc/supabase/migrations/` + `supabase db push`)
+- [x] Migraciones 001–017 aplicadas en Supabase (proyecto "GDC", vía `gdc/supabase/migrations/` + `supabase db push`)
 - [x] Seed de catálogo (`gdc/supabase/seed.sql`: tipos_proceso, subtipos_proceso, tipos_documento) aplicado y verificado
-- [x] RLS configurado por rol para cada tabla (migraciones 014–015), verificado con `pg_class`/`pg_policies` en las 13 tablas
+- [x] RLS configurado por rol para cada tabla (migraciones 014–015, corrección en 017), verificado con `pg_class`/`pg_policies` en las 13 tablas y con usuarios reales de cada rol
 - [x] Proyecto Next.js inicializado (`gdc/`, App Router, TypeScript, Tailwind 4, shadcn/ui) con Supabase Auth conectado (`src/lib/supabase/{client,server,middleware}.ts`) y verificado end-to-end en navegador: login real → middleware protege `/dashboard` → lectura de `usuarios` vía RLS muestra rol correcto
-- [ ] Módulo 1 — Roles y Usuarios (RF-01 a RF-03)
-- [ ] Módulo 2 — Expedientes y Procesos (RF-04 a RF-08)
-- [ ] Módulo 3 — Documentos y Ciclo de Vida (RF-09 a RF-15)
+- [~] Módulo 1 — Roles y Usuarios (RF-01 a RF-03): creación/listado de usuarios implementado; falta editar/desactivar/restablecer (RF-01) y RF-03 (auditoría de cambios de rol)
+- [x] Módulo 2 — Expedientes y Procesos (RF-04 a RF-08): alta, fases, asignaciones — verificado end-to-end con usuario Asistente real
+- [x] Módulo 3 — Documentos y Ciclo de Vida (RF-09 a RF-15): generación de `.docx` real (Storage), ciclo generado→validado→en_corrección→confirmado verificado end-to-end con usuarios Asistente y Juez reales
 - [ ] Módulo 4 — Dashboard del Juez (RF-16 a RF-19)
 - [ ] Módulo 5 — Calendario y Plazos (RF-20 a RF-24, RF-22-EXTRA, RF-24-EXTRA)
 - [ ] Módulo 6 — Reportería y KPIs (RF-25 a RF-28)
