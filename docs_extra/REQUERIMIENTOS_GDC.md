@@ -611,6 +611,7 @@ RLS habilitado en las 13 tablas de negocio. Resumen por tabla (SQL completo en `
 - [x] Migraciones 001–015 aplicadas en Supabase (proyecto "GDC", vía `gdc/supabase/migrations/` + `supabase db push`)
 - [x] Seed de catálogo (`gdc/supabase/seed.sql`: tipos_proceso, subtipos_proceso, tipos_documento) aplicado y verificado
 - [x] RLS configurado por rol para cada tabla (migraciones 014–015), verificado con `pg_class`/`pg_policies` en las 13 tablas
+- [x] Proyecto Next.js inicializado (`gdc/`, App Router, TypeScript, Tailwind 4, shadcn/ui) con Supabase Auth conectado (`src/lib/supabase/{client,server,middleware}.ts`) y verificado end-to-end en navegador: login real → middleware protege `/dashboard` → lectura de `usuarios` vía RLS muestra rol correcto
 - [ ] Módulo 1 — Roles y Usuarios (RF-01 a RF-03)
 - [ ] Módulo 2 — Expedientes y Procesos (RF-04 a RF-08)
 - [ ] Módulo 3 — Documentos y Ciclo de Vida (RF-09 a RF-15)
