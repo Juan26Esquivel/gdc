@@ -444,7 +444,7 @@ RLS habilitado en las 13 tablas de negocio. Resumen por tabla (SQL completo en `
 
 ### Módulo 1 — Gestión de Roles y Usuarios
 
-**RF-01.** El sistema debe permitir al Administrador crear, editar, desactivar y restablecer usuarios, asignándoles uno de los 4 roles: Juez, Asistente, Analista de Datos, Administrador.
+**RF-01.** El sistema debe permitir al Administrador crear, editar, desactivar y restablecer usuarios, asignándoles uno de los 4 roles: Juez, Asistente, Analista de Datos, Administrador. **Parcialmente implementado**: creación de usuarios y listado (`/usuarios`, migración de código en `gdc/src/app/(app)/usuarios/`), usando el cliente admin de Supabase (`gdc/src/lib/supabase/admin.ts`, requiere `SUPABASE_SECRET_KEY` server-side). Falta editar/desactivar/restablecer.
 
 **RF-02.** El sistema debe restringir el acceso a cada módulo según la tabla de permisos de la sección 2, validando el rol en cada request (RLS de Supabase + validación en el backend). **Implementado** en las migraciones 014–015 (funciones helper + políticas por tabla).
 
