@@ -413,27 +413,39 @@ export type Database = {
           configurado_por: string
           created_at: string
           descripcion: string | null
+          entidad_base: Database["public"]["Enums"]["entidad_base_kpi"]
           id: string
+          metrica: Database["public"]["Enums"]["metrica_kpi"]
           nombre: string
-          tipo_calculo: string
+          umbral_alerta: number | null
+          umbral_critico: number | null
+          umbral_optimo: number | null
         }
         Insert: {
           activo?: boolean
           configurado_por: string
           created_at?: string
           descripcion?: string | null
+          entidad_base: Database["public"]["Enums"]["entidad_base_kpi"]
           id?: string
+          metrica: Database["public"]["Enums"]["metrica_kpi"]
           nombre: string
-          tipo_calculo: string
+          umbral_alerta?: number | null
+          umbral_critico?: number | null
+          umbral_optimo?: number | null
         }
         Update: {
           activo?: boolean
           configurado_por?: string
           created_at?: string
           descripcion?: string | null
+          entidad_base?: Database["public"]["Enums"]["entidad_base_kpi"]
           id?: string
+          metrica?: Database["public"]["Enums"]["metrica_kpi"]
           nombre?: string
-          tipo_calculo?: string
+          umbral_alerta?: number | null
+          umbral_critico?: number | null
+          umbral_optimo?: number | null
         }
         Relationships: [
           {
@@ -578,6 +590,7 @@ export type Database = {
     }
     Enums: {
       categoria_documento: "resolucion_judicial" | "comunicacion"
+      entidad_base_kpi: "expediente" | "documento" | "audiencia"
       estado_audiencia:
         | "programada"
         | "celebrada"
@@ -590,6 +603,7 @@ export type Database = {
         | "notificacion_demanda"
         | "audiencia_preliminar"
         | "audiencia_fondo"
+      metrica_kpi: "conteo" | "porcentaje_cumplimiento" | "promedio_dias"
       rol_gdc: "juez" | "asistente" | "analista_datos" | "administrador"
       tipo_audiencia: "preliminar" | "fondo"
     }
@@ -723,6 +737,7 @@ export const Constants = {
   public: {
     Enums: {
       categoria_documento: ["resolucion_judicial", "comunicacion"],
+      entidad_base_kpi: ["expediente", "documento", "audiencia"],
       estado_audiencia: [
         "programada",
         "celebrada",
@@ -737,6 +752,7 @@ export const Constants = {
         "audiencia_preliminar",
         "audiencia_fondo",
       ],
+      metrica_kpi: ["conteo", "porcentaje_cumplimiento", "promedio_dias"],
       rol_gdc: ["juez", "asistente", "analista_datos", "administrador"],
       tipo_audiencia: ["preliminar", "fondo"],
     },

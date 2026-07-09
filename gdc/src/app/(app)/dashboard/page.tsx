@@ -27,7 +27,7 @@ export default async function DashboardPage() {
           <p className="text-sm text-muted-foreground">
             {usuario.rol === "asistente"
               ? "Consulta tus expedientes asignados en el menú \"Expedientes\"."
-              : "El panel de KPIs se irá construyendo en un próximo módulo."}
+              : "Configura y consulta los indicadores de desempeño en el menú \"KPIs\"."}
           </p>
         </CardContent>
       </Card>

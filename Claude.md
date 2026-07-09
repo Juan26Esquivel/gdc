@@ -69,6 +69,8 @@ Esta sección es **tan importante como las técnicas**. El éxito de la colabora
   - **Cómo probarlo** (pasos concretos, ej. "abre esta URL", "haz clic en este botón", "ejecuta este comando").
   - **Qué falta o qué sigue**.
 - Si detectas que una petición del usuario podría tener consecuencias no deseadas (de seguridad, costos, escalabilidad, experiencia de usuario), **dilo explícitamente antes de implementarla**, aunque no se haya preguntado.
+- Si una librería o scaffold pudo haber cambiado su API interna desde tu entrenamiento (versiones muy recientes, o un cambio de arquitectura como un generador que migró de una librería base a otra), **verifica el código fuente realmente instalado antes de asumir el patrón de uso** (props, callbacks, nombres exactos). Un supuesto incorrecto aquí no siempre lanza un error — a veces produce un bug silencioso (ej. un campo que se ve vacío en vez de mostrar un mensaje) que solo se nota al probar visualmente.
+- Tras un cambio estructural grande (tema visual global, nuevas dependencias que afectan el bundling), si el navegador no refleja tus cambios como esperas, considera limpiar la caché de compilación del servidor de desarrollo (ej. `.next`, `.vite`, `node_modules/.cache`) y reiniciarlo antes de asumir que el código está mal — puede ser caché obsoleta, no un bug real.
 
 ### 3.4 Cuando algo no está claro
 - Si una instrucción es ambigua, haz **una o dos preguntas concretas** antes de empezar, priorizando lo que más impacta la decisión técnica. No bombardees con preguntas; resuelve lo que puedas razonablemente inferir y pregunta solo lo esencial.
@@ -119,6 +121,7 @@ La seguridad se aplica **desde el primer commit**, no se agrega "después".
 - Nunca incluyas claves, tokens, contraseñas o credenciales directamente en el código.
 - Usa variables de entorno (`.env`), y mantén siempre un `.env.example` actualizado con las claves necesarias (sin valores reales).
 - Asegúrate de que `.env`, `.env.local`, claves privadas, etc. estén en `.gitignore` desde el primer commit.
+- **Ningún secreto (contraseña de base de datos, service_role key, tokens de API, claves privadas) debe pasar nunca por el chat ni por la salida de un comando que tú ejecutes.** Si una acción lo requiere (login a un servicio, agregar una clave a `.env.local`, rotar una clave expuesta), pide al usuario que la escriba/pegue él mismo directamente en su terminal o editor (ej. guiarlo con `notepad "ruta\.env.local"` en Windows), y confirma el resultado sin pedirle que te copie el valor. Antes de correr un comando de un CLI que no conozcas bien (ej. uno que "liste claves" o "muestre configuración"), piensa si podría imprimir credenciales completas en su salida — si tienes dudas, verifícalo con una prueba de bajo riesgo primero o advierte al usuario antes de correrlo. Si un secreto queda expuesto por accidente (tuyo o de una herramienta), dilo de inmediato y recomienda rotarlo, no lo minimices.
 
 ### 6.2 Validación y manejo de datos
 - **Nunca confíes en el input del cliente**: valida y sanitiza todos los datos en el backend, aunque ya se valide en el frontend.
@@ -130,6 +133,7 @@ La seguridad se aplica **desde el primer commit**, no se agrega "después".
 - Implementa control de acceso basado en roles/permisos (RBAC) aplicando el **principio de mínimo privilegio**: cada usuario/servicio solo accede a lo que necesita.
 - Verifica permisos en **cada endpoint del backend**, no solo ocultando opciones en el frontend.
 - Maneja sesiones/tokens (JWT u otros) con expiración adecuada, rotación de tokens y revocación cuando sea necesario.
+- **Nunca desactives Row Level Security, una política de acceso, o cualquier otro control de seguridad — ni siquiera temporalmente para diagnosticar un bug — sin pedir autorización explícita para esa acción puntual.** Si el usuario la autoriza, hazla, aísla la causa, y revierte el cambio de inmediato en el mismo turno (nunca la dejes "por ahora"). Si tu entorno bloquea automáticamente este tipo de acción, respeta el bloqueo: explica al usuario qué intentabas y por qué, y deja que decida.
 
 ### 6.4 Infraestructura y comunicación
 - Fuerza HTTPS en todos los entornos accesibles públicamente.
@@ -168,6 +172,7 @@ La seguridad se aplica **desde el primer commit**, no se agrega "después".
 - Para flujos críticos de usuario (registro, login, checkout), considera **pruebas end-to-end** (ej. Playwright/Cypress) a medida que el proyecto madure.
 - No busques 100% de cobertura como objetivo en sí mismo; prioriza cubrir lo que, si falla, **rompe el negocio o la seguridad**.
 - Antes de marcar una tarea como "completa", verifica que las pruebas existentes sigan pasando y que no se haya introducido una regresión.
+- Para verificar flujos con control de acceso por rol, crea (con el usuario al tanto) cuentas de prueba dedicadas para cada rol relevante, con contraseñas que tú mismo defines — nunca reutilices ni pidas las credenciales reales del usuario para esto. Reutiliza la sesión de esas cuentas de prueba (ej. guardando el `storageState` de Playwright) entre verificaciones sucesivas en vez de iniciar sesión manualmente cada vez, y limpia los datos de prueba que generes al terminar.
 
 ---
 
@@ -188,6 +193,11 @@ La seguridad se aplica **desde el primer commit**, no se agrega "después".
 - Los detalles técnicos del error deben quedar registrados en logs internos, nunca expuestos directamente al cliente.
 - Usa niveles de log apropiados (info, warning, error, debug) y evita saturar los logs con ruido innecesario en producción.
 - Para proyectos en producción, sugiere (cuando aún no exista) una herramienta de monitoreo de errores (ej. Sentry) para detectar problemas proactivamente.
+
+### 10.1 Depuración sistemática de integraciones externas
+- Cuando algo no funciona y la causa no es evidente (ej. una integración con un servicio externo tipo base de datos gestionada, cola de mensajes, proveedor de auth), **descarta primero lo más básico y barato de comprobar** (permisos, variables de entorno, configuración) antes de pasar a hipótesis más complejas — no adivines a ciegas ni cambies varias cosas a la vez.
+- Si necesitas una prueba controlada que reduce temporalmente la seguridad para aislar una causa (ver 6.3), pide autorización explícita, ejecútala, y revierte de inmediato.
+- Si tu acceso es limitado (ej. no tienes el panel de administración de un servicio de terceros), pide al usuario que revise un punto puntual ahí y te reporte lo que ve, en vez de seguir adivinando sin esa información.
 
 ---
 
@@ -227,6 +237,7 @@ Para cada solicitud del usuario, sigue este proceso:
 - Subir o exponer secretos, claves, contraseñas o credenciales en el código o en mensajes.
 - Hacer cambios masivos, refactors grandes o cambios de arquitectura sin avisar y obtener confirmación.
 - Eliminar archivos, ramas, datos de base de datos o desplegar a producción sin confirmación explícita.
+- Desactivar RLS, políticas de acceso o cualquier control de seguridad — ni siquiera "solo para probar algo" — sin autorización explícita puntual y reversión inmediata después.
 - Introducir dependencias innecesarias, abandonadas o sin verificar su reputación.
 - "Silenciar" errores o warnings (ej. usando `any`, `// eslint-disable`, `try/catch` vacíos) solo para que el código "compile" sin resolver la causa real.
 - Dejar código de prueba, credenciales de prueba, `console.log` de depuración o comentarios tipo `TODO: arreglar esto luego` sin avisar al usuario antes de considerar una tarea terminada.

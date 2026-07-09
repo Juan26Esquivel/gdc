@@ -516,6 +516,35 @@ create trigger trg_broadcast_expedientes
 >
 > Incluso con esto, el canal seguía devolviendo `Unauthorized` hasta corregir un segundo problema, esta vez del lado del cliente: `@supabase/ssr` no sincroniza automáticamente el JWT de sesión con `supabase.realtime` (a diferencia del cliente estándar de `supabase-js`). Hubo que llamar `supabase.realtime.setAuth(session.access_token)` explícitamente antes de suscribirse (`gdc/src/app/(app)/dashboard/realtime-refresh.tsx`). Diagnosticado en conjunto con el usuario usando el **Realtime Inspector** del dashboard de Supabase, que permitió confirmar que el canal sí era accesible en general (aislando el problema al cliente de la app, no al proyecto).
 
+### 020 — `kpis_config` completo + acceso de lectura del Analista de Datos (RF-25 a RF-28)
+
+```sql
+create type entidad_base_kpi as enum ('expediente', 'documento', 'audiencia');
+create type metrica_kpi as enum ('conteo', 'porcentaje_cumplimiento', 'promedio_dias');
+
+alter table kpis_config
+  add column entidad_base entidad_base_kpi not null,
+  add column metrica metrica_kpi not null,
+  add column umbral_optimo numeric,
+  add column umbral_alerta numeric,
+  add column umbral_critico numeric;
+
+alter table kpis_config drop column tipo_calculo;
+
+-- El Analista de Datos nunca había tenido política de SELECT sobre
+-- expedientes/documentos/audiencias (migración 015 solo cubría
+-- administrador/juez/asistente-asignado) — sin esto, el motor de cálculo de
+-- KPIs vería siempre 0 filas para ese rol.
+create policy expedientes_analista_select on expedientes for select
+  using (fn_usuario_rol() = 'analista_datos');
+create policy documentos_analista_select on documentos for select
+  using (fn_usuario_rol() = 'analista_datos');
+create policy audiencias_analista_select on audiencias for select
+  using (fn_usuario_rol() = 'analista_datos');
+```
+
+> El campo `tipo_calculo` original (texto libre) nunca fue consumido por ninguna UI — se reemplaza por `entidad_base` + `metrica`, dos enums que el motor de cálculo (`gdc/src/lib/kpis.ts`) sabe interpretar sin ambigüedad. Solo 9 combinaciones son válidas (3 entidades × 3 métricas) y cada una mapea a una consulta real y documentada en el código (conteo mensual, tasa de cumplimiento de plazos/celebración, o promedio de días), nunca a una cifra inventada. Los umbrales (óptimo/alerta/crítico, en %) solo tienen efecto visual sobre KPIs de métrica "porcentaje de cumplimiento".
+
 ---
 
 ## 4. Requerimientos Funcionales
@@ -592,13 +621,13 @@ create trigger trg_broadcast_expedientes
 
 ### Módulo 6 — Reportería y KPIs
 
-**RF-25.** El sistema debe permitir al Analista de Datos configurar y alimentar KPIs (ej. volumen por tipo de documento, comparativos mensuales/anuales).
+**RF-25.** El sistema debe permitir al Analista de Datos configurar y alimentar KPIs (ej. volumen por tipo de documento, comparativos mensuales/anuales). **Implementado** (`/kpis`, `gdc/src/app/(app)/kpis/`): el Analista (y el Administrador) puede crear, editar, activar/desactivar y eliminar indicadores desde un panel "Configurador de KPI" (estilo Iustitia, fiel al mockup `configuraci_n_de_kpis_gdc`). Cada KPI define una **entidad base** (Expediente/Documento/Audiencia), una **métrica** (Conteo/Porcentaje de cumplimiento/Promedio de días) y umbrales de rendimiento (óptimo/alerta/crítico, en %). No se acepta un cálculo de texto libre: el motor (`gdc/src/lib/kpis.ts`) solo sabe interpretar esas 9 combinaciones documentadas, cada una con una consulta real (nunca una cifra inventada) — ver migración 020.
 
-**RF-26.** El sistema debe permitir tanto al Juez como al Analista de Datos consultar los KPIs configurados.
+**RF-26.** El sistema debe permitir tanto al Juez como al Analista de Datos consultar los KPIs configurados. **Implementado**: `/kpis` es accesible para Juez, Analista de Datos y Administrador (RLS + gate de página); el Juez ve el catálogo y la "Simulación de Visualización" (donut de porcentaje o tendencia de barras según la métrica) en modo solo lectura — sin el panel configurador ni botones de editar/eliminar. Verificado con las cuentas de prueba Juez de Prueba y Analista de Prueba (Playwright).
 
-**RF-27.** El sistema debe generar reportes de volumen de documentos emitidos por período, exportables o visualizables en pantalla.
+**RF-27.** El sistema debe generar reportes de volumen de documentos emitidos por período, exportables o visualizables en pantalla. **Implementado**: botón "Exportar volumen de documentos" en `/kpis` (`obtenerVolumenDocumentosCsv` en `actions.ts`) genera un CSV real (mes × tipo de documento × cantidad) a partir de la tabla `documentos`, descargado directamente en el navegador. La visualización en pantalla ya existía vía el catálogo y las tarjetas de tendencia.
 
-**RF-28.** El sistema debe mantener el histórico de KPIs para comparativos mes a mes y año a año.
+**RF-28.** El sistema debe mantener el histórico de KPIs para comparativos mes a mes y año a año. **Implementado con una limitación documentada**: en vez de una tabla de snapshots históricos (que requeriría un job programado inexistente en este stack), el histórico mensual (últimos 6 meses) se calcula **al vuelo** a partir de las fechas ya existentes en `expedientes`/`documentos`/`audiencias` (`created_at`, `fecha_confirmacion`, `fecha_programada`, según la métrica) — es un cálculo real, no una cifra de relleno, pero no persiste un valor "congelado" mes a mes: si se corrige un dato histórico, la serie completa se recalcula. El comparativo año a año no está implementado todavía (la ventana fija es de 6 meses); se deja como mejora futura si el volumen de datos lo justifica.
 
 ### Módulo 7 — Administración y Seguridad
 
@@ -693,7 +722,7 @@ create trigger trg_broadcast_expedientes
 
 ## 8. Checklist de Estado de Implementación
 
-- [x] Migraciones 001–019 aplicadas en Supabase (proyecto "GDC", vía `gdc/supabase/migrations/` + `supabase db push`)
+- [x] Migraciones 001–020 aplicadas en Supabase (proyecto "GDC", vía `gdc/supabase/migrations/` + `supabase db push`)
 - [x] Seed de catálogo (`gdc/supabase/seed.sql`: tipos_proceso, subtipos_proceso, tipos_documento) aplicado y verificado
 - [x] RLS configurado por rol para cada tabla (migraciones 014–015, corrección en 017), verificado con `pg_class`/`pg_policies` en las 13 tablas y con usuarios reales de cada rol
 - [x] Proyecto Next.js inicializado (`gdc/`, App Router, TypeScript, Tailwind 4, shadcn/ui) con Supabase Auth conectado (`src/lib/supabase/{client,server,middleware}.ts`) y verificado end-to-end en navegador: login real → middleware protege `/dashboard` → lectura de `usuarios` vía RLS muestra rol correcto
@@ -707,8 +736,8 @@ create trigger trg_broadcast_expedientes
   - Fase 3: Documentos — nueva vista por expediente (`/expedientes/[id]/documentos`) de 3 columnas (historial, editor Tiptap, observaciones + trazabilidad adaptada a los 4 estados reales sin ningún paso de firma, preservando RF-14); el listado global `/documentos` quedó como resumen de solo lectura con enlace "Ver expediente". Verificado end-to-end con los 3 roles reales: generar → observar → rehacer → confirmar.
   - Dashboard del Juez: construido directamente en este estilo (stat cards, tarjeta oscura destacada, panel de críticos con borde rojo). Faltan KPIs y Auditoría, que se construirán igual cuando les toque el turno.
 - [x] Módulo 4 — Dashboard del Juez (RF-16 a RF-19): stat cards, gráficas Recharts, panel de críticos (RF-24-EXTRA) y Realtime (Broadcast from Database) verificados end-to-end con datos reales
-- [~] Módulo 5 — Calendario y Plazos (RF-20 a RF-24, RF-22-EXTRA, RF-24-EXTRA): calendario y cálculo de plazos implementados y verificados con datos reales; faltan RF-23 (UI de configuración de plazos) y RF-24-EXTRA (alerta de plazo de admisión, se hará en el Dashboard del Juez)
-- [ ] Módulo 6 — Reportería y KPIs (RF-25 a RF-28)
+- [~] Módulo 5 — Calendario y Plazos (RF-20 a RF-24, RF-22-EXTRA, RF-24-EXTRA): calendario y cálculo de plazos implementados y verificados con datos reales; RF-24-EXTRA implementado en el Dashboard del Juez; falta RF-23 (UI de configuración de plazos por subtipo, Módulo 7)
+- [x] Módulo 6 — Reportería y KPIs (RF-25 a RF-28): configurador de KPIs, consulta de solo lectura para el Juez, exportación CSV de volumen de documentos y tendencia mensual calculada en tiempo real — sin snapshots históricos ni comparativo año a año (ver limitación documentada en RF-28). Verificado end-to-end con Analista de Prueba (crear/editar/eliminar) y Juez de Prueba (solo consulta)
 - [ ] Módulo 7 — Administración y Seguridad (RF-29 a RF-33, RF-33-EXTRA)
 - [ ] Módulo 8 — Reglas de Montos y Cuantía (RF-34 a RF-36)
 - [ ] Módulo 9 — Validación de no-integración con Órgano Judicial (RF-37 a RF-38)

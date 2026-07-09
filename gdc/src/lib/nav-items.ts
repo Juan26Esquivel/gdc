@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Folder, FileText, Calendar } from "lucide-react";
+import { LayoutDashboard, Users, Folder, FileText, Calendar, BarChart3 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { RolGdc } from "@/lib/auth/current-user";
 
@@ -40,5 +40,11 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Calendario",
     roles: ["juez", "asistente", "administrador"],
     icon: Calendar,
+  },
+  {
+    href: "/kpis",
+    label: "KPIs",
+    roles: ["juez", "analista_datos", "administrador"],
+    icon: BarChart3,
   },
 ];
