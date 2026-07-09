@@ -324,12 +324,12 @@ create table configuracion_sistema (
   tope_cuantia numeric(12,2) not null default 10000.00, -- Art. 14 y 52 Ley 402: umbral entre menor y mayor cuantía
   modo_validacion_cuantia text not null default 'bloquear' check (modo_validacion_cuantia in ('bloquear', 'alertar')),
   plazo_admision_dias int not null default 30, -- Art. 395: días hábiles para notificar auto admisorio/mandamiento de pago tras presentar la demanda; aplica transversalmente a los 6 tipos de proceso
-  actualizado_por uuid references usuarios(id) not null,
+  actualizado_por uuid references usuarios(id), -- nullable: no hay usuarios todavía en el momento de esta migración; la app lo setea la primera vez que un Administrador real edite la configuración
   updated_at timestamptz not null default now()
 );
 
--- fila única inicial; actualizado_por debe apuntar al usuario Administrador creado en el seed de despliegue
-insert into configuracion_sistema (id, actualizado_por) values (1, /* uuid del administrador inicial */ '00000000-0000-0000-0000-000000000000');
+-- fila única inicial, sin actualizado_por (se completa cuando el primer Administrador real la edite)
+insert into configuracion_sistema (id) values (1);
 ```
 
 > Reemplaza el tope de cuantía hardcodeado de la migración 004 (RF-36: ajustable sin despliegue de código) y agrega `modo_validacion_cuantia` (RF-35: alertar o bloquear según configuración del Administrador). `plazo_admision_dias` es el plazo transversal del Art. 395, usado para alertar cuando un expediente lleva más de 30 días hábiles en fase `admision` sin pasar a `notificacion_demanda` (ver RF-24).
@@ -556,7 +556,8 @@ create trigger trg_auditoria_borrado_documentos
 
 ## 8. Checklist de Estado de Implementación
 
-- [ ] Migraciones 001–013 aplicadas en Supabase
+- [x] Migraciones 001–013 aplicadas en Supabase (proyecto "GDC", vía `gdc/supabase/migrations/` + `supabase db push`)
+- [x] Seed de catálogo (`gdc/supabase/seed.sql`: tipos_proceso, subtipos_proceso, tipos_documento) aplicado y verificado
 - [ ] RLS configurado por rol para cada tabla
 - [ ] Módulo 1 — Roles y Usuarios (RF-01 a RF-03)
 - [ ] Módulo 2 — Expedientes y Procesos (RF-04 a RF-08)
