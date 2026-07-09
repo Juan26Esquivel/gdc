@@ -386,6 +386,58 @@ create trigger trg_auditoria_borrado_documentos
 
 > Garantiza a nivel de base de datos (no solo de aplicación) que toda eliminación de un expediente o documento quede registrada en `auditoria` con el contenido completo de la fila borrada (`to_jsonb(old)`), incluso si ocurre fuera del flujo normal de la app Next.js. El usuario responsable se resuelve por `auth.uid()`; si el borrado ocurre sin sesión autenticada (ej. script administrativo directo sobre Supabase), se usa como respaldo quien creó/generó el registro.
 
+### 014 — Funciones Helper para RLS
+
+```sql
+create or replace function fn_usuario_rol() returns rol_gdc
+language sql security definer stable
+set search_path = public
+as $$
+  select rol from usuarios where auth_user_id = auth.uid();
+$$;
+
+create or replace function fn_usuario_id() returns uuid
+language sql security definer stable
+set search_path = public
+as $$
+  select id from usuarios where auth_user_id = auth.uid();
+$$;
+
+create or replace function fn_expediente_asignado(p_expediente_id uuid) returns boolean
+language sql security definer stable
+set search_path = public
+as $$
+  select exists (
+    select 1 from asignaciones
+    where expediente_id = p_expediente_id
+      and asistente_id = fn_usuario_id()
+      and activa = true
+  );
+$$;
+```
+
+> `SECURITY DEFINER` + `stable`: estas funciones corren con privilegios del dueño (bypass RLS), evitando recursión al consultar `usuarios`/`asignaciones` desde las propias políticas de esas tablas. Son la base de todas las políticas RLS de la migración 015.
+
+### 015 — Políticas RLS (implementa RF-02 y la matriz de la sección 2)
+
+RLS habilitado en las 13 tablas de negocio. Resumen por tabla (SQL completo en `gdc/supabase/migrations/20260709090002_rls_politicas.sql`):
+
+| Tabla | Regla |
+|---|---|
+| `usuarios` | Cada quien ve su propia fila; Administrador ve/edita todo. |
+| `tipos_proceso`, `subtipos_proceso`, `tipos_documento` | Lectura para cualquier autenticado (catálogos); escritura solo Administrador. |
+| `expedientes` | Juez y Administrador ven todos; Asistente solo los asignados (`fn_expediente_asignado`); escritura solo Administrador. |
+| `expediente_fases` | Visibilidad heredada del expediente; escritura solo Administrador (no asignada a nadie más en la matriz). |
+| `asignaciones` | Juez/Administrador ven todas; Asistente ve solo las propias; escritura solo Administrador. |
+| `documentos` | Juez/Administrador ven todos; Asistente ve/inserta/actualiza solo los de expedientes asignados (generar/rehacer); Juez además puede actualizar (revisar/confirmar); borrado solo Administrador. |
+| `audiencias` | Visibilidad heredada del expediente; escritura solo Administrador. |
+| `kpis_config` | Analista/Administrador configuran y alimentan; Juez solo consulta. |
+| `campos_restringidos` | Lectura para cualquier autenticado (para bloquear campos en formularios); escritura solo Administrador. |
+| `auditoria` | Solo Administrador lee; cualquier autenticado inserta su propia entrada (`usuario_id = fn_usuario_id()`); sin `update`/`delete` para nadie (log inmutable). |
+| `configuracion_sistema` | Lectura para cualquier autenticado; solo Administrador actualiza. |
+
+> **Nota:** aunque las políticas fallen o estén mal, el editor SQL del dashboard de Supabase y el CLI usan una conexión que no está sujeta a RLS (rol `postgres`/`service_role`) — RLS solo afecta a la futura app Next.js conectada como usuario autenticado. Tres decisiones no cubiertas explícitamente por la matriz de la sección 2 (marcadas arriba) se resolvieron con el criterio más conservador y quedan abiertas a ajuste: acceso de lectura a `auditoria` restringido a Administrador, lectura de `campos_restringidos` abierta a cualquier autenticado, y escritura de `expediente_fases`/`audiencias` restringida a Administrador.
+
 ---
 
 ## 4. Requerimientos Funcionales
@@ -394,7 +446,7 @@ create trigger trg_auditoria_borrado_documentos
 
 **RF-01.** El sistema debe permitir al Administrador crear, editar, desactivar y restablecer usuarios, asignándoles uno de los 4 roles: Juez, Asistente, Analista de Datos, Administrador.
 
-**RF-02.** El sistema debe restringir el acceso a cada módulo según la tabla de permisos de la sección 2, validando el rol en cada request (RLS de Supabase + validación en el backend).
+**RF-02.** El sistema debe restringir el acceso a cada módulo según la tabla de permisos de la sección 2, validando el rol en cada request (RLS de Supabase + validación en el backend). **Implementado** en las migraciones 014–015 (funciones helper + políticas por tabla).
 
 **RF-03.** El sistema debe registrar en la tabla `auditoria` cualquier cambio de rol o desactivación de usuario.
 
@@ -556,9 +608,9 @@ create trigger trg_auditoria_borrado_documentos
 
 ## 8. Checklist de Estado de Implementación
 
-- [x] Migraciones 001–013 aplicadas en Supabase (proyecto "GDC", vía `gdc/supabase/migrations/` + `supabase db push`)
+- [x] Migraciones 001–015 aplicadas en Supabase (proyecto "GDC", vía `gdc/supabase/migrations/` + `supabase db push`)
 - [x] Seed de catálogo (`gdc/supabase/seed.sql`: tipos_proceso, subtipos_proceso, tipos_documento) aplicado y verificado
-- [ ] RLS configurado por rol para cada tabla
+- [x] RLS configurado por rol para cada tabla (migraciones 014–015), verificado con `pg_class`/`pg_policies` en las 13 tablas
 - [ ] Módulo 1 — Roles y Usuarios (RF-01 a RF-03)
 - [ ] Módulo 2 — Expedientes y Procesos (RF-04 a RF-08)
 - [ ] Módulo 3 — Documentos y Ciclo de Vida (RF-09 a RF-15)
