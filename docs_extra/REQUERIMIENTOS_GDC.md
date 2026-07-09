@@ -1,0 +1,571 @@
+# GDC — Gestor Documental y de Trazabilidad de Expedientes
+## Documento de Requerimientos Funcionales y No Funcionales
+
+> Basado en: transcripción de sesión de descubrimiento ("Leo"), rondas de validación con el usuario, y consulta directa al **Código Procesal Civil de la República de Panamá (Ley 402 de 9 de octubre de 2023)**. Este documento está redactado para consumo directo de Claude Code.
+
+---
+
+## 0. Descripción General
+
+GDC es un sistema de apoyo administrativo para un despacho judicial civil en Panamá. Permite:
+
+- Clasificar y dar seguimiento a expedientes por tipo de proceso y fase.
+- Generar (por código, sin plantillas `.docx` predefinidas por ahora) los documentos judiciales — Proveído, Providencia, Auto, Sentencia — y el documento administrativo de comunicación **Oficio**.
+- Controlar el ciclo de vida de cada documento (Generado → Validado → En corrección → Confirmado) sin ejecutar ni almacenar firmas digitales, ya que estas ocurren en la plataforma oficial del Órgano Judicial.
+- Dar visibilidad al Juez de su carga de trabajo (expedientes por fase, calendario de audiencias, productividad mensual).
+- Permitir que un rol de Analista de Datos configure y alimente KPIs consumidos tanto por él como por el Juez.
+- Aplicar reglas de negocio propias del despacho: tope de cuantía de B/.10,000.00 por trámite (salvo lanzamientos) y cálculo de plazos de audiencia según el subtipo de proceso declarativo.
+
+**Fuera de alcance explícito:** GDC **no se integra técnicamente** con la plataforma del Órgano Judicial ni con su plugin de Open Office/Word. El único punto de contacto entre ambos sistemas es manual: el Asistente traslada el contenido generado en GDC hacia el plugin oficial.
+
+---
+
+## 1. Stack Tecnológico
+
+| Capa | Tecnología |
+|---|---|
+| Framework | Next.js 16 + React 19 |
+| Estilos / UI | Tailwind CSS 4 + shadcn/ui |
+| Backend / DB | Supabase (PostgreSQL, Auth, Storage, Realtime) |
+| Generación de documentos `.docx` | `docx` (npm, construcción por código — sin plantillas predefinidas por ahora) |
+| Calendario de audiencias | `react-big-calendar` |
+| Gráficas / KPIs | Recharts |
+| Deploy | Vercel |
+
+> Nota de arquitectura: dado que aún no existen plantillas `.docx` de referencia, los documentos se generan armando el `.docx` desde código (estructura, encabezados y contenido definidos programáticamente). Cuando existan plantillas oficiales, se puede migrar a `docxtemplater` sin cambiar el modelo de datos.
+
+---
+
+## 2. Roles y Permisos
+
+| Módulo / Acción | Juez | Asistente | Analista de Datos | Administrador |
+|---|---|---|---|---|
+| Ver expedientes propios / asignados | ✅ (todos los del despacho) | ✅ (solo asignados) | ❌ | ✅ (todos) |
+| Crear / clasificar expedientes | ❌ | ❌ | ❌ | ✅ |
+| Asignar expedientes como tarea | ❌ | ❌ | ❌ | ✅ |
+| Generar documento (.docx) | ❌ | ✅ | ❌ | ✅ |
+| Revisar / dejar observaciones sobre documento | ✅ | ❌ | ❌ | ✅ |
+| Cambiar estado de documento (validar, corregir, confirmar) | ✅ (revisar y confirmar) | ✅ (generar y rehacer) | ❌ | ✅ (todos los estados) |
+| Ver dashboard de pendientes por fase | ✅ | ❌ | ❌ | ✅ |
+| Ver calendario de audiencias | ✅ | ✅ (solo asignados) | ❌ | ✅ |
+| Configurar/alimentar KPIs y reportes | ❌ (solo consulta) | ❌ | ✅ | ✅ |
+| Consultar KPIs y reportes históricos | ✅ | ❌ | ✅ | ✅ |
+| Definir campos restringidos (información sensible) | ❌ | ❌ | ❌ | ✅ |
+| Administrar usuarios y roles | ❌ | ❌ | ❌ | ✅ |
+| Configurar parámetros de plazos por tipo/subtipo de proceso | ❌ | ❌ | ❌ | ✅ |
+| Configurar tope de cuantía y excepciones | ❌ | ❌ | ❌ | ✅ |
+
+> El Administrador es un **rol único** (Administrador = Superadministrador) con acceso total: lectura, modificación, ingreso, eliminación y restablecimiento sobre cualquier módulo.
+
+---
+
+## 3. Modelo de Datos (SQL — Migraciones)
+
+Las migraciones se numeran secuencialmente desde `001` (proyecto nuevo).
+
+### 001 — Roles y Usuarios
+
+```sql
+create type rol_gdc as enum ('juez', 'asistente', 'analista_datos', 'administrador');
+
+create table usuarios (
+  id uuid primary key default gen_random_uuid(),
+  auth_user_id uuid references auth.users(id) not null unique,
+  nombre_completo text not null,
+  rol rol_gdc not null,
+  activo boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index idx_usuarios_rol on usuarios(rol);
+```
+
+### 002 — Catálogo de Tipos de Proceso y Subtipos
+
+```sql
+create table tipos_proceso (
+  id serial primary key,
+  nombre text not null unique, -- Declarativo, Declarativos especiales, Jurisdicción voluntaria, Ejecución, Desacato a los tribunales, Matrimonio
+  descripcion text,
+  base_legal text -- ej. 'Ley 402 - Libro Cuarto, Título I' o 'Código de la Familia' (caso Matrimonio)
+);
+
+create table subtipos_proceso (
+  id serial primary key,
+  tipo_proceso_id int references tipos_proceso(id) not null,
+  nombre text not null, -- ej. 'Ordinario', 'Sumario' dentro de Declarativo
+  plazo_audiencia_min_dias int, -- ej. 20 (Ordinario) o 10 (Sumario) -- audiencia preliminar
+  plazo_audiencia_max_dias int, -- ej. 60 (Ordinario) o 20 (Sumario) -- audiencia preliminar
+  plazo_audiencia_fondo_min_dias int, -- ventana para audiencia de fondo/final, contada desde el cierre de la audiencia preliminar
+  plazo_audiencia_fondo_max_dias int,
+  base_legal text, -- ej. 'Art. 619 y 252' / 'Art. 645 num. 8'
+  unique (tipo_proceso_id, nombre)
+);
+
+-- seed inicial conocido:
+-- Declarativo > Ordinario: audiencia preliminar 20-60 días (Art. 619, 252);
+--   audiencia de fondo 20-40 días desde el cierre de la preliminar
+--   [VERIFICAR ARTÍCULO EXACTO — aparenta ser Art. 255 núm. 8, no confirmado con certeza por errores de OCR conocidos en la transcripción del Código]
+-- Declarativo > Sumario: audiencia preliminar 10-20 días (Art. 645 num. 8);
+--   audiencia de fondo sin plazo confirmado (columnas quedan null)
+-- Declarativos especiales, Jurisdicción voluntaria, Ejecución, Desacato a los tribunales:
+--   investigados — NO tienen una ventana de audiencia parametrizable análoga a Declarativo.
+--   Sus plazos son puntuales y dispersos por trámite específico (ver sección "Decisiones abiertas").
+-- Matrimonio: fuera del Código Procesal Civil (se rige por Código de Familia), sin parametrizar.
+```
+
+### 003 — Catálogo de Tipos de Documento (Resoluciones + Oficio)
+
+```sql
+create type categoria_documento as enum ('resolucion_judicial', 'comunicacion');
+
+create table tipos_documento (
+  id serial primary key,
+  nombre text not null unique, -- Proveído, Providencia, Auto, Sentencia, Oficio
+  categoria categoria_documento not null,
+  requiere_motivacion boolean not null default false, -- true para Auto y Sentencia
+  base_legal text
+);
+
+-- seed:
+-- Proveído       | resolucion_judicial | false | Art. 265 num. 1
+-- Providencia    | resolucion_judicial | false | Art. 265 num. 2
+-- Auto           | resolucion_judicial | true  | Art. 265 num. 3, Art. 267
+-- Sentencia      | resolucion_judicial | true  | Art. 265 num. 4, Art. 269
+-- Oficio         | comunicacion        | false | (no regulado en Ley 402; uso administrativo del despacho)
+```
+
+### 004 — Expedientes
+
+```sql
+create table expedientes (
+  id uuid primary key default gen_random_uuid(),
+  numero_expediente text not null unique,
+  tipo_proceso_id int references tipos_proceso(id) not null,
+  subtipo_proceso_id int references subtipos_proceso(id), -- nullable, no todos los tipos tienen subtipo aún parametrizado
+  cuantia numeric(12,2), -- null si es indeterminada
+  es_lanzamiento boolean not null default false, -- excepción de tope de cuantía
+  fecha_notificacion_demanda date, -- ancla para el cálculo de plazos de audiencia
+  created_by uuid references usuarios(id) not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index idx_expedientes_tipo_proceso on expedientes(tipo_proceso_id);
+create index idx_expedientes_numero on expedientes(numero_expediente);
+
+-- Regla de negocio (validación a nivel de aplicación y trigger de respaldo):
+-- cuantia <= configuracion_sistema.tope_cuantia (migración 012) a menos que es_lanzamiento = true
+```
+
+### 005 — Fases de Expediente (histórico)
+
+```sql
+create type fase_expediente as enum (
+  'admision',
+  'notificacion_demanda',
+  'audiencia_preliminar',
+  'audiencia_fondo'
+);
+
+create table expediente_fases (
+  id uuid primary key default gen_random_uuid(),
+  expediente_id uuid references expedientes(id) not null,
+  fase fase_expediente not null,
+  fecha_inicio timestamptz not null default now(),
+  fecha_fin timestamptz, -- null mientras la fase esté activa
+  observaciones text
+);
+
+create index idx_expediente_fases_expediente on expediente_fases(expediente_id);
+
+-- La fase "actual" de un expediente es la fila con fecha_fin is null más reciente.
+```
+
+### 006 — Asignaciones de Tareas (Administrador → Asistente)
+
+```sql
+create table asignaciones (
+  id uuid primary key default gen_random_uuid(),
+  expediente_id uuid references expedientes(id) not null,
+  asistente_id uuid references usuarios(id) not null,
+  asignado_por uuid references usuarios(id) not null,
+  fecha_asignacion timestamptz not null default now(),
+  activa boolean not null default true
+);
+
+create index idx_asignaciones_asistente on asignaciones(asistente_id) where activa = true;
+```
+
+### 007 — Documentos (ciclo de vida)
+
+```sql
+create type estado_documento as enum (
+  'generado',
+  'validado',
+  'en_correccion',
+  'confirmado'
+);
+
+create table documentos (
+  id uuid primary key default gen_random_uuid(),
+  expediente_id uuid references expedientes(id) not null,
+  tipo_documento_id int references tipos_documento(id) not null,
+  estado estado_documento not null default 'generado',
+  generado_por uuid references usuarios(id) not null,
+  contenido_texto text, -- texto plano generado por código, el que el Asistente traslada al plugin oficial
+  archivo_docx_path text, -- ruta en Supabase Storage del .docx generado (metadata únicamente, no el documento legal final)
+  observaciones_juez text, -- comentarios cuando el documento pasa a 'en_correccion'
+  confirmado_por uuid references usuarios(id), -- Juez que confirma el cierre del ciclo
+  fecha_confirmacion timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index idx_documentos_expediente on documentos(expediente_id);
+create index idx_documentos_estado on documentos(estado);
+
+-- Transiciones válidas de estado (a validar en la capa de aplicación):
+-- generado -> validado -> confirmado
+-- validado -> en_correccion -> generado (rehacer)
+```
+
+### 008 — Calendario de Audiencias
+
+```sql
+create type tipo_audiencia as enum ('preliminar', 'fondo');
+
+-- Terminología con respaldo directo en el Código Procesal Civil (Ley 402/2023):
+-- 'suspendida' (Art. 258 "Suspensión de la audiencia final") y 'continuada' (Art. 259 "Concentración",
+-- varias sesiones/recesos como una misma unidad procesal) son términos legales explícitos.
+-- El Código NO usa "desierta", "reprogramada" ni "cancelada" para audiencias (esos términos solo
+-- aplican a recursos/incidentes); el efecto real de incomparecencia total es la terminación del
+-- proceso (Art. 253), no un estado de la audiencia en sí.
+create type estado_audiencia as enum (
+  'programada',
+  'celebrada',
+  'suspendida',
+  'continuada',
+  'terminada_por_incomparecencia'
+);
+
+create table audiencias (
+  id uuid primary key default gen_random_uuid(),
+  expediente_id uuid references expedientes(id) not null,
+  tipo tipo_audiencia not null,
+  fecha_programada timestamptz not null,
+  -- Para tipo = 'preliminar': fecha_notificacion_demanda + plazo del subtipo.
+  -- Para tipo = 'fondo': fecha de cierre de la audiencia 'preliminar' del mismo expediente + plazo_audiencia_fondo del subtipo.
+  fecha_limite_calculada timestamptz,
+  estado estado_audiencia not null default 'programada',
+  created_at timestamptz not null default now()
+);
+
+create index idx_audiencias_fecha on audiencias(fecha_programada);
+create index idx_audiencias_expediente on audiencias(expediente_id);
+```
+
+### 009 — Configuración de KPIs y Reportes
+
+```sql
+create table kpis_config (
+  id uuid primary key default gen_random_uuid(),
+  nombre text not null,
+  descripcion text,
+  tipo_calculo text not null, -- 'conteo_por_tipo_documento', 'comparativo_mensual', 'comparativo_anual', etc.
+  configurado_por uuid references usuarios(id) not null,
+  activo boolean not null default true,
+  created_at timestamptz not null default now()
+);
+```
+
+### 010 — Restricciones de Campos Sensibles
+
+```sql
+create table campos_restringidos (
+  id serial primary key,
+  entidad text not null, -- 'expediente' | 'documento'
+  nombre_campo text not null,
+  motivo text,
+  definido_por uuid references usuarios(id) not null,
+  activo boolean not null default true,
+  created_at timestamptz not null default now(),
+  unique (entidad, nombre_campo)
+);
+
+-- Pendiente: Juan debe indicar qué campos concretos deben poblar esta tabla (ver "Decisiones abiertas").
+```
+
+### 011 — Auditoría
+
+```sql
+create table auditoria (
+  id uuid primary key default gen_random_uuid(),
+  usuario_id uuid references usuarios(id) not null,
+  accion text not null, -- 'crear_expediente', 'cambiar_estado_documento', 'asignar_tarea', etc.
+  entidad text not null,
+  entidad_id uuid,
+  detalle jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index idx_auditoria_entidad on auditoria(entidad, entidad_id);
+create index idx_auditoria_usuario on auditoria(usuario_id);
+```
+
+> Nota multi-tenant: todas las tablas anteriores están diseñadas para admitir en una migración futura una columna `despacho_id` (o `tenant_id`) sin romper la estructura, cumpliendo con HU-18-EXTRA (preparación para multi-tenant sin implementarlo aún).
+
+### 012 — Configuración General del Sistema
+
+```sql
+create table configuracion_sistema (
+  id int primary key default 1 check (id = 1), -- singleton: una sola fila
+  tope_cuantia numeric(12,2) not null default 10000.00, -- Art. 14 y 52 Ley 402: umbral entre menor y mayor cuantía
+  modo_validacion_cuantia text not null default 'bloquear' check (modo_validacion_cuantia in ('bloquear', 'alertar')),
+  plazo_admision_dias int not null default 30, -- Art. 395: días hábiles para notificar auto admisorio/mandamiento de pago tras presentar la demanda; aplica transversalmente a los 6 tipos de proceso
+  actualizado_por uuid references usuarios(id) not null,
+  updated_at timestamptz not null default now()
+);
+
+-- fila única inicial; actualizado_por debe apuntar al usuario Administrador creado en el seed de despliegue
+insert into configuracion_sistema (id, actualizado_por) values (1, /* uuid del administrador inicial */ '00000000-0000-0000-0000-000000000000');
+```
+
+> Reemplaza el tope de cuantía hardcodeado de la migración 004 (RF-36: ajustable sin despliegue de código) y agrega `modo_validacion_cuantia` (RF-35: alertar o bloquear según configuración del Administrador). `plazo_admision_dias` es el plazo transversal del Art. 395, usado para alertar cuando un expediente lleva más de 30 días hábiles en fase `admision` sin pasar a `notificacion_demanda` (ver RF-24).
+
+### 013 — Auditoría Automática de Borrados
+
+```sql
+create or replace function fn_auditoria_borrado_expedientes() returns trigger as $$
+declare
+  v_usuario_id uuid;
+begin
+  select id into v_usuario_id from usuarios where auth_user_id = auth.uid();
+
+  insert into auditoria (usuario_id, accion, entidad, entidad_id, detalle)
+  values (
+    coalesce(v_usuario_id, old.created_by),
+    'eliminar_expediente',
+    'expediente',
+    old.id,
+    to_jsonb(old)
+  );
+
+  return old;
+end;
+$$ language plpgsql security definer;
+
+create or replace function fn_auditoria_borrado_documentos() returns trigger as $$
+declare
+  v_usuario_id uuid;
+begin
+  select id into v_usuario_id from usuarios where auth_user_id = auth.uid();
+
+  insert into auditoria (usuario_id, accion, entidad, entidad_id, detalle)
+  values (
+    coalesce(v_usuario_id, old.generado_por),
+    'eliminar_documento',
+    'documento',
+    old.id,
+    to_jsonb(old)
+  );
+
+  return old;
+end;
+$$ language plpgsql security definer;
+
+create trigger trg_auditoria_borrado_expedientes
+  before delete on expedientes
+  for each row execute function fn_auditoria_borrado_expedientes();
+
+create trigger trg_auditoria_borrado_documentos
+  before delete on documentos
+  for each row execute function fn_auditoria_borrado_documentos();
+```
+
+> Garantiza a nivel de base de datos (no solo de aplicación) que toda eliminación de un expediente o documento quede registrada en `auditoria` con el contenido completo de la fila borrada (`to_jsonb(old)`), incluso si ocurre fuera del flujo normal de la app Next.js. El usuario responsable se resuelve por `auth.uid()`; si el borrado ocurre sin sesión autenticada (ej. script administrativo directo sobre Supabase), se usa como respaldo quien creó/generó el registro.
+
+---
+
+## 4. Requerimientos Funcionales
+
+### Módulo 1 — Gestión de Roles y Usuarios
+
+**RF-01.** El sistema debe permitir al Administrador crear, editar, desactivar y restablecer usuarios, asignándoles uno de los 4 roles: Juez, Asistente, Analista de Datos, Administrador.
+
+**RF-02.** El sistema debe restringir el acceso a cada módulo según la tabla de permisos de la sección 2, validando el rol en cada request (RLS de Supabase + validación en el backend).
+
+**RF-03.** El sistema debe registrar en la tabla `auditoria` cualquier cambio de rol o desactivación de usuario.
+
+### Módulo 2 — Gestión de Expedientes y Procesos
+
+**RF-04.** El sistema debe permitir al Administrador registrar un expediente indicando: número de expediente, tipo de proceso (de los 6 catalogados), subtipo (cuando aplique, ej. Ordinario/Sumario dentro de Declarativo), cuantía (o indicar que es indeterminada), y si corresponde a un lanzamiento.
+
+**RF-05.** El sistema debe permitir al Administrador asignar un expediente como tarea a un Asistente específico.
+
+**RF-06.** El sistema debe mostrar al Juez la cantidad de expedientes pendientes de admisión, agrupados por tipo de proceso.
+
+**RF-07.** El sistema debe mostrar al Juez el desglose de expedientes por fase (Admisión, Notificación de la demanda, Audiencia preliminar, Audiencia de fondo) dentro de cada tipo de proceso.
+
+**RF-08.** El sistema debe registrar el historial de cambios de fase de cada expediente (tabla `expediente_fases`), conservando fecha de inicio y fin de cada fase.
+
+### Módulo 3 — Generación y Ciclo de Vida de Documentos
+
+**RF-09.** El sistema debe permitir al Asistente generar por código (sin plantilla `.docx` predefinida) un documento del tipo correspondiente (Proveído, Providencia, Auto, Sentencia u Oficio), asociado al expediente correcto.
+
+**RF-10.** El sistema debe distinguir internamente que Proveído, Providencia, Auto y Sentencia son **resoluciones judiciales**, mientras que Oficio es un **documento de comunicación** aparte (`categoria_documento`).
+
+**RF-11.** El sistema debe generar el archivo `.docx` usando la librería `docx` (construcción por código), incluyendo como mínimo: tipo de documento, número de expediente, tipo de proceso, fecha, y espacio para el contenido redactado por el Asistente.
+
+**RF-12.** El sistema debe permitir al Juez revisar el documento **validado** (la validación de completitud ocurre automáticamente al generarse el `.docx`, no es una acción de rol) y dejar observaciones cuando no esté correcto, cambiando su estado a `en_correccion`.
+
+**RF-13.** El sistema debe llevar el documento por el siguiente ciclo de estados: `generado` → `validado` (al momento de generarse el `.docx`) → (`en_correccion` si el Juez lo rechaza, regresando a `generado` tras la corrección) → `confirmado` (cuando el Juez confirma que la firma se realizó en el sistema oficial del Órgano Judicial).
+
+**RF-14.** El sistema **no debe** ejecutar, generar ni almacenar ninguna firma digital o física; únicamente modela el estado del documento y permite al Juez **confirmar** (cerrar el ciclo) o solicitar **rehacer** (regresar a corrección).
+
+**RF-15.** El sistema debe registrar quién generó, quién revisó y quién confirmó cada documento, con las fechas correspondientes.
+
+### Módulo 4 — Panel de Control del Juez (Dashboard)
+
+**RF-16.** El sistema debe mostrar al Juez una gráfica mensual del volumen de documentos remitidos, desglosada por tipo (Proveído, Providencia, Auto, Sentencia, Oficio).
+
+**RF-17.** El sistema debe permitir al Juez comparar el volumen de expedientes trabajados en el mes actual contra el mes y el año anterior (expedientes ingresados vs. resueltos).
+
+**RF-18.** El sistema debe mostrar al Juez un resumen consolidado y actualizado al día del total de expedientes pendientes, agrupado por tipo de proceso y fase.
+
+**RF-19.** El sistema debe actualizar el dashboard del Juez en tiempo real (o near real-time) usando Supabase Realtime cuando cambie el estado de un expediente o documento.
+
+### Módulo 5 — Calendario y Plazos de Audiencias
+
+**RF-20.** El sistema debe mostrar al Juez un calendario con los expedientes que tienen audiencia programada para el mes siguiente.
+
+**RF-21.** El sistema debe distinguir claramente qué expediente corresponde a cada audiencia mostrada en el calendario.
+
+**RF-22.** El sistema debe calcular automáticamente la ventana de fecha límite para la audiencia preliminar de un expediente Declarativo, a partir de la `fecha_notificacion_demanda`, usando el plazo configurado según el subtipo:
+ - Ordinario: entre 20 y 60 días después de la notificación.
+ - Sumario: entre 10 y 20 días después de la notificación.
+
+**RF-22-EXTRA.** El sistema debe calcular automáticamente la ventana de fecha límite para la audiencia de **fondo/final** de un expediente Declarativo Ordinario, a partir de la fecha real de **cierre** de su audiencia preliminar (no de `fecha_notificacion_demanda`), usando `plazo_audiencia_fondo_min_dias`/`max_dias` del subtipo:
+ - Ordinario: entre 20 y 40 días después del cierre de la audiencia preliminar. `[VERIFICAR ARTÍCULO EXACTO — aparenta ser Art. 255 núm. 8, no confirmado con certeza por errores de OCR conocidos en la transcripción del Código]`
+ - Sumario: sin plazo de audiencia de fondo confirmado por ahora (columnas quedan `null`).
+
+**RF-23.** El sistema debe permitir al Administrador configurar (agregar/editar) los plazos de `subtipos_proceso` para nuevos subtipos o tipos de proceso a medida que se definan (ver decisiones abiertas).
+
+**RF-24.** El sistema debe alertar al Juez y al Asistente cuando un expediente se acerque o exceda la ventana de plazo calculada para su audiencia.
+
+**RF-24-EXTRA.** El sistema debe alertar al Juez y al Asistente cuando un expediente lleve más de `plazo_admision_dias` (30 días hábiles por defecto, Art. 395, `configuracion_sistema`) en fase `admision` sin haber pasado a `notificacion_demanda`. Esta regla es transversal a los 6 tipos de proceso, ya que el Art. 395 no distingue por tipo.
+
+### Módulo 6 — Reportería y KPIs
+
+**RF-25.** El sistema debe permitir al Analista de Datos configurar y alimentar KPIs (ej. volumen por tipo de documento, comparativos mensuales/anuales).
+
+**RF-26.** El sistema debe permitir tanto al Juez como al Analista de Datos consultar los KPIs configurados.
+
+**RF-27.** El sistema debe generar reportes de volumen de documentos emitidos por período, exportables o visualizables en pantalla.
+
+**RF-28.** El sistema debe mantener el histórico de KPIs para comparativos mes a mes y año a año.
+
+### Módulo 7 — Administración y Seguridad
+
+**RF-29.** El sistema debe permitir al Administrador definir campos específicos del expediente o del documento que no pueden cargarse por ser información sensible (tabla `campos_restringidos`), bloqueando su ingreso en los formularios correspondientes. *(Pendiente de definición final de campos — ver sección 6.)*
+
+**RF-30.** El sistema debe permitir al Administrador gestionar el catálogo de procesos y números de expediente disponibles para asignación.
+
+**RF-31.** El sistema debe permitir al Administrador administrar usuarios y roles con permisos completos (lectura, modificación, ingreso, eliminación, restablecimiento).
+
+**RF-32.** El sistema debe estar diseñado de forma que la incorporación futura de un campo `despacho_id`/`tenant_id` no requiera reestructurar las tablas existentes (preparación multi-tenant).
+
+**RF-33.** El sistema debe registrar en `auditoria` cualquier acción de creación, modificación o eliminación realizada por el Administrador sobre configuración, usuarios o catálogos.
+
+**RF-33-EXTRA.** El sistema debe permitir la eliminación de expedientes y documentos, pero cada eliminación debe quedar registrada automáticamente en `auditoria` (garantizado a nivel de base de datos mediante trigger — `fn_auditoria_borrado_expedientes` / `fn_auditoria_borrado_documentos`, migración 013 — no solo por convención de la capa de aplicación).
+
+### Módulo 8 — Reglas de Negocio: Montos y Cuantía
+
+**RF-34.** El sistema debe limitar el registro de la cuantía de un expediente a un máximo de **B/.10,000.00**, salvo cuando el expediente esté marcado como `es_lanzamiento = true`, en cuyo caso no habrá límite.
+
+**RF-35.** El sistema debe alertar o bloquear el registro de un monto que exceda el tope, si el expediente no es un lanzamiento, según el valor de `configuracion_sistema.modo_validacion_cuantia` ('bloquear' | 'alertar').
+
+**RF-36.** El sistema debe permitir al Administrador consultar y ajustar el valor del tope de cuantía (`configuracion_sistema.tope_cuantia`) y su modo de validación, sin necesidad de despliegue de código (fila única editable en `configuracion_sistema`).
+
+### Módulo 9 — No Integración con el Órgano Judicial
+
+**RF-37.** El sistema no debe establecer ninguna integración técnica (API, base de datos compartida, webhook, etc.) con la plataforma oficial del Órgano Judicial ni con su plugin de Open Office/Word.
+
+**RF-38.** El sistema debe facilitar al Asistente la copia/exportación del contenido generado (texto plano y/o `.docx`) para que sea trasladado manualmente al plugin oficial.
+
+---
+
+## 5. Requerimientos No Funcionales
+
+**RNF-01 — Seguridad de acceso.** Autenticación vía Supabase Auth; autorización por rol aplicada tanto en RLS (PostgreSQL) como en middleware de Next.js.
+
+**RNF-02 — Confidencialidad de datos judiciales.** El sistema no debe almacenar el contenido legal definitivo/firmado de los documentos (eso reside en el sistema oficial); solo su metadata y el borrador previo a la firma.
+
+**RNF-03 — Auditoría completa.** Toda acción relevante (creación, cambio de estado, asignación, configuración) debe quedar registrada en la tabla `auditoria` con usuario, fecha y detalle.
+
+**RNF-04 — Disponibilidad.** El sistema debe operar con una disponibilidad objetivo de 99.5% mensual, acorde a un despliegue estándar en Vercel + Supabase.
+
+**RNF-05 — Rendimiento del dashboard.** Las consultas del panel del Juez (expedientes por fase, KPIs) deben responder en menos de 2 segundos bajo carga normal del despacho.
+
+**RNF-06 — Actualización en tiempo real.** Los cambios de estado de expedientes/documentos deben reflejarse en el dashboard del Juez sin necesidad de recargar la página (Supabase Realtime).
+
+**RNF-07 — Escalabilidad / preparación multi-tenant.** El modelo de datos y la arquitectura deben permitir agregar aislamiento por despacho/circuito en una fase futura sin romper la estructura existente, aunque esta versión opere para un solo despacho.
+
+**RNF-08 — Usabilidad y accesibilidad.** Interfaces con componentes shadcn/ui, con soporte de navegación por teclado y tamaños de touch target adecuados para uso en tablet/escritorio del despacho.
+
+**RNF-09 — Trazabilidad legal mínima.** Aunque el sistema no ejecuta firmas, debe conservar evidencia suficiente (estado, fechas, usuario) para reconstruir el ciclo completo de cada documento ante una auditoría interna del despacho.
+
+**RNF-10 — Mantenibilidad.** El código de generación de documentos `.docx` debe estar desacoplado por tipo de documento, de forma que al incorporar plantillas oficiales (`docxtemplater`) no sea necesario reescribir la lógica de negocio del ciclo de estados.
+
+**RNF-11 — Compatibilidad de navegador.** Soporte para las últimas 2 versiones de Chrome, Edge y Firefox (navegadores típicos de equipos de despacho judicial).
+
+**RNF-12 — Cumplimiento de protección de datos personales.** Los reportes y KPIs no deben exponer datos personales de las partes más allá de lo estrictamente necesario para el seguimiento administrativo del expediente.
+
+---
+
+## 6. Decisiones Abiertas (pendientes antes de implementación completa)
+
+- **Plazos por tipo/subtipo de proceso — RESUELTO (parcialmente) tras revisión del Código Procesal Civil:**
+  - Declarativo Ordinario: audiencia preliminar 20-60 días (Art. 619/252) + audiencia de fondo 20-40 días desde cierre de la preliminar `[VERIFICAR ARTÍCULO EXACTO — aparenta Art. 255 núm. 8]`.
+  - Declarativo Sumario: audiencia preliminar 10-20 días (Art. 645 núm. 8); sin plazo de audiencia de fondo confirmado.
+  - Declarativos especiales, Jurisdicción voluntaria, Ejecución, Desacato a los tribunales: **investigados y confirmados sin ventana de audiencia parametrizable** análoga a Declarativo — sus plazos son puntuales y dispersos por trámite específico (ej. Art. 741 núm. 3: 5 días para pagar en ejecución; Art. 800 núm. 3: 5 días para descargos en desacato; Art. 687 núm. 3: término probatorio de 3 meses en jurisdicción voluntaria). No se modelan como cálculo automático de audiencia por ahora.
+  - Matrimonio: fuera del Código Procesal Civil (Código de Familia), sigue sin parametrizar.
+  - Se agregó en cambio un plazo transversal de **admisión** (30 días hábiles, Art. 395) aplicable a los 6 tipos de proceso por igual, vía `configuracion_sistema.plazo_admision_dias`.
+  - **Investigado y descartado:** no existe en el Código una norma general de "10 días para trámites varios" — es simplemente el plazo específico más repetido entre decenas de artículos puntuales y no relacionados entre sí (cada uno con su propio trámite y artículo). El verdadero mecanismo supletorio del Código es discrecional (Art. 195: "términos judiciales" fijados por el juez cuando la ley no señala plazo), no automatizable por el sistema.
+- **Campos restringidos:** falta que el Administrador defina la lista concreta de campos sensibles que alimentarán la tabla `campos_restringidos`.
+- **Plantilla `.docx` oficial:** por ahora la generación es por código; si en el futuro se define una plantilla oficial, se migraría a `docxtemplater` (el modelo de datos ya lo soporta sin cambios).
+- **Repositorio Git/GitHub:** pendiente de confirmar con el usuario si se inicializa ahora o en un paso posterior (acción visible/compartida que requiere autorización explícita antes de ejecutarse).
+
+---
+
+## 7. Componentes de UI (referencia inicial)
+
+- `ExpedienteForm` — alta/edición de expediente (tipo, subtipo, cuantía, lanzamiento, fecha de notificación).
+- `ExpedienteList` / `ExpedienteFilters` — listado con filtros por tipo de proceso, fase y estado.
+- `DocumentoGenerator` — formulario de generación de documento por tipo, con vista previa antes de exportar `.docx`.
+- `DocumentoStatusBadge` / `DocumentoTimeline` — visualización del ciclo de estados del documento.
+- `JuezDashboard` — panel con conteo de pendientes por fase, gráfica mensual (Recharts) y resumen consolidado.
+- `CalendarioAudiencias` — vista de calendario (react-big-calendar) con expedientes por audiencia.
+- `KpiConfigPanel` — panel del Analista de Datos para configurar/alimentar KPIs.
+- `KpiViewer` — vista de consulta de KPIs para Juez y Analista de Datos.
+- `AdminPanel` — gestión de usuarios, roles, campos restringidos, catálogos de proceso, tope de cuantía.
+- `AsignacionesPanel` — asignación de expedientes a Asistentes.
+
+---
+
+## 8. Checklist de Estado de Implementación
+
+- [ ] Migraciones 001–013 aplicadas en Supabase
+- [ ] RLS configurado por rol para cada tabla
+- [ ] Módulo 1 — Roles y Usuarios (RF-01 a RF-03)
+- [ ] Módulo 2 — Expedientes y Procesos (RF-04 a RF-08)
+- [ ] Módulo 3 — Documentos y Ciclo de Vida (RF-09 a RF-15)
+- [ ] Módulo 4 — Dashboard del Juez (RF-16 a RF-19)
+- [ ] Módulo 5 — Calendario y Plazos (RF-20 a RF-24, RF-22-EXTRA, RF-24-EXTRA)
+- [ ] Módulo 6 — Reportería y KPIs (RF-25 a RF-28)
+- [ ] Módulo 7 — Administración y Seguridad (RF-29 a RF-33, RF-33-EXTRA)
+- [ ] Módulo 8 — Reglas de Montos y Cuantía (RF-34 a RF-36)
+- [ ] Módulo 9 — Validación de no-integración con Órgano Judicial (RF-37 a RF-38)
+- [ ] Trigger de auditoría de borrado verificado en entorno de prueba (migración 013)
+- [ ] Decisiones abiertas de la sección 6 resueltas (campos restringidos, plantilla oficial, repositorio Git/GitHub pendientes)
