@@ -61,6 +61,13 @@ export type Database = {
             referencedRelation: "expedientes"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "asignaciones_expediente_id_fkey"
+            columns: ["expediente_id"]
+            isOneToOne: false
+            referencedRelation: "vista_embargo_saldos"
+            referencedColumns: ["expediente_id"]
+          },
         ]
       }
       audiencias: {
@@ -98,6 +105,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "expedientes"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audiencias_expediente_id_fkey"
+            columns: ["expediente_id"]
+            isOneToOne: false
+            referencedRelation: "vista_embargo_saldos"
+            referencedColumns: ["expediente_id"]
           },
         ]
       }
@@ -307,6 +321,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "documentos_expediente_id_fkey"
+            columns: ["expediente_id"]
+            isOneToOne: false
+            referencedRelation: "vista_embargo_saldos"
+            referencedColumns: ["expediente_id"]
+          },
+          {
             foreignKeyName: "documentos_generado_por_fkey"
             columns: ["generado_por"]
             isOneToOne: false
@@ -318,6 +339,114 @@ export type Database = {
             columns: ["tipo_documento_id"]
             isOneToOne: false
             referencedRelation: "tipos_documento"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      embargo_abonos: {
+        Row: {
+          created_at: string
+          expediente_id: string
+          fecha: string
+          id: string
+          monto: number
+          registrado_por: string
+        }
+        Insert: {
+          created_at?: string
+          expediente_id: string
+          fecha: string
+          id?: string
+          monto: number
+          registrado_por: string
+        }
+        Update: {
+          created_at?: string
+          expediente_id?: string
+          fecha?: string
+          id?: string
+          monto?: number
+          registrado_por?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "embargo_abonos_expediente_id_fkey"
+            columns: ["expediente_id"]
+            isOneToOne: false
+            referencedRelation: "expedientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "embargo_abonos_expediente_id_fkey"
+            columns: ["expediente_id"]
+            isOneToOne: false
+            referencedRelation: "vista_embargo_saldos"
+            referencedColumns: ["expediente_id"]
+          },
+          {
+            foreignKeyName: "embargo_abonos_registrado_por_fkey"
+            columns: ["registrado_por"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      eventos_expediente: {
+        Row: {
+          created_at: string
+          detalle: string | null
+          expediente_id: string
+          fecha_evento: string
+          id: string
+          registrado_por: string | null
+          tipo_evento_id: string
+        }
+        Insert: {
+          created_at?: string
+          detalle?: string | null
+          expediente_id: string
+          fecha_evento: string
+          id?: string
+          registrado_por?: string | null
+          tipo_evento_id: string
+        }
+        Update: {
+          created_at?: string
+          detalle?: string | null
+          expediente_id?: string
+          fecha_evento?: string
+          id?: string
+          registrado_por?: string | null
+          tipo_evento_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eventos_expediente_expediente_id_fkey"
+            columns: ["expediente_id"]
+            isOneToOne: false
+            referencedRelation: "expedientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eventos_expediente_expediente_id_fkey"
+            columns: ["expediente_id"]
+            isOneToOne: false
+            referencedRelation: "vista_embargo_saldos"
+            referencedColumns: ["expediente_id"]
+          },
+          {
+            foreignKeyName: "eventos_expediente_registrado_por_fkey"
+            columns: ["registrado_por"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eventos_expediente_tipo_evento_id_fkey"
+            columns: ["tipo_evento_id"]
+            isOneToOne: false
+            referencedRelation: "tipos_evento"
             referencedColumns: ["id"]
           },
         ]
@@ -356,6 +485,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "expediente_fases_expediente_id_fkey"
+            columns: ["expediente_id"]
+            isOneToOne: false
+            referencedRelation: "vista_embargo_saldos"
+            referencedColumns: ["expediente_id"]
+          },
+          {
             foreignKeyName: "expediente_fases_fase_id_fkey"
             columns: ["fase_id"]
             isOneToOne: false
@@ -366,15 +502,22 @@ export type Database = {
       }
       expedientes: {
         Row: {
+          cerrado: boolean
+          cerrado_por: string | null
           created_at: string
           created_by: string
           cuantia: number | null
           despacho_id: string
+          documento_cierre_id: string | null
           es_lanzamiento: boolean
+          estado_matrimonio: string | null
+          fecha_cierre: string | null
           fecha_notificacion_demanda: string | null
           fecha_registro: string
           fisico_electronico: string | null
           id: string
+          monto_embargo_decretado: number | null
+          motivo_cierre: string | null
           motivo_omision_umbral: string | null
           municipal_circuito: string | null
           notas: string | null
@@ -382,19 +525,27 @@ export type Database = {
           omitir_umbral_inactividad: boolean
           pretension: string | null
           subtipo_proceso_id: number | null
+          tipo_cierre: string | null
           tipo_proceso_id: number
           updated_at: string
         }
         Insert: {
+          cerrado?: boolean
+          cerrado_por?: string | null
           created_at?: string
           created_by: string
           cuantia?: number | null
           despacho_id: string
+          documento_cierre_id?: string | null
           es_lanzamiento?: boolean
+          estado_matrimonio?: string | null
+          fecha_cierre?: string | null
           fecha_notificacion_demanda?: string | null
           fecha_registro: string
           fisico_electronico?: string | null
           id?: string
+          monto_embargo_decretado?: number | null
+          motivo_cierre?: string | null
           motivo_omision_umbral?: string | null
           municipal_circuito?: string | null
           notas?: string | null
@@ -402,19 +553,27 @@ export type Database = {
           omitir_umbral_inactividad?: boolean
           pretension?: string | null
           subtipo_proceso_id?: number | null
+          tipo_cierre?: string | null
           tipo_proceso_id: number
           updated_at?: string
         }
         Update: {
+          cerrado?: boolean
+          cerrado_por?: string | null
           created_at?: string
           created_by?: string
           cuantia?: number | null
           despacho_id?: string
+          documento_cierre_id?: string | null
           es_lanzamiento?: boolean
+          estado_matrimonio?: string | null
+          fecha_cierre?: string | null
           fecha_notificacion_demanda?: string | null
           fecha_registro?: string
           fisico_electronico?: string | null
           id?: string
+          monto_embargo_decretado?: number | null
+          motivo_cierre?: string | null
           motivo_omision_umbral?: string | null
           municipal_circuito?: string | null
           notas?: string | null
@@ -422,10 +581,18 @@ export type Database = {
           omitir_umbral_inactividad?: boolean
           pretension?: string | null
           subtipo_proceso_id?: number | null
+          tipo_cierre?: string | null
           tipo_proceso_id?: number
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "expedientes_cerrado_por_fkey"
+            columns: ["cerrado_por"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "expedientes_created_by_fkey"
             columns: ["created_by"]
@@ -438,6 +605,13 @@ export type Database = {
             columns: ["despacho_id"]
             isOneToOne: false
             referencedRelation: "despachos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expedientes_documento_cierre_id_fkey"
+            columns: ["documento_cierre_id"]
+            isOneToOne: false
+            referencedRelation: "documentos"
             referencedColumns: ["id"]
           },
           {
@@ -609,6 +783,44 @@ export type Database = {
         }
         Relationships: []
       }
+      tipos_evento: {
+        Row: {
+          alimenta: string
+          codigo: string
+          created_at: string
+          es_generado_por_sistema: boolean
+          id: string
+          nombre: string
+          tipo_proceso_id: number | null
+        }
+        Insert: {
+          alimenta: string
+          codigo: string
+          created_at?: string
+          es_generado_por_sistema?: boolean
+          id?: string
+          nombre: string
+          tipo_proceso_id?: number | null
+        }
+        Update: {
+          alimenta?: string
+          codigo?: string
+          created_at?: string
+          es_generado_por_sistema?: boolean
+          id?: string
+          nombre?: string
+          tipo_proceso_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tipos_evento_tipo_proceso_id_fkey"
+            columns: ["tipo_proceso_id"]
+            isOneToOne: false
+            referencedRelation: "tipos_proceso"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tipos_proceso: {
         Row: {
           base_legal: string | null
@@ -673,7 +885,15 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      vista_embargo_saldos: {
+        Row: {
+          expediente_id: string | null
+          monto_embargo_decretado: number | null
+          saldo_pendiente: number | null
+          total_abonado: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       fn_expediente_asignado: {
