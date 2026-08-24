@@ -1,20 +1,23 @@
-export const ORDEN_FASES = [
-  "admision",
-  "notificacion_demanda",
-  "audiencia_preliminar",
-  "audiencia_fondo",
-] as const;
+// Las fases ahora vienen del catálogo `fases_proceso` (una lista por tipo de
+// proceso), no de un enum fijo de Postgres — ver docs_extra/ordenes_tecnicas/OT-02.
+// Declarativo, Ejecución y Jurisdicción voluntaria tienen su propio catálogo;
+// Matrimonio no participa (usa un campo de Estado, fuera de esta ficha).
 
-export type FaseExpediente = (typeof ORDEN_FASES)[number];
-
-export const FASE_LABEL: Record<FaseExpediente, string> = {
-  admision: "Admisión",
-  notificacion_demanda: "Notificación de la demanda",
-  audiencia_preliminar: "Audiencia preliminar",
-  audiencia_fondo: "Audiencia de fondo",
+export type FaseProceso = {
+  id: string;
+  tipo_proceso_id: number;
+  nombre: string;
+  orden: number;
+  es_fase_inicial: boolean;
 };
 
-export function siguienteFase(faseActual: FaseExpediente): FaseExpediente | null {
-  const indice = ORDEN_FASES.indexOf(faseActual);
-  return ORDEN_FASES[indice + 1] ?? null;
+export function faseInicial(fasesDelTipo: FaseProceso[]): FaseProceso | null {
+  return fasesDelTipo.find((f) => f.es_fase_inicial) ?? null;
+}
+
+export function siguienteFase(fasesDelTipo: FaseProceso[], faseActualId: string): FaseProceso | null {
+  const ordenadas = [...fasesDelTipo].sort((a, b) => a.orden - b.orden);
+  const indice = ordenadas.findIndex((f) => f.id === faseActualId);
+  if (indice === -1) return null;
+  return ordenadas[indice + 1] ?? null;
 }

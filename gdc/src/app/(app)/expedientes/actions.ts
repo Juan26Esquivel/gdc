@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getUsuarioActual } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
 import { getConfiguracionSistema } from "@/lib/catalogos";
-import { ORDEN_FASES } from "@/lib/fases";
+import { faseInicial, siguienteFase, type FaseProceso } from "@/lib/fases";
 
 export type EstadoCrearExpediente = { error?: string; advertencia?: string; ok?: boolean };
 
@@ -55,6 +55,10 @@ export async function crearExpediente(
       cuantia,
       es_lanzamiento: esLanzamiento,
       created_by: actual.id,
+      despacho_id: actual.despacho_id,
+      // Nace igual a la fecha de hoy (= created_at); el Juez puede corregirla
+      // luego desde la aplicación (OT-01/OT-02, campo editable en OT-04).
+      fecha_registro: new Date().toISOString().slice(0, 10),
     })
     .select("id")
     .single();
@@ -63,13 +67,25 @@ export async function crearExpediente(
     return { error: `No se pudo crear el expediente: ${errorInsert?.message}` };
   }
 
-  const { error: errorFase } = await supabase.from("expediente_fases").insert({
-    expediente_id: expediente.id,
-    fase: "admision",
-  });
+  // Algunos tipos de proceso (Matrimonio, y por ahora "Declarativos especiales"
+  // y "Desacato a los tribunales" — ver OT-02) no tienen catálogo de fases
+  // propio todavía: el expediente se crea igual, simplemente sin fase inicial,
+  // en vez de fallar. El flujo de registro por tipo se construye en OT-04.
+  const { data: fasesDelTipo } = await supabase
+    .from("fases_proceso")
+    .select("id, tipo_proceso_id, nombre, orden, es_fase_inicial")
+    .eq("tipo_proceso_id", tipoProcesoId);
 
-  if (errorFase) {
-    return { error: `Expediente creado, pero falló registrar la fase inicial: ${errorFase.message}` };
+  const inicial = faseInicial((fasesDelTipo ?? []) as FaseProceso[]);
+  if (inicial) {
+    const { error: errorFase } = await supabase.from("expediente_fases").insert({
+      expediente_id: expediente.id,
+      fase_id: inicial.id,
+    });
+
+    if (errorFase) {
+      return { error: `Expediente creado, pero falló registrar la fase inicial: ${errorFase.message}` };
+    }
   }
 
   revalidatePath("/expedientes");
@@ -92,9 +108,24 @@ export async function avanzarFase(
   const fechaAudiencia = formData.get("fecha_audiencia") as string;
 
   const supabase = await createClient();
+  const { data: expedienteTipo } = await supabase
+    .from("expedientes")
+    .select("tipo_proceso_id")
+    .eq("id", expedienteId)
+    .single();
+
+  if (!expedienteTipo) {
+    return { error: "No se encontró el expediente" };
+  }
+
+  const { data: fasesDelTipo } = await supabase
+    .from("fases_proceso")
+    .select("id, tipo_proceso_id, nombre, orden, es_fase_inicial")
+    .eq("tipo_proceso_id", expedienteTipo.tipo_proceso_id);
+
   const { data: faseActual, error: errorFaseActual } = await supabase
     .from("expediente_fases")
-    .select("id, fase")
+    .select("id, fase_id")
     .eq("expediente_id", expedienteId)
     .is("fecha_fin", null)
     .order("fecha_inicio", { ascending: false })
@@ -105,19 +136,18 @@ export async function avanzarFase(
     return { error: "No se encontró la fase activa de este expediente" };
   }
 
-  const indiceActual = ORDEN_FASES.indexOf(faseActual.fase);
-  const siguienteFase = ORDEN_FASES[indiceActual + 1];
+  const proxima = siguienteFase((fasesDelTipo ?? []) as FaseProceso[], faseActual.fase_id);
 
-  if (!siguienteFase) {
-    return { error: "El expediente ya está en la última fase (audiencia de fondo)" };
+  if (!proxima) {
+    return { error: "El expediente ya está en la última fase de su catálogo" };
   }
 
-  if (siguienteFase === "notificacion_demanda" && !fechaNotificacion) {
+  if (proxima.nombre === "Notificación de la demanda" && !fechaNotificacion) {
     return { error: "Debes indicar la fecha de notificación de la demanda para avanzar a esta fase" };
   }
 
-  const esAudienciaPreliminar = siguienteFase === "audiencia_preliminar";
-  const esAudienciaFondo = siguienteFase === "audiencia_fondo";
+  const esAudienciaPreliminar = proxima.nombre === "Audiencia preliminar";
+  const esAudienciaFondo = proxima.nombre === "Audiencia de fondo";
 
   if ((esAudienciaPreliminar || esAudienciaFondo) && !fechaAudiencia) {
     return { error: "Debes indicar la fecha programada de la audiencia para avanzar a esta fase" };
@@ -166,14 +196,14 @@ export async function avanzarFase(
 
   const { error: errorNuevaFase } = await supabase.from("expediente_fases").insert({
     expediente_id: expedienteId,
-    fase: siguienteFase,
+    fase_id: proxima.id,
   });
 
   if (errorNuevaFase) {
     return { error: `No se pudo registrar la nueva fase: ${errorNuevaFase.message}` };
   }
 
-  if (siguienteFase === "notificacion_demanda" && fechaNotificacion) {
+  if (proxima.nombre === "Notificación de la demanda" && fechaNotificacion) {
     await supabase
       .from("expedientes")
       .update({ fecha_notificacion_demanda: fechaNotificacion })

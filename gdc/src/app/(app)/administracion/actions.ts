@@ -55,6 +55,7 @@ export async function actualizarConfiguracionSistema(
   const topeCuantia = Number(formData.get("tope_cuantia"));
   const modoValidacion = formData.get("modo_validacion_cuantia") as string;
   const plazoAdmisionDias = Number(formData.get("plazo_admision_dias"));
+  const umbralInactividadDias = Number(formData.get("umbral_inactividad_dias"));
 
   if (!Number.isFinite(topeCuantia) || topeCuantia <= 0) {
     return { error: "El tope de cuantía debe ser un número mayor a 0" };
@@ -65,6 +66,9 @@ export async function actualizarConfiguracionSistema(
   if (!Number.isFinite(plazoAdmisionDias) || plazoAdmisionDias <= 0) {
     return { error: "El plazo de admisión debe ser un número mayor a 0" };
   }
+  if (!Number.isFinite(umbralInactividadDias) || umbralInactividadDias <= 0) {
+    return { error: "El umbral de inactividad debe ser un número mayor a 0" };
+  }
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -73,6 +77,7 @@ export async function actualizarConfiguracionSistema(
       tope_cuantia: topeCuantia,
       modo_validacion_cuantia: modoValidacion,
       plazo_admision_dias: plazoAdmisionDias,
+      umbral_inactividad_dias: umbralInactividadDias,
       actualizado_por: actual.id,
     })
     .eq("id", 1);
@@ -83,6 +88,7 @@ export async function actualizarConfiguracionSistema(
     tope_cuantia: topeCuantia,
     modo_validacion_cuantia: modoValidacion,
     plazo_admision_dias: plazoAdmisionDias,
+    umbral_inactividad_dias: umbralInactividadDias,
   });
 
   revalidatePath("/administracion");

@@ -7,6 +7,7 @@ export type UsuarioActual = {
   nombre_completo: string;
   rol: RolGdc;
   activo: boolean;
+  despacho_id: string;
   email: string | null;
 };
 
@@ -21,7 +22,7 @@ export async function getUsuarioActual(): Promise<UsuarioActual | null> {
 
   const { data: perfil } = await supabase
     .from("usuarios")
-    .select("id, nombre_completo, rol, activo")
+    .select("id, nombre_completo, rol, activo, despacho_id")
     .eq("auth_user_id", user.id)
     .single();
 

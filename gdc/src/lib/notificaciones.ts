@@ -42,11 +42,11 @@ export async function obtenerNotificaciones(rol: RolGdc): Promise<ItemNotificaci
 
     const { data: expedientes } = await supabase
       .from("expedientes")
-      .select("expediente_fases(fase, fecha_fin, fecha_inicio)");
+      .select("expediente_fases(fase_id, fecha_fin, fecha_inicio, fases_proceso(nombre))");
 
     const criticos = (expedientes ?? []).filter((exp) => {
       const admisionActiva = exp.expediente_fases.find(
-        (f) => f.fase === "admision" && f.fecha_fin === null,
+        (f) => f.fases_proceso?.nombre === "Admisión" && f.fecha_fin === null,
       );
       return admisionActiva && new Date(admisionActiva.fecha_inicio) < limite;
     }).length;

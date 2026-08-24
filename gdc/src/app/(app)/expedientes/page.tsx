@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Folder, AlertTriangle, Gavel } from "lucide-react";
 import { getUsuarioActual } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
-import { getTiposProceso, getSubtiposProceso } from "@/lib/catalogos";
+import { getTiposProceso, getSubtiposProceso, getFasesProceso } from "@/lib/catalogos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -17,7 +17,7 @@ import { AvanzarFaseForm } from "./avanzar-fase-form";
 import { AsignarDialog } from "./asignar-dialog";
 import { FiltrosExpedientes } from "./filtros-expedientes";
 import { EliminarExpedienteBoton } from "./eliminar-expediente-boton";
-import { FASE_LABEL } from "@/lib/fases";
+import { siguienteFase, type FaseProceso } from "@/lib/fases";
 import { StatCard } from "@/components/stat-card";
 import { PlazoBar } from "@/components/plazo-bar";
 import { calcularEstadoPlazo } from "@/lib/plazo-audiencia";
@@ -32,7 +32,7 @@ export default async function ExpedientesPage({ searchParams }: Props) {
   const esAdmin = usuario?.rol === "administrador";
 
   const supabase = await createClient();
-  const [{ data: expedientes }, tiposProceso, subtiposProceso, { data: asistentes }] =
+  const [{ data: expedientes }, tiposProceso, subtiposProceso, fasesProceso, { data: asistentes }] =
     await Promise.all([
       supabase
         .from("expedientes")
@@ -41,13 +41,14 @@ export default async function ExpedientesPage({ searchParams }: Props) {
            fecha_notificacion_demanda, created_at,
            tipos_proceso(nombre),
            subtipos_proceso(nombre),
-           expediente_fases(fase, fecha_fin),
+           expediente_fases(fase_id, fecha_fin, fases_proceso(id, tipo_proceso_id, nombre, orden, es_fase_inicial)),
            asignaciones(activa, usuarios!asistente_id(id, nombre_completo)),
            audiencias(tipo, fecha_limite_calculada, estado)`,
         )
         .order("created_at", { ascending: false }),
       getTiposProceso(),
       getSubtiposProceso(),
+      getFasesProceso(),
       esAdmin
         ? supabase
             .from("usuarios")
@@ -63,7 +64,10 @@ export default async function ExpedientesPage({ searchParams }: Props) {
   const totalExpedientes = todos.length;
   const enFaseAudiencia = todos.filter((exp) => {
     const activa = exp.expediente_fases.find((f) => f.fecha_fin === null);
-    return activa?.fase === "audiencia_preliminar" || activa?.fase === "audiencia_fondo";
+    return (
+      activa?.fases_proceso?.nombre === "Audiencia preliminar" ||
+      activa?.fases_proceso?.nombre === "Audiencia de fondo"
+    );
   }).length;
   const enPlazoCritico = todos.filter((exp) => {
     const audienciaActiva = exp.audiencias.find((a) => a.estado === "programada");
@@ -78,7 +82,7 @@ export default async function ExpedientesPage({ searchParams }: Props) {
     if (tipoFiltro && exp.tipo_proceso_id !== Number(tipoFiltro)) return false;
     if (faseFiltro) {
       const activa = exp.expediente_fases.find((f) => f.fecha_fin === null);
-      if (activa?.fase !== faseFiltro) return false;
+      if (activa?.fase_id !== faseFiltro) return false;
     }
     return true;
   });
@@ -109,7 +113,7 @@ export default async function ExpedientesPage({ searchParams }: Props) {
         <StatCard icono={Gavel} label="En fase audiencia" valor={enFaseAudiencia} />
       </div>
 
-      <FiltrosExpedientes tiposProceso={tiposProceso} />
+      <FiltrosExpedientes tiposProceso={tiposProceso} fasesProceso={fasesProceso} />
 
       <Card>
         <CardHeader>
@@ -133,6 +137,12 @@ export default async function ExpedientesPage({ searchParams }: Props) {
             <TableBody>
               {filas.map((exp) => {
                 const faseActual = exp.expediente_fases.find((f) => f.fecha_fin === null);
+                const fasesDelTipo = fasesProceso.filter(
+                  (f) => f.tipo_proceso_id === exp.tipo_proceso_id,
+                );
+                const proximaFase = faseActual
+                  ? siguienteFase(fasesDelTipo as FaseProceso[], faseActual.fase_id)
+                  : null;
                 const asignacionActual = exp.asignaciones.find((a) => a.activa);
                 const audienciaActiva = exp.audiencias.find((a) => a.estado === "programada");
                 const estadoPlazo = calcularEstadoPlazo(
@@ -158,7 +168,7 @@ export default async function ExpedientesPage({ searchParams }: Props) {
                           ? `B/.${exp.cuantia}`
                           : "Indeterminada"}
                     </TableCell>
-                    <TableCell>{faseActual ? FASE_LABEL[faseActual.fase] : "—"}</TableCell>
+                    <TableCell>{faseActual?.fases_proceso?.nombre ?? "—"}</TableCell>
                     <TableCell>
                       <PlazoBar estado={estadoPlazo} />
                     </TableCell>
@@ -174,9 +184,7 @@ export default async function ExpedientesPage({ searchParams }: Props) {
                     )}
                     {esAdmin && (
                       <TableCell>
-                        {faseActual && faseActual.fase !== "audiencia_fondo" && (
-                          <AvanzarFaseForm expedienteId={exp.id} faseActual={faseActual.fase} />
-                        )}
+                        <AvanzarFaseForm expedienteId={exp.id} proximaFase={proximaFase} />
                       </TableCell>
                     )}
                     {esAdmin && (

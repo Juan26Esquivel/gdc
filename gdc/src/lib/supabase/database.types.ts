@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       asignaciones: {
@@ -209,6 +184,7 @@ export type Database = {
           modo_validacion_cuantia: string
           plazo_admision_dias: number
           tope_cuantia: number
+          umbral_inactividad_dias: number
           updated_at: string
         }
         Insert: {
@@ -217,6 +193,7 @@ export type Database = {
           modo_validacion_cuantia?: string
           plazo_admision_dias?: number
           tope_cuantia?: number
+          umbral_inactividad_dias?: number
           updated_at?: string
         }
         Update: {
@@ -225,6 +202,7 @@ export type Database = {
           modo_validacion_cuantia?: string
           plazo_admision_dias?: number
           tope_cuantia?: number
+          umbral_inactividad_dias?: number
           updated_at?: string
         }
         Relationships: [
@@ -237,17 +215,46 @@ export type Database = {
           },
         ]
       }
+      despachos: {
+        Row: {
+          activo: boolean
+          created_at: string
+          id: string
+          nombre: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          id?: string
+          nombre: string
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          id?: string
+          nombre?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       documentos: {
         Row: {
           archivo_docx_path: string | null
           confirmado_por: string | null
           contenido_texto: string | null
           created_at: string
+          culmina_proceso: boolean
           estado: Database["public"]["Enums"]["estado_documento"]
           expediente_id: string
           fecha_confirmacion: string | null
           generado_por: string
           id: string
+          motivo_culminacion: string | null
           observaciones_juez: string | null
           tipo_documento_id: number
           updated_at: string
@@ -257,11 +264,13 @@ export type Database = {
           confirmado_por?: string | null
           contenido_texto?: string | null
           created_at?: string
+          culmina_proceso?: boolean
           estado?: Database["public"]["Enums"]["estado_documento"]
           expediente_id: string
           fecha_confirmacion?: string | null
           generado_por: string
           id?: string
+          motivo_culminacion?: string | null
           observaciones_juez?: string | null
           tipo_documento_id: number
           updated_at?: string
@@ -271,11 +280,13 @@ export type Database = {
           confirmado_por?: string | null
           contenido_texto?: string | null
           created_at?: string
+          culmina_proceso?: boolean
           estado?: Database["public"]["Enums"]["estado_documento"]
           expediente_id?: string
           fecha_confirmacion?: string | null
           generado_por?: string
           id?: string
+          motivo_culminacion?: string | null
           observaciones_juez?: string | null
           tipo_documento_id?: number
           updated_at?: string
@@ -314,7 +325,7 @@ export type Database = {
       expediente_fases: {
         Row: {
           expediente_id: string
-          fase: Database["public"]["Enums"]["fase_expediente"]
+          fase_id: string
           fecha_fin: string | null
           fecha_inicio: string
           id: string
@@ -322,7 +333,7 @@ export type Database = {
         }
         Insert: {
           expediente_id: string
-          fase: Database["public"]["Enums"]["fase_expediente"]
+          fase_id: string
           fecha_fin?: string | null
           fecha_inicio?: string
           id?: string
@@ -330,7 +341,7 @@ export type Database = {
         }
         Update: {
           expediente_id?: string
-          fase?: Database["public"]["Enums"]["fase_expediente"]
+          fase_id?: string
           fecha_fin?: string | null
           fecha_inicio?: string
           id?: string
@@ -344,6 +355,13 @@ export type Database = {
             referencedRelation: "expedientes"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "expediente_fases_fase_id_fkey"
+            columns: ["fase_id"]
+            isOneToOne: false
+            referencedRelation: "fases_proceso"
+            referencedColumns: ["id"]
+          },
         ]
       }
       expedientes: {
@@ -351,10 +369,18 @@ export type Database = {
           created_at: string
           created_by: string
           cuantia: number | null
+          despacho_id: string
           es_lanzamiento: boolean
           fecha_notificacion_demanda: string | null
+          fecha_registro: string
+          fisico_electronico: string | null
           id: string
+          motivo_omision_umbral: string | null
+          municipal_circuito: string | null
+          notas: string | null
           numero_expediente: string
+          omitir_umbral_inactividad: boolean
+          pretension: string | null
           subtipo_proceso_id: number | null
           tipo_proceso_id: number
           updated_at: string
@@ -363,10 +389,18 @@ export type Database = {
           created_at?: string
           created_by: string
           cuantia?: number | null
+          despacho_id: string
           es_lanzamiento?: boolean
           fecha_notificacion_demanda?: string | null
+          fecha_registro: string
+          fisico_electronico?: string | null
           id?: string
+          motivo_omision_umbral?: string | null
+          municipal_circuito?: string | null
+          notas?: string | null
           numero_expediente: string
+          omitir_umbral_inactividad?: boolean
+          pretension?: string | null
           subtipo_proceso_id?: number | null
           tipo_proceso_id: number
           updated_at?: string
@@ -375,10 +409,18 @@ export type Database = {
           created_at?: string
           created_by?: string
           cuantia?: number | null
+          despacho_id?: string
           es_lanzamiento?: boolean
           fecha_notificacion_demanda?: string | null
+          fecha_registro?: string
+          fisico_electronico?: string | null
           id?: string
+          motivo_omision_umbral?: string | null
+          municipal_circuito?: string | null
+          notas?: string | null
           numero_expediente?: string
+          omitir_umbral_inactividad?: boolean
+          pretension?: string | null
           subtipo_proceso_id?: number | null
           tipo_proceso_id?: number
           updated_at?: string
@@ -392,6 +434,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "expedientes_despacho_id_fkey"
+            columns: ["despacho_id"]
+            isOneToOne: false
+            referencedRelation: "despachos"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "expedientes_subtipo_proceso_id_fkey"
             columns: ["subtipo_proceso_id"]
             isOneToOne: false
@@ -400,6 +449,44 @@ export type Database = {
           },
           {
             foreignKeyName: "expedientes_tipo_proceso_id_fkey"
+            columns: ["tipo_proceso_id"]
+            isOneToOne: false
+            referencedRelation: "tipos_proceso"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fases_proceso: {
+        Row: {
+          created_at: string
+          es_fase_inicial: boolean
+          id: string
+          nombre: string
+          orden: number
+          tipo_proceso_id: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          es_fase_inicial?: boolean
+          id?: string
+          nombre: string
+          orden: number
+          tipo_proceso_id: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          es_fase_inicial?: boolean
+          id?: string
+          nombre?: string
+          orden?: number
+          tipo_proceso_id?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fases_proceso_tipo_proceso_id_fkey"
             columns: ["tipo_proceso_id"]
             isOneToOne: false
             referencedRelation: "tipos_proceso"
@@ -548,6 +635,7 @@ export type Database = {
           activo: boolean
           auth_user_id: string
           created_at: string
+          despacho_id: string
           id: string
           nombre_completo: string
           rol: Database["public"]["Enums"]["rol_gdc"]
@@ -557,6 +645,7 @@ export type Database = {
           activo?: boolean
           auth_user_id: string
           created_at?: string
+          despacho_id: string
           id?: string
           nombre_completo: string
           rol: Database["public"]["Enums"]["rol_gdc"]
@@ -566,12 +655,21 @@ export type Database = {
           activo?: boolean
           auth_user_id?: string
           created_at?: string
+          despacho_id?: string
           id?: string
           nombre_completo?: string
           rol?: Database["public"]["Enums"]["rol_gdc"]
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "usuarios_despacho_id_fkey"
+            columns: ["despacho_id"]
+            isOneToOne: false
+            referencedRelation: "despachos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -582,6 +680,7 @@ export type Database = {
         Args: { p_expediente_id: string }
         Returns: boolean
       }
+      fn_usuario_despacho: { Args: never; Returns: string }
       fn_usuario_id: { Args: never; Returns: string }
       fn_usuario_rol: {
         Args: never
@@ -598,11 +697,6 @@ export type Database = {
         | "continuada"
         | "terminada_por_incomparecencia"
       estado_documento: "generado" | "validado" | "en_correccion" | "confirmado"
-      fase_expediente:
-        | "admision"
-        | "notificacion_demanda"
-        | "audiencia_preliminar"
-        | "audiencia_fondo"
       metrica_kpi: "conteo" | "porcentaje_cumplimiento" | "promedio_dias"
       rol_gdc: "juez" | "asistente" | "analista_datos" | "administrador"
       tipo_audiencia: "preliminar" | "fondo"
@@ -731,9 +825,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       categoria_documento: ["resolucion_judicial", "comunicacion"],
@@ -746,12 +837,6 @@ export const Constants = {
         "terminada_por_incomparecencia",
       ],
       estado_documento: ["generado", "validado", "en_correccion", "confirmado"],
-      fase_expediente: [
-        "admision",
-        "notificacion_demanda",
-        "audiencia_preliminar",
-        "audiencia_fondo",
-      ],
       metrica_kpi: ["conteo", "porcentaje_cumplimiento", "promedio_dias"],
       rol_gdc: ["juez", "asistente", "analista_datos", "administrador"],
       tipo_audiencia: ["preliminar", "fondo"],

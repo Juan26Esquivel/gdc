@@ -54,6 +54,10 @@ export async function crearUsuario(
     auth_user_id: nuevoAuthUser.user.id,
     nombre_completo: nombreCompleto,
     rol,
+    // Por ahora solo existe un despacho: el nuevo usuario se asigna al mismo
+    // despacho del Administrador que lo crea (OT-02). Cuando exista más de
+    // uno, este formulario necesitará su propio selector de despacho.
+    despacho_id: actual.despacho_id,
   });
 
   if (errorInsert) {

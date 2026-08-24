@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import { getConfiguracionSistema } from "@/lib/catalogos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/stat-card";
-import { FASE_LABEL, type FaseExpediente } from "@/lib/fases";
 import { CargaPorFaseChart } from "./carga-por-fase-chart";
 import { DocumentosPorTipoChart } from "./documentos-por-tipo-chart";
 import { RealtimeRefresh } from "./realtime-refresh";
@@ -46,7 +45,9 @@ export default async function DashboardPage() {
   ] = await Promise.all([
     supabase
       .from("expedientes")
-      .select("id, created_at, expediente_fases(fase, fecha_fin, fecha_inicio)"),
+      .select(
+        "id, created_at, expediente_fases(fase_id, fecha_fin, fecha_inicio, fases_proceso(nombre))",
+      ),
     supabase
       .from("documentos")
       .select("id, estado, created_at, fecha_confirmacion, tipos_documento(nombre)"),
@@ -66,15 +67,18 @@ export default async function DashboardPage() {
       (d) => d.estado === "confirmado" && d.fecha_confirmacion && new Date(d.fecha_confirmacion) >= inicioMesActual,
     ).length ?? 0;
 
-  // RF-18: carga de trabajo por fase (fase activa de cada expediente)
+  // RF-18: carga de trabajo por fase (fase activa de cada expediente). El
+  // catálogo de fases ahora es por tipo de proceso (OT-02), así que se agrupa
+  // por el nombre de la fase activa en vez de un enum fijo de 4 valores.
   const conteoPorFase: Record<string, number> = {};
   for (const exp of expedientes ?? []) {
     const activa = exp.expediente_fases.find((f) => f.fecha_fin === null);
-    if (activa) conteoPorFase[activa.fase] = (conteoPorFase[activa.fase] ?? 0) + 1;
+    const nombreFase = activa?.fases_proceso?.nombre;
+    if (nombreFase) conteoPorFase[nombreFase] = (conteoPorFase[nombreFase] ?? 0) + 1;
   }
-  const datosCargaPorFase = (Object.keys(FASE_LABEL) as FaseExpediente[]).map((fase) => ({
-    fase: FASE_LABEL[fase],
-    cantidad: conteoPorFase[fase] ?? 0,
+  const datosCargaPorFase = Object.entries(conteoPorFase).map(([fase, cantidad]) => ({
+    fase,
+    cantidad,
   }));
 
   // RF-16: documentos generados este mes, por tipo
@@ -106,7 +110,7 @@ export default async function DashboardPage() {
   const expedientesCriticos = (expedientes ?? [])
     .map((exp) => {
       const admisionActiva = exp.expediente_fases.find(
-        (f) => f.fase === "admision" && f.fecha_fin === null,
+        (f) => f.fases_proceso?.nombre === "Admisión" && f.fecha_fin === null,
       );
       return admisionActiva ? { id: exp.id, fecha_inicio: admisionActiva.fecha_inicio } : null;
     })

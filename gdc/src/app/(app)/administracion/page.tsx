@@ -23,7 +23,7 @@ export default async function AdministracionPage() {
         .order("id"),
       supabase
         .from("configuracion_sistema")
-        .select("tope_cuantia, modo_validacion_cuantia, plazo_admision_dias")
+        .select("tope_cuantia, modo_validacion_cuantia, plazo_admision_dias, umbral_inactividad_dias")
         .eq("id", 1)
         .single(),
     ]);

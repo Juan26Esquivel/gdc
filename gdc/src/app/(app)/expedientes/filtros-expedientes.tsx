@@ -9,11 +9,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { FASE_LABEL, ORDEN_FASES } from "@/lib/fases";
+import type { FaseProceso } from "@/lib/fases";
 
 type TipoProceso = { id: number; nombre: string };
 
-export function FiltrosExpedientes({ tiposProceso }: { tiposProceso: TipoProceso[] }) {
+export function FiltrosExpedientes({
+  tiposProceso,
+  fasesProceso,
+}: {
+  tiposProceso: TipoProceso[];
+  fasesProceso: FaseProceso[];
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tipo = searchParams.get("tipo") ?? "";
@@ -26,9 +32,22 @@ export function FiltrosExpedientes({ tiposProceso }: { tiposProceso: TipoProceso
     router.push(`/expedientes?${params.toString()}`);
   }
 
+  // Cada tipo de proceso tiene su propio catálogo de fases (OT-02): al elegir
+  // un tipo, solo se listan las fases de ese tipo; sin tipo elegido, se listan
+  // todas para no bloquear el filtro por fase de entrada.
+  const fasesDisponibles = tipo
+    ? fasesProceso.filter((f) => f.tipo_proceso_id === Number(tipo))
+    : fasesProceso;
+
   return (
     <div className="flex items-center gap-3">
-      <Select value={tipo} onValueChange={(v) => actualizar("tipo", v)}>
+      <Select
+        value={tipo}
+        onValueChange={(v) => {
+          actualizar("tipo", v);
+          actualizar("fase", null);
+        }}
+      >
         <SelectTrigger className="w-56">
           <SelectValue placeholder="Tipo: Todos">
             {(value: string | null) =>
@@ -48,14 +67,14 @@ export function FiltrosExpedientes({ tiposProceso }: { tiposProceso: TipoProceso
         <SelectTrigger className="w-56">
           <SelectValue placeholder="Fase: Todas">
             {(value: string | null) =>
-              value ? FASE_LABEL[value as keyof typeof FASE_LABEL] : "Fase: Todas"
+              fasesDisponibles.find((f) => f.id === value)?.nombre ?? "Fase: Todas"
             }
           </SelectValue>
         </SelectTrigger>
         <SelectContent>
-          {ORDEN_FASES.map((f) => (
-            <SelectItem key={f} value={f}>
-              {FASE_LABEL[f]}
+          {fasesDisponibles.map((f) => (
+            <SelectItem key={f.id} value={f.id}>
+              {f.nombre}
             </SelectItem>
           ))}
         </SelectContent>

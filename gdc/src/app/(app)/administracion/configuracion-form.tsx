@@ -17,6 +17,7 @@ type Configuracion = {
   tope_cuantia: number;
   modo_validacion_cuantia: string;
   plazo_admision_dias: number;
+  umbral_inactividad_dias: number;
 } | null;
 
 const ESTADO_INICIAL: EstadoAdministracion = {};
@@ -72,6 +73,21 @@ export function ConfiguracionForm({ configuracion }: { configuracion: Configurac
           defaultValue={configuracion.plazo_admision_dias}
           required
         />
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="umbral_inactividad_dias">Umbral de inactividad (días sin movimiento)</Label>
+        <Input
+          id="umbral_inactividad_dias"
+          name="umbral_inactividad_dias"
+          type="number"
+          defaultValue={configuracion.umbral_inactividad_dias}
+          required
+        />
+        <p className="text-xs text-muted-foreground">
+          Aplica a todos los tipos de proceso; un expediente puntual puede omitirlo con
+          justificación (Panel del Juez).
+        </p>
       </div>
 
       {estado.error && <p className="text-sm text-destructive">{estado.error}</p>}
