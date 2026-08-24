@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BotonAtenderEmbargo } from "./boton-atender-embargo";
 
 function ListaVacia({ mensaje }: { mensaje: string }) {
   return <p className="text-sm text-muted-foreground">{mensaje}</p>;
@@ -192,8 +193,10 @@ export function TarjetaAptosParaEmbargo({
       <CardHeader>
         <CardTitle>Ejecutivos aptos para decretar embargo</CardTitle>
         <p className="text-xs text-muted-foreground">
-          Venció el término de {plazoExcepcionDias} días hábiles para presentar excepción; el día{" "}
-          {plazoEmbargoDias} hábil es la referencia de límite para decretar
+          Aparecen a partir del día {plazoExcepcionDias + 1} hábil desde la notificación, cuando ya
+          venció el término de {plazoExcepcionDias} días para presentar excepción. El día{" "}
+          {plazoEmbargoDias} hábil es el límite para decretar. Con «Ya se decretó» el expediente sale
+          de esta lista.
         </p>
       </CardHeader>
       <CardContent className="flex flex-col divide-y divide-border">
@@ -201,17 +204,18 @@ export function TarjetaAptosParaEmbargo({
           <ListaVacia mensaje="Ningún ejecutivo tiene el término de excepción vencido." />
         )}
         {items.map((item) => (
-          <Link
+          <div
             key={item.id}
-            href={`/expedientes/${item.id}`}
             className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
           >
-            <div className="min-w-0">
+            {/* El enlace envuelve solo el texto: un <form> dentro de un <Link> no
+                es HTML válido y el clic navegaría en vez de confirmar. */}
+            <Link href={`/expedientes/${item.id}`} className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold">{item.numeroExpediente}</p>
               <p className="text-xs text-muted-foreground">
                 Límite para decretar: {item.fechaLimiteDecreto}
               </p>
-            </div>
+            </Link>
             <span
               className={`flex shrink-0 items-center gap-1 text-xs font-semibold ${
                 item.pasadoElLimite ? "text-destructive" : "text-amber-700"
@@ -220,7 +224,8 @@ export function TarjetaAptosParaEmbargo({
               <AlertTriangle className="size-3" />
               {item.diasHabilesDesdeNotificacion} días hábiles
             </span>
-          </Link>
+            <BotonAtenderEmbargo expedienteId={item.id} />
+          </div>
         ))}
       </CardContent>
     </Card>

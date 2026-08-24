@@ -196,9 +196,19 @@ export default async function DashboardPage() {
   // con el día 10 hábil como referencia de límite. Solo se listan los que siguen
   // en la fase de Notificación: si ya avanzaron a "Cumplimiento de embargo", el
   // embargo se decretó y la alerta no aplica.
+  // Un expediente con el evento embargo_decretado ya fue atendido: sale de la
+  // alerta aunque su fase siga en Notificación (el avance de fase es un acto
+  // aparte, que puede ocurrir después).
+  const conEmbargoDecretado = new Set(
+    (eventos ?? [])
+      .filter((ev) => ev.tipos_evento?.codigo === "embargo_decretado")
+      .map((ev) => ev.expediente_id),
+  );
+
   const itemsAptosParaEmbargo: ItemAptoEmbargo[] = activos
     .map((exp) => {
       if (exp.tipos_proceso?.nombre !== "Ejecución") return null;
+      if (conEmbargoDecretado.has(exp.id)) return null;
       if (!exp.fecha_notificacion_demanda) return null;
       const faseActiva = faseActivaDe(exp.expediente_fases);
       if (faseActiva?.fases_proceso?.nombre !== "Notificación") return null;
