@@ -59,6 +59,7 @@ export async function actualizarConfiguracionSistema(
   const umbralInactividadDias = Number(formData.get("umbral_inactividad_dias"));
   const plazoExcepcionEjecutivoDias = Number(formData.get("plazo_excepcion_ejecutivo_dias"));
   const plazoEmbargoEjecutivoDias = Number(formData.get("plazo_embargo_ejecutivo_dias"));
+  const plazoPublicacionEdictoMeses = Number(formData.get("plazo_publicacion_edicto_meses"));
 
   if (!Number.isFinite(topeCuantia) || topeCuantia <= 0) {
     return { error: "El tope de cuantía debe ser un número mayor a 0" };
@@ -86,6 +87,10 @@ export async function actualizarConfiguracionSistema(
     };
   }
 
+  if (!Number.isFinite(plazoPublicacionEdictoMeses) || plazoPublicacionEdictoMeses <= 0) {
+    return { error: "El plazo para publicar el edicto debe ser un número de meses mayor a 0" };
+  }
+
   const supabase = await createClient();
   const { error } = await supabase
     .from("configuracion_sistema")
@@ -96,6 +101,7 @@ export async function actualizarConfiguracionSistema(
       umbral_inactividad_dias: umbralInactividadDias,
       plazo_excepcion_ejecutivo_dias: plazoExcepcionEjecutivoDias,
       plazo_embargo_ejecutivo_dias: plazoEmbargoEjecutivoDias,
+      plazo_publicacion_edicto_meses: plazoPublicacionEdictoMeses,
       actualizado_por: actual.id,
     })
     .eq("id", 1);
@@ -109,6 +115,7 @@ export async function actualizarConfiguracionSistema(
     umbral_inactividad_dias: umbralInactividadDias,
     plazo_excepcion_ejecutivo_dias: plazoExcepcionEjecutivoDias,
     plazo_embargo_ejecutivo_dias: plazoEmbargoEjecutivoDias,
+    plazo_publicacion_edicto_meses: plazoPublicacionEdictoMeses,
   });
 
   revalidatePath("/administracion");

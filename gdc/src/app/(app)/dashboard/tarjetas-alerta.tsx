@@ -112,17 +112,31 @@ export type ItemEdictoSinPublicar = {
   numeroExpediente: string;
   subtipoNombre: string | null;
   diasDesdeEdicto: number;
+  fechaLimitePublicacion: string;
+  reiteros: number;
 };
 
-export function TarjetaEdictosSinPublicar({ items }: { items: ItemEdictoSinPublicar[] }) {
+export function TarjetaEdictosSinPublicar({
+  items,
+  plazoMeses,
+}: {
+  items: ItemEdictoSinPublicar[];
+  plazoMeses: number;
+}) {
+  const textoPlazo = plazoMeses === 1 ? "un mes calendario" : `${plazoMeses} meses calendario`;
   return (
     <Card>
       <CardHeader>
         <CardTitle>Edictos sin publicar (Jurisdicción voluntaria)</CardTitle>
-        <p className="text-xs text-muted-foreground">Más de 30 días desde el edicto emplazatorio</p>
+        <p className="text-xs text-muted-foreground">
+          Pasó {textoPlazo} desde el edicto emplazatorio sin que se publique el aviso en un diario
+          de circulación nacional
+        </p>
       </CardHeader>
       <CardContent className="flex flex-col divide-y divide-border">
-        {items.length === 0 && <ListaVacia mensaje="Ningún edicto lleva más de 30 días sin publicación." />}
+        {items.length === 0 && (
+          <ListaVacia mensaje={`Ningún edicto pasó de ${textoPlazo} sin publicación.`} />
+        )}
         {items.map((item) => (
           <Link
             key={item.id}
@@ -131,7 +145,12 @@ export function TarjetaEdictosSinPublicar({ items }: { items: ItemEdictoSinPubli
           >
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold">{item.numeroExpediente}</p>
-              <p className="text-xs text-muted-foreground">{item.subtipoNombre ?? "Jurisdicción voluntaria"}</p>
+              <p className="text-xs text-muted-foreground">
+                Vencía el {item.fechaLimitePublicacion} ·{" "}
+                {item.reiteros === 0
+                  ? "sin reiteros"
+                  : `${item.reiteros} reitero${item.reiteros === 1 ? "" : "s"}`}
+              </p>
             </div>
             <span className="flex shrink-0 items-center gap-1 text-xs font-semibold text-amber-700">
               <AlertTriangle className="size-3" />

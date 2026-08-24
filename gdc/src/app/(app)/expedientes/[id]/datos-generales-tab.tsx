@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DatosGeneralesCard } from "./editar-datos-generales";
+import { AudienciasExpediente, type AudienciaVista } from "./audiencias-expediente";
 
 type FaseLinea = { id: string; nombre: string; orden: number; completada: boolean; actual: boolean; fecha: string | null };
 
@@ -28,6 +29,8 @@ export type DatosGeneralesProps = {
   auditoriaReciente: { id: string; accion: string; usuarioNombre: string | null; fecha: string }[];
   embargo: { montoDecretado: number; totalAbonado: number; saldoPendiente: number } | null;
   ventanasAudiencia: VentanaAudienciaVista[];
+  audiencias: AudienciaVista[];
+  esAdmin: boolean;
   puedeEditar: boolean;
 };
 
@@ -92,6 +95,8 @@ export function DatosGeneralesTab(props: DatosGeneralesProps) {
     auditoriaReciente,
     embargo,
     ventanasAudiencia,
+    audiencias,
+    esAdmin,
     puedeEditar,
   } = props;
 
@@ -198,6 +203,12 @@ export function DatosGeneralesTab(props: DatosGeneralesProps) {
             </CardContent>
           </Card>
         )}
+
+        <AudienciasExpediente
+          expedienteId={expedienteId}
+          audiencias={audiencias}
+          esAdmin={esAdmin}
+        />
 
         {embargo && (
           <Card>

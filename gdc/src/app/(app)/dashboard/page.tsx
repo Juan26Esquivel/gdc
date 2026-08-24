@@ -3,6 +3,7 @@ import { getUsuarioActual } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
 import { getConfiguracionSistema, getDiasNoHabiles } from "@/lib/catalogos";
 import { contarDiasHabilesTranscurridos, sumarDiasHabiles } from "@/lib/dias-habiles";
+import { calcularEstadoPublicacionEdicto } from "@/lib/plazo-edicto";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/stat-card";
 import { calcularSemaforo } from "@/lib/semaforo";
@@ -92,6 +93,7 @@ export default async function DashboardPage() {
   const plazoAdmisionDias = configuracion?.plazo_admision_dias ?? 30;
   const plazoExcepcionDias = configuracion?.plazo_excepcion_ejecutivo_dias ?? 8;
   const plazoEmbargoDias = configuracion?.plazo_embargo_ejecutivo_dias ?? 10;
+  const plazoEdictoMeses = configuracion?.plazo_publicacion_edicto_meses ?? 1;
 
   // Punto 1: expedientes activos por tipo de proceso (Declarativo se
   // desglosa por subtipo, como en el Excel/mockup; el resto no tiene subtipo
@@ -224,19 +226,33 @@ export default async function DashboardPage() {
     .filter((item): item is ItemAptoEmbargo => item !== null)
     .sort((a, b) => b.diasHabilesDesdeNotificacion - a.diasHabilesDesdeNotificacion);
 
-  // Punto 5: edictos sin publicar (Jurisdicción voluntaria) — edicto emitido
-  // sin publicación posterior, hace más de 30 días.
-  const eventosPorExpediente = new Map<string, { edicto?: string; publicacion?: string }>();
+  // Punto 5: edictos sin publicar (Jurisdicción voluntaria) — edicto emitido sin
+  // publicación posterior, pasado el plazo configurado. El plazo es en MESES
+  // CALENDARIO (aclarado por el usuario el 2026-08-23), no los 30 días fijos que
+  // este cálculo usaba antes. Se cuentan también los reiteros ya registrados:
+  // saber si al interesado ya se le reiteró cambia qué hacer con el expediente.
+  const eventosPorExpediente = new Map<
+    string,
+    { edicto?: string; publicacion?: string; reiteros: number }
+  >();
   for (const ev of eventos ?? []) {
     const codigo = ev.tipos_evento?.codigo;
-    if (codigo !== "edicto_emplazatorio_emitido" && codigo !== "publicacion_edicto_registrada") continue;
-    const actual = eventosPorExpediente.get(ev.expediente_id) ?? {};
+    if (
+      codigo !== "edicto_emplazatorio_emitido" &&
+      codigo !== "publicacion_edicto_registrada" &&
+      codigo !== "reitero_publicacion_edicto"
+    ) {
+      continue;
+    }
+    const actual = eventosPorExpediente.get(ev.expediente_id) ?? { reiteros: 0 };
     if (codigo === "edicto_emplazatorio_emitido") {
       if (!actual.edicto || new Date(ev.created_at) > new Date(actual.edicto)) actual.edicto = ev.created_at;
-    } else {
+    } else if (codigo === "publicacion_edicto_registrada") {
       if (!actual.publicacion || new Date(ev.created_at) > new Date(actual.publicacion)) {
         actual.publicacion = ev.created_at;
       }
+    } else {
+      actual.reiteros += 1;
     }
     eventosPorExpediente.set(ev.expediente_id, actual);
   }
@@ -244,15 +260,17 @@ export default async function DashboardPage() {
   for (const [expedienteId, datos] of eventosPorExpediente.entries()) {
     if (!datos.edicto) continue;
     if (datos.publicacion && new Date(datos.publicacion) > new Date(datos.edicto)) continue;
-    const dias = Math.floor((new Date().getTime() - new Date(datos.edicto).getTime()) / (1000 * 60 * 60 * 24));
-    if (dias <= 30) continue;
+    const estado = calcularEstadoPublicacionEdicto(datos.edicto, plazoEdictoMeses, hoyIso);
+    if (!estado.vencido) continue;
     const exp = activos.find((e) => e.id === expedienteId);
     if (!exp) continue;
     itemsEdictosSinPublicar.push({
       id: exp.id,
       numeroExpediente: exp.numero_expediente,
       subtipoNombre: exp.subtipos_proceso?.nombre ?? null,
-      diasDesdeEdicto: dias,
+      diasDesdeEdicto: estado.diasDesdeElEdicto,
+      fechaLimitePublicacion: estado.fechaLimite,
+      reiteros: datos.reiteros,
     });
   }
   itemsEdictosSinPublicar.sort((a, b) => b.diasDesdeEdicto - a.diasDesdeEdicto);
@@ -314,7 +332,7 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <TarjetaMovimientosSinTrabajar items={itemsMovimientosSinTrabajar} umbralDias={umbralInactividadDias} />
         <TarjetaPendientesNotificar items={itemsPendientesNotificar} plazoAdmisionDias={plazoAdmisionDias} />
-        <TarjetaEdictosSinPublicar items={itemsEdictosSinPublicar} />
+        <TarjetaEdictosSinPublicar items={itemsEdictosSinPublicar} plazoMeses={plazoEdictoMeses} />
       </div>
 
       <div className="grid grid-cols-1 gap-4">

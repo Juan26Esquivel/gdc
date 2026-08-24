@@ -76,6 +76,7 @@ export type Database = {
           estado: Database["public"]["Enums"]["estado_audiencia"]
           expediente_id: string
           fecha_minima_calculada: string | null
+          motivo: string | null
           fecha_limite_calculada: string | null
           fecha_programada: string
           id: string
@@ -86,6 +87,7 @@ export type Database = {
           estado?: Database["public"]["Enums"]["estado_audiencia"]
           expediente_id: string
           fecha_minima_calculada?: string | null
+          motivo?: string | null
           fecha_limite_calculada?: string | null
           fecha_programada: string
           id?: string
@@ -96,6 +98,7 @@ export type Database = {
           estado?: Database["public"]["Enums"]["estado_audiencia"]
           expediente_id?: string
           fecha_minima_calculada?: string | null
+          motivo?: string | null
           fecha_limite_calculada?: string | null
           fecha_programada?: string
           id?: string
@@ -201,6 +204,7 @@ export type Database = {
           modo_validacion_cuantia: string
           plazo_admision_dias: number
           plazo_embargo_ejecutivo_dias: number
+          plazo_publicacion_edicto_meses: number
           plazo_excepcion_ejecutivo_dias: number
           tope_cuantia: number
           umbral_inactividad_dias: number
@@ -212,6 +216,7 @@ export type Database = {
           modo_validacion_cuantia?: string
           plazo_admision_dias?: number
           plazo_embargo_ejecutivo_dias?: number
+          plazo_publicacion_edicto_meses?: number
           plazo_excepcion_ejecutivo_dias?: number
           tope_cuantia?: number
           umbral_inactividad_dias?: number
@@ -223,6 +228,7 @@ export type Database = {
           modo_validacion_cuantia?: string
           plazo_admision_dias?: number
           plazo_embargo_ejecutivo_dias?: number
+          plazo_publicacion_edicto_meses?: number
           plazo_excepcion_ejecutivo_dias?: number
           tope_cuantia?: number
           umbral_inactividad_dias?: number
@@ -538,6 +544,7 @@ export type Database = {
           documento_cierre_id: string | null
           es_lanzamiento: boolean
           estado_matrimonio: string | null
+          estado_proceso: string
           fecha_cierre: string | null
           fecha_notificacion_demanda: string | null
           fecha_registro: string
@@ -566,6 +573,7 @@ export type Database = {
           documento_cierre_id?: string | null
           es_lanzamiento?: boolean
           estado_matrimonio?: string | null
+          estado_proceso?: string
           fecha_cierre?: string | null
           fecha_notificacion_demanda?: string | null
           fecha_registro: string
@@ -594,6 +602,7 @@ export type Database = {
           documento_cierre_id?: string | null
           es_lanzamiento?: boolean
           estado_matrimonio?: string | null
+          estado_proceso?: string
           fecha_cierre?: string | null
           fecha_notificacion_demanda?: string | null
           fecha_registro?: string
@@ -949,7 +958,7 @@ export type Database = {
       estado_documento: "generado" | "validado" | "en_correccion" | "confirmado"
       metrica_kpi: "conteo" | "porcentaje_cumplimiento" | "promedio_dias"
       rol_gdc: "juez" | "asistente" | "analista_datos" | "administrador"
-      tipo_audiencia: "preliminar" | "fondo"
+      tipo_audiencia: "preliminar" | "fondo" | "especial"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1089,7 +1098,7 @@ export const Constants = {
       estado_documento: ["generado", "validado", "en_correccion", "confirmado"],
       metrica_kpi: ["conteo", "porcentaje_cumplimiento", "promedio_dias"],
       rol_gdc: ["juez", "asistente", "analista_datos", "administrador"],
-      tipo_audiencia: ["preliminar", "fondo"],
+      tipo_audiencia: ["preliminar", "fondo", "especial"],
     },
   },
 } as const

@@ -27,6 +27,7 @@ const localizer = dateFnsLocalizer({
 type Audiencia = {
   id: string;
   tipo: string;
+  motivo: string | null;
   fecha_programada: string;
   fecha_limite_calculada: string | null;
   estado: string;
@@ -35,7 +36,12 @@ type Audiencia = {
 
 type EventoAudiencia = Event & { audiencia: Audiencia };
 
-const TIPO_LABEL: Record<string, string> = { preliminar: "Preliminar", fondo: "Fondo" };
+// "especial" se agregó al enum en la migración 20260823150001 (Art. 262/263).
+const TIPO_LABEL: Record<string, string> = {
+  preliminar: "Preliminar",
+  fondo: "Fondo",
+  especial: "Especial",
+};
 
 export function CalendarioCliente({
   audiencias,
@@ -100,7 +106,9 @@ export function CalendarioCliente({
             <div className="flex flex-col gap-4 p-4 pt-0">
               <div className="rounded-md border border-border bg-muted/50 p-3 text-sm">
                 <p>
-                  <span className="font-medium">Tipo:</span> {TIPO_LABEL[seleccionada.tipo]}
+                  <span className="font-medium">Tipo:</span>{" "}
+                  {TIPO_LABEL[seleccionada.tipo] ?? seleccionada.tipo}
+                  {seleccionada.motivo ? ` · ${seleccionada.motivo}` : ""}
                 </p>
                 <p>
                   <span className="font-medium">Fecha programada:</span>{" "}

@@ -11,7 +11,7 @@ export default async function CalendarioPage() {
   const { data: audiencias } = await supabase
     .from("audiencias")
     .select(
-      `id, tipo, fecha_programada, fecha_limite_calculada, estado,
+      `id, tipo, motivo, fecha_programada, fecha_minima_calculada, fecha_limite_calculada, estado,
        expedientes(numero_expediente, tipos_proceso(nombre))`,
     )
     .order("fecha_programada", { ascending: true });

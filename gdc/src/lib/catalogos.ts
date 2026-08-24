@@ -32,7 +32,8 @@ export async function getConfiguracionSistema() {
     .from("configuracion_sistema")
     .select(
       `tope_cuantia, modo_validacion_cuantia, plazo_admision_dias, umbral_inactividad_dias,
-       plazo_excepcion_ejecutivo_dias, plazo_embargo_ejecutivo_dias`,
+       plazo_excepcion_ejecutivo_dias, plazo_embargo_ejecutivo_dias,
+       plazo_publicacion_edicto_meses`,
     )
     .eq("id", 1)
     .single();

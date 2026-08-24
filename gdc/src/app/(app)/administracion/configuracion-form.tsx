@@ -20,6 +20,7 @@ type Configuracion = {
   umbral_inactividad_dias: number;
   plazo_excepcion_ejecutivo_dias: number;
   plazo_embargo_ejecutivo_dias: number;
+  plazo_publicacion_edicto_meses: number;
 } | null;
 
 const ESTADO_INICIAL: EstadoAdministracion = {};
@@ -128,6 +129,28 @@ export function ConfiguracionForm({ configuracion }: { configuracion: Configurac
         />
         <p className="text-xs text-muted-foreground">
           Debe ser mayor que el término de excepción. Pasado este día, la alerta se marca en rojo.
+        </p>
+      </div>
+
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Sucesiones (jurisdicción voluntaria)
+      </p>
+
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="plazo_publicacion_edicto_meses">
+          Plazo para publicar el edicto emplazatorio (meses calendario)
+        </Label>
+        <Input
+          id="plazo_publicacion_edicto_meses"
+          name="plazo_publicacion_edicto_meses"
+          type="number"
+          defaultValue={configuracion.plazo_publicacion_edicto_meses}
+          required
+        />
+        <p className="text-xs text-muted-foreground">
+          Meses que tiene el interesado para publicar el aviso en un diario de circulación
+          nacional. Pasado el plazo, el expediente aparece en la alerta de edictos sin publicar del
+          Panel del Juez.
         </p>
       </div>
 

@@ -18,6 +18,14 @@ const LABEL_ESTADO_MATRIMONIO: Record<string, string> = {
   retirado: "Retirado",
 };
 
+// Coincide con el check de expedientes.estado_proceso (migración 20260823160001).
+const LABEL_ESTADO_PROCESO: Record<string, string> = {
+  en_tramite: "En trámite",
+  desistido: "Desistido",
+  conciliado: "Conciliado",
+  retirado: "Retirado (retiro del proceso)",
+};
+
 export type EventoHistorial = {
   id: string;
   tipoNombre: string;
@@ -211,6 +219,29 @@ function FormularioEventoGenerico({
               </option>
             ))}
           </select>
+        </div>
+      )}
+
+      {tipoEvento.codigo === "estado_proceso_actualizado" && (
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="estado_proceso">Nuevo estado del proceso</Label>
+          <select
+            id="estado_proceso"
+            name="estado_proceso"
+            required
+            className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+          >
+            {Object.entries(LABEL_ESTADO_PROCESO).map(([valor, label]) => (
+              <option key={valor} value={valor}>
+                {label}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-muted-foreground">
+            Desistido, conciliado y retirado <strong>cierran el expediente</strong> sin documento de
+            cierre. La mediación no va aquí: se cierra con el documento &quot;Acuerdo de
+            Mediación&quot;.
+          </p>
         </div>
       )}
 

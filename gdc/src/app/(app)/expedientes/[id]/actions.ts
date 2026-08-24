@@ -5,7 +5,11 @@ import { getUsuarioActual } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
 import { registrarAuditoria } from "@/lib/auditoria";
 
-export type EstadoAccionExpediente = { error?: string; ok?: boolean };
+export type EstadoAccionExpediente = { error?: string; advertencia?: string; ok?: boolean };
+
+/** Coincide con el `check` de expedientes.estado_proceso (migración
+ *  20260823160001). Los tres distintos de en_tramite cierran el expediente. */
+const ESTADOS_PROCESO_VALIDOS = ["en_tramite", "desistido", "conciliado", "retirado"];
 
 async function puedeActuarSobreExpediente(expedienteId: string) {
   const actual = await getUsuarioActual();
@@ -94,6 +98,26 @@ export async function registrarEvento(
     // El trigger de OT-03 se encarga de cerrar el expediente si corresponde
     // (celebrado/retirado) y de insertar el evento "expediente_cerrado" — no
     // se duplica esa lógica aquí.
+  }
+
+  // Desistimiento, conciliación y retiro son ESTADOS del expediente (decisión
+  // del usuario del 2026-08-23), y los tres son terminales: el trigger de la
+  // migración 20260823160001 cierra el expediente e inserta el evento de cierre.
+  // Aquí solo se cambia el estado; el cierre no se duplica.
+  if (codigo === "estado_proceso_actualizado") {
+    const nuevoEstado = formData.get("estado_proceso") as string;
+    if (!ESTADOS_PROCESO_VALIDOS.includes(nuevoEstado)) {
+      return { error: "Debes seleccionar un estado válido del proceso" };
+    }
+    const { data: filas, error } = await supabase
+      .from("expedientes")
+      .update({ estado_proceso: nuevoEstado })
+      .eq("id", expedienteId)
+      .select("id");
+    if (error) return { error: `No se pudo actualizar el estado del proceso: ${error.message}` };
+    if (!filas?.length) {
+      return { error: "No tienes permiso para cambiar el estado de este expediente" };
+    }
   }
 
   const { error: errorEvento } = await supabase.from("eventos_expediente").insert({
@@ -246,5 +270,127 @@ export async function actualizarDatosGenerales(
   });
 
   revalidatePath(`/expedientes/${expedienteId}`);
+  return { ok: true };
+}
+
+/**
+ * Audiencia especial (Art. 262 y 263, Ley 402). A diferencia de la preliminar y
+ * la de fondo, no depende de una fase del proceso ni tiene ventana
+ * parametrizable: se convoca cuando surge el incidente que la motiva, así que no
+ * entra por `avanzarFase` y necesita su propia vía.
+ *
+ * Escritura sobre `audiencias` restringida al Administrador (migración
+ * 20260709090002): programar audiencias es acto del despacho.
+ */
+export async function programarAudienciaEspecial(
+  _prevState: EstadoAccionExpediente,
+  formData: FormData,
+): Promise<EstadoAccionExpediente> {
+  const actual = await getUsuarioActual();
+  if (actual?.rol !== "administrador") {
+    return { error: "Solo el Administrador puede programar audiencias" };
+  }
+
+  const expedienteId = formData.get("expediente_id") as string;
+  const fecha = (formData.get("fecha_programada") as string)?.trim();
+  const motivo = (formData.get("motivo") as string)?.trim();
+
+  if (!fecha || Number.isNaN(new Date(fecha).getTime())) {
+    return { error: "La fecha de la audiencia no es válida" };
+  }
+  if (!motivo) {
+    return { error: "El motivo es obligatorio: es lo que distingue una audiencia especial de otra" };
+  }
+  if (motivo.length > 300) {
+    return { error: "El motivo no puede pasar de 300 caracteres" };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("audiencias").insert({
+    expediente_id: expedienteId,
+    tipo: "especial",
+    fecha_programada: fecha,
+    motivo,
+    // Sin fecha mínima ni límite: la audiencia especial no tiene ventana legal
+    // parametrizable, se convoca por el incidente.
+  });
+
+  if (error) return { error: `No se pudo programar la audiencia: ${error.message}` };
+
+  await registrarAuditoria(actual.id, "programar_audiencia_especial", "expediente", expedienteId, {
+    fecha_programada: fecha,
+    motivo,
+  });
+
+  revalidatePath(`/expedientes/${expedienteId}`);
+  revalidatePath("/calendario");
+  return { ok: true };
+}
+
+/**
+ * Reprogramar una audiencia ya fijada. Antes solo se podía cambiar su estado
+ * (celebrada/suspendida/...), no la fecha, así que un aplazamiento no tenía cómo
+ * registrarse. Si la fecha nueva se sale de la ventana legal se avisa, no se
+ * bloquea: el mismo criterio que al programarla desde el avance de fase.
+ */
+export async function reprogramarAudiencia(
+  _prevState: EstadoAccionExpediente,
+  formData: FormData,
+): Promise<EstadoAccionExpediente> {
+  const actual = await getUsuarioActual();
+  if (actual?.rol !== "administrador") {
+    return { error: "Solo el Administrador puede reprogramar audiencias" };
+  }
+
+  const audienciaId = formData.get("audiencia_id") as string;
+  const expedienteId = formData.get("expediente_id") as string;
+  const nuevaFecha = (formData.get("nueva_fecha") as string)?.trim();
+
+  if (!audienciaId) return { error: "Audiencia inválida" };
+  if (!nuevaFecha || Number.isNaN(new Date(nuevaFecha).getTime())) {
+    return { error: "La fecha nueva no es válida" };
+  }
+
+  const supabase = await createClient();
+  const { data: audiencia } = await supabase
+    .from("audiencias")
+    .select("tipo, fecha_programada, fecha_minima_calculada, fecha_limite_calculada")
+    .eq("id", audienciaId)
+    .maybeSingle();
+
+  if (!audiencia) return { error: "No se encontró la audiencia" };
+  if (audiencia.fecha_programada.slice(0, 10) === nuevaFecha.slice(0, 10)) {
+    return { error: "La fecha nueva es la misma que la actual" };
+  }
+
+  const { data: filas, error } = await supabase
+    .from("audiencias")
+    .update({ fecha_programada: nuevaFecha })
+    .eq("id", audienciaId)
+    .select("id");
+
+  if (error) return { error: `No se pudo reprogramar: ${error.message}` };
+  if (!filas?.length) return { error: "No tienes permiso para reprogramar esta audiencia" };
+
+  await registrarAuditoria(actual.id, "reprogramar_audiencia", "expediente", expedienteId, {
+    audiencia_id: audienciaId,
+    tipo: audiencia.tipo,
+    antes: audiencia.fecha_programada,
+    despues: nuevaFecha,
+  });
+
+  revalidatePath(`/expedientes/${expedienteId}`);
+  revalidatePath("/calendario");
+
+  const desde = audiencia.fecha_minima_calculada?.slice(0, 10);
+  const hasta = audiencia.fecha_limite_calculada?.slice(0, 10);
+  const dia = nuevaFecha.slice(0, 10);
+  if (desde && hasta && (dia < desde || dia > hasta)) {
+    return {
+      ok: true,
+      advertencia: `Reprogramada, pero la fecha nueva queda fuera de la ventana legal (${desde} a ${hasta}).`,
+    };
+  }
+
   return { ok: true };
 }

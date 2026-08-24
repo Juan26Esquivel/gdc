@@ -39,7 +39,7 @@ export default async function DetalleExpedientePage({ params, searchParams }: Pr
        subtipos_proceso(nombre, plazo_contestacion_dias, plazo_audiencia_min_dias,
                         plazo_audiencia_max_dias, plazo_audiencia_fondo_min_dias,
                         plazo_audiencia_fondo_max_dias),
-       audiencias(tipo, fecha_programada, estado),
+       audiencias(id, tipo, fecha_programada, estado, motivo),
        expediente_fases(fase_id, fecha_inicio, fecha_fin, fases_proceso(id, nombre, orden)),
        asignaciones(activa, usuarios!asistente_id(id, nombre_completo))`,
     )
@@ -100,6 +100,16 @@ export default async function DetalleExpedientePage({ params, searchParams }: Pr
         expediente.audiencias.find((a) => a.tipo === "fondo")?.fecha_programada ?? null,
     },
   ].filter((v): v is NonNullable<typeof v> => Boolean(v));
+
+  const audienciasVista = [...expediente.audiencias]
+    .sort((a, b) => a.fecha_programada.localeCompare(b.fecha_programada))
+    .map((a) => ({
+      id: a.id,
+      tipo: a.tipo,
+      fechaProgramada: a.fecha_programada,
+      estado: a.estado,
+      motivo: a.motivo,
+    }));
 
   // Espeja exactamente lo que permiten las políticas de la migración
   // 20260823110001: el Administrador y el Juez del despacho pueden corregir los
@@ -268,6 +278,8 @@ export default async function DetalleExpedientePage({ params, searchParams }: Pr
           }))}
           embargo={embargo}
           ventanasAudiencia={ventanasAudiencia}
+          audiencias={audienciasVista}
+          esAdmin={usuario?.rol === "administrador"}
           puedeEditar={puedeEditarDatos}
         />
       )}
