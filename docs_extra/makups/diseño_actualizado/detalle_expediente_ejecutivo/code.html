@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Detalle — Expediente Ejecutivo — GDC</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    a { color: #0F766E; text-decoration: none; }
+    a:hover { color: #0B5C55; }
+    .app { display: flex; width: 1440px; min-height: 900px; background: #F7F7F5; font-family: 'IBM Plex Sans', sans-serif; color: #16171A; }
+    .side { width: 232px; flex-shrink: 0; background: #FFFFFF; border-right: 1px solid #E7E7E3; display: flex; flex-direction: column; padding: 24px 16px; gap: 28px; }
+    .brand { display: flex; align-items: center; gap: 10px; padding: 0 8px; }
+    .brand-mark { width: 32px; height: 32px; border-radius: 8px; background: #0F766E; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .brand-word { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 16px; letter-spacing: -0.01em; }
+    .brand-sub { font-size: 11px; color: #8A8C90; margin-top: -2px; }
+    .nav { display: flex; flex-direction: column; gap: 2px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; font-size: 13.5px; color: #52545A; font-weight: 500; }
+    .nav-item.active { background: #ECF6F3; color: #0F5F58; }
+    .nav-item svg { flex-shrink: 0; }
+    .side-foot { margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 10px 8px; border-top: 1px solid #EFEFEC; }
+    .avatar { width: 30px; height: 30px; border-radius: 999px; background: #E6E7E3; display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 600; color: #52545A; flex-shrink: 0; }
+    .main { flex: 1; padding: 24px 32px 32px; display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+    .breadcrumb { font-size: 12.5px; color: #9A9C9F; display: flex; align-items: center; gap: 6px; }
+    .header-row { display: flex; align-items: flex-start; justify-content: space-between; }
+    .header-left { display: flex; flex-direction: column; gap: 8px; }
+    .exp-num { font-family: 'IBM Plex Mono', monospace; font-size: 26px; font-weight: 500; }
+    .tag-row { display: flex; align-items: center; gap: 8px; }
+    .tag { padding: 4px 10px; border-radius: 7px; font-size: 11.5px; font-weight: 600; }
+    .tag-teal { background: #ECF6F3; color: #0F5F58; }
+    .tag-amber { background: #FEF3C7; color: #92400E; }
+    .tag-gray { background: #F1F1EE; color: #6B6D72; }
+    .header-actions { display: flex; align-items: center; gap: 10px; }
+    .btn-primary { display: flex; align-items: center; gap: 6px; background: #0F766E; color: #FFFFFF; border: none; border-radius: 9px; padding: 9px 14px; font-size: 13px; font-weight: 600; font-family: 'IBM Plex Sans', sans-serif; }
+    .btn-ghost { display: flex; align-items: center; gap: 6px; background: #FFFFFF; color: #3D3F44; border: 1px solid #E4E4E0; border-radius: 9px; padding: 9px 14px; font-size: 13px; font-weight: 600; font-family: 'IBM Plex Sans', sans-serif; }
+    .layout { display: grid; grid-template-columns: 2fr 1fr; gap: 18px; align-items: start; }
+    .col { display: flex; flex-direction: column; gap: 18px; }
+    .card { background: #FFFFFF; border: 1px solid #E9E9E5; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+    .card-title { font-family: 'Space Grotesk', sans-serif; font-size: 14.5px; font-weight: 600; }
+    .new-pill { display: inline-flex; align-items: center; margin-left: 8px; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 700; letter-spacing: 0.02em; color: #0F766E; border: 1px solid #A6DED4; background: #F3FBF9; }
+    .field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 20px; }
+    .field-label { font-size: 11px; color: #9A9C9F; font-weight: 500; margin-bottom: 3px; }
+    .field-value { font-size: 13.5px; font-weight: 500; }
+    .field-value.mono { font-family: 'IBM Plex Mono', monospace; }
+    .amount-check { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #15803D; font-weight: 500; margin-top: 4px; }
+    .stepper { display: flex; align-items: flex-start; padding: 6px 4px; }
+    .step { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1; position: relative; }
+    .step-line { position: absolute; top: 9px; left: 50%; width: 100%; height: 2px; background: #E4E4E0; z-index: 0; }
+    .step:last-child .step-line { display: none; }
+    .step-dot { width: 19px; height: 19px; border-radius: 999px; z-index: 1; display: flex; align-items: center; justify-content: center; }
+    .step-dot.done { background: #0F766E; }
+    .step-dot.current { background: #FFFFFF; border: 2.5px solid #0F766E; }
+    .step-dot.pending { background: #FFFFFF; border: 2px solid #E4E4E0; }
+    .step-label { font-size: 11px; font-weight: 600; text-align: center; }
+    .step-date { font-size: 10.5px; color: #9A9C9F; text-align: center; }
+    .obs-label-row { display: flex; align-items: center; }
+    .obs-box { border: 1px solid #E4E4E0; border-radius: 9px; padding: 12px 14px; font-size: 13.5px; font-weight: 500; background: #FBFBFA; }
+    .notes-box { border: 1px solid #E4E4E0; border-radius: 9px; padding: 12px 14px; font-size: 12.5px; color: #6B6D72; background: #FBFBFA; min-height: 52px; }
+    .assign-row { display: flex; align-items: center; justify-content: space-between; }
+    .assign-person { display: flex; align-items: center; gap: 10px; }
+    .doc-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #F1F1EE; }
+    .doc-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .doc-left { display: flex; align-items: center; gap: 9px; font-size: 12.5px; font-weight: 500; }
+    .badge { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 999px; font-size: 10.5px; font-weight: 600; }
+    .badge-green { background: #DCFCE7; color: #15803D; }
+    .badge-amber { background: #FEF3C7; color: #92400E; }
+    .audit-item { font-size: 11.5px; color: #6B6D72; padding: 8px 0; border-bottom: 1px solid #F1F1EE; }
+    .audit-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .audit-item b { color: #16171A; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="side">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="13" x2="15" y2="13"></line><line x1="9" y1="17" x2="15" y2="17"></line></svg>
+      </div>
+      <div>
+        <div class="brand-word">GDC</div>
+        <div class="brand-sub">Segundo Municipal Civil</div>
+      </div>
+    </div>
+    <div class="nav">
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>Panel del Juez</div>
+      <div class="nav-item active"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>Expedientes</div>
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>Documentos</div>
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>Calendario</div>
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>KPIs y Reportes</div>
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>Administración</div>
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>Auditoría</div>
+    </div>
+    <div class="side-foot">
+      <div class="avatar">MP</div>
+      <div>
+        <div style="font-size:12.5px; font-weight:600;">Miguel Pinzón</div>
+        <div style="font-size:11px; color:#9A9C9F;">Asistente</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="breadcrumb">
+      <a href="#">Expedientes</a>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+      <span>1016442026</span>
+    </div>
+
+    <div class="header-row">
+      <div class="header-left">
+        <div class="exp-num">1016442026</div>
+        <div class="tag-row">
+          <span class="tag tag-teal">Ejecución · Mandamiento de pago</span>
+          <span class="tag tag-amber">Agendado</span>
+          <span class="tag tag-gray">Segundo Municipal · Municipal</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn-ghost">Reasignar</button>
+        <button class="btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+          Generar documento
+        </button>
+      </div>
+    </div>
+
+    <div class="layout">
+      <div class="col">
+        <div class="card">
+          <div class="card-title">Datos generales</div>
+          <div class="field-grid">
+            <div>
+              <div class="field-label">Físico o electrónico <span class="new-pill">Nuevo</span></div>
+              <div class="field-value">Electrónico</div>
+            </div>
+            <div>
+              <div class="field-label">Municipal o circuito <span class="new-pill">Nuevo</span></div>
+              <div class="field-value">Municipal</div>
+            </div>
+            <div>
+              <div class="field-label">Despacho del juez <span class="new-pill">Nuevo</span></div>
+              <div class="field-value">Segundo Municipal</div>
+            </div>
+            <div>
+              <div class="field-label">Fecha de presentación <span class="new-pill">Nuevo</span></div>
+              <div class="field-value">06/07/2026</div>
+            </div>
+            <div>
+              <div class="field-label">Fecha de admisión</div>
+              <div class="field-value">09/07/2026</div>
+            </div>
+            <div>
+              <div class="field-label">Fecha de notificación</div>
+              <div class="field-value">21/07/2026</div>
+            </div>
+            <div>
+              <div class="field-label">Monto de mandamiento de pago</div>
+              <div class="field-value mono">B/. 5,096.96</div>
+              <div class="amount-check">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                Dentro del tope de B/. 10,000.00
+              </div>
+            </div>
+            <div>
+              <div class="field-label">Es lanzamiento</div>
+              <div class="field-value">No</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Línea de trámite</div>
+          <div class="stepper">
+            <div class="step"><div class="step-line"></div><div class="step-dot done"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div><div class="step-label">Presentación</div><div class="step-date">06/07</div></div>
+            <div class="step"><div class="step-line"></div><div class="step-dot done"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div><div class="step-label">Admisión</div><div class="step-date">09/07</div></div>
+            <div class="step"><div class="step-line"></div><div class="step-dot done"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div><div class="step-label">Notificación</div><div class="step-date">21/07</div></div>
+            <div class="step"><div class="step-line"></div><div class="step-dot current"></div><div class="step-label">Decretado embargo</div><div class="step-date">En curso</div></div>
+            <div class="step"><div class="step-line"></div><div class="step-dot pending"></div><div class="step-label">Edicto emplazatorio</div><div class="step-date">—</div></div>
+            <div class="step"><div class="step-dot pending"></div><div class="step-label">Publicación</div><div class="step-date">—</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="obs-label-row">
+            <div class="card-title" style="margin:0;">Estado y observación <span class="new-pill">Nuevo</span></div>
+          </div>
+          <div>
+            <div class="field-label">Equivalente a la columna "Observación" del cuadro Excel — hoy no existe en el modelo de datos de GDC</div>
+            <div class="obs-box">PENDIENTE OFICIO DE EMBARGO</div>
+          </div>
+          <div>
+            <div class="field-label">Notas <span class="new-pill">Nuevo</span></div>
+            <div class="notes-box">Sin notas registradas.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="card">
+          <div class="card-title">Asignación</div>
+          <div class="assign-row">
+            <div class="assign-person">
+              <div class="avatar">MP</div>
+              <div>
+                <div style="font-size:13px; font-weight:600;">Miguel Pinzón</div>
+                <div style="font-size:11px; color:#9A9C9F;">Asistente</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Documentos generados</div>
+          <div class="doc-item">
+            <div class="doc-left">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B6D72" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+              Auto — Decreto de embargo
+            </div>
+            <span class="badge badge-green">Confirmado</span>
+          </div>
+          <div class="doc-item">
+            <div class="doc-left">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B6D72" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+              Oficio — Notificación embargo
+            </div>
+            <span class="badge badge-amber">En corrección</span>
+          </div>
+          <a href="#" style="font-size:12px; font-weight:600;">Ver todos los documentos →</a>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Auditoría reciente</div>
+          <div class="audit-item"><b>Miguel Pinzón</b> generó el documento "Oficio — Notificación embargo" · hace 2 h</div>
+          <div class="audit-item"><b>Juez de Prueba</b> confirmó "Auto — Decreto de embargo" · ayer</div>
+          <div class="audit-item"><b>Sistema</b> calculó fecha límite de audiencia · 21/07/2026</div>
+          <a href="#" style="font-size:12px; font-weight:600;">Ver historial completo →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

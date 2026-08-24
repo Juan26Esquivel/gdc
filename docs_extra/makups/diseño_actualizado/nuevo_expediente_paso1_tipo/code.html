@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nuevo expediente — Paso 1: Tipo de proceso — GDC</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    a { color: #0F766E; text-decoration: none; }
+    .app { display: flex; width: 1440px; min-height: 900px; background: #F7F7F5; font-family: 'IBM Plex Sans', sans-serif; color: #16171A; }
+    .side { width: 232px; flex-shrink: 0; background: #FFFFFF; border-right: 1px solid #E7E7E3; display: flex; flex-direction: column; padding: 24px 16px; gap: 28px; }
+    .brand { display: flex; align-items: center; gap: 10px; padding: 0 8px; }
+    .brand-mark { width: 32px; height: 32px; border-radius: 8px; background: #0F766E; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .brand-word { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 16px; letter-spacing: -0.01em; }
+    .brand-sub { font-size: 11px; color: #8A8C90; margin-top: -2px; }
+    .nav { display: flex; flex-direction: column; gap: 2px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; font-size: 13.5px; color: #52545A; font-weight: 500; }
+    .nav-item.active { background: #ECF6F3; color: #0F5F58; }
+    .side-foot { margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 10px 8px; border-top: 1px solid #EFEFEC; }
+    .avatar { width: 30px; height: 30px; border-radius: 999px; background: #E6E7E3; display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 600; color: #52545A; flex-shrink: 0; }
+    .main { flex: 1; padding: 24px 32px 32px; display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+    .breadcrumb { font-size: 12.5px; color: #9A9C9F; display: flex; align-items: center; gap: 6px; }
+    .stepper { display: flex; align-items: center; gap: 10px; }
+    .step-pill { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; color: #B4B6B9; }
+    .step-pill.current { color: #0F766E; }
+    .step-num { width: 20px; height: 20px; border-radius: 999px; display: flex; align-items: center; justify-content: center; font-size: 11px; background: #F1F1EE; color: #9A9C9F; }
+    .step-pill.current .step-num { background: #0F766E; color: #fff; }
+    .step-sep { width: 28px; height: 1px; background: #E4E4E0; }
+    .hero { display: flex; flex-direction: column; gap: 6px; align-items: center; text-align: center; padding: 8px 0 4px; }
+    .hero-title { font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 600; }
+    .hero-sub { font-size: 13.5px; color: #6B6D72; max-width: 560px; }
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; max-width: 1040px; margin: 0 auto; width: 100%; }
+    .type-card { background: #FFFFFF; border: 1.5px solid #E9E9E5; border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 12px; cursor: pointer; }
+    .type-card.selected { border-color: #0F766E; box-shadow: 0 0 0 3px #E6F4F1; }
+    .type-card.disabled { opacity: 0.6; }
+    .type-icon { width: 40px; height: 40px; border-radius: 10px; background: #ECF6F3; display: flex; align-items: center; justify-content: center; }
+    .type-icon.gray { background: #F1F1EE; }
+    .type-name { font-family: 'Space Grotesk', sans-serif; font-size: 15.5px; font-weight: 600; }
+    .type-desc { font-size: 12px; color: #8A8C90; line-height: 1.45; flex: 1; }
+    .type-foot { display: flex; align-items: center; justify-content: space-between; }
+    .field-count { font-size: 11px; color: #9A9C9F; font-weight: 500; }
+    .pending-tag { font-size: 10.5px; font-weight: 600; color: #92400E; background: #FEF3C7; padding: 3px 8px; border-radius: 999px; }
+    .check-circle { width: 20px; height: 20px; border-radius: 999px; background: #0F766E; display: flex; align-items: center; justify-content: center; }
+    .actions { display: flex; align-items: center; justify-content: center; gap: 10px; padding-top: 8px; }
+    .btn-primary { background: #0F766E; color: #FFFFFF; border: none; border-radius: 9px; padding: 11px 22px; font-size: 13.5px; font-weight: 600; font-family: 'IBM Plex Sans', sans-serif; }
+    .btn-ghost { background: #FFFFFF; color: #3D3F44; border: 1px solid #E4E4E0; border-radius: 9px; padding: 11px 22px; font-size: 13.5px; font-weight: 600; font-family: 'IBM Plex Sans', sans-serif; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="side">
+    <div class="brand">
+      <div class="brand-mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="13" x2="15" y2="13"></line><line x1="9" y1="17" x2="15" y2="17"></line></svg></div>
+      <div><div class="brand-word">GDC</div><div class="brand-sub">Segundo Municipal Civil</div></div>
+    </div>
+    <div class="nav">
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>Panel del Juez</div>
+      <div class="nav-item active"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>Expedientes</div>
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>Documentos</div>
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>Calendario</div>
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>KPIs y Reportes</div>
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>Administración</div>
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>Auditoría</div>
+    </div>
+    <div class="side-foot">
+      <div class="avatar">MP</div>
+      <div><div style="font-size:12.5px; font-weight:600;">Miguel Pinzón</div><div style="font-size:11px; color:#9A9C9F;">Asistente</div></div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="breadcrumb">
+      <a href="#">Expedientes</a>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+      <span>Nuevo expediente</span>
+    </div>
+
+    <div class="stepper" style="justify-content:center;">
+      <div class="step-pill current"><div class="step-num">1</div>Tipo de proceso</div>
+      <div class="step-sep"></div>
+      <div class="step-pill"><div class="step-num">2</div>Datos del expediente</div>
+      <div class="step-sep"></div>
+      <div class="step-pill"><div class="step-num">3</div>Confirmación</div>
+    </div>
+
+    <div class="hero">
+      <div class="hero-title">¿Qué tipo de expediente vas a registrar?</div>
+      <div class="hero-sub">Cada tipo de proceso tiene sus propios campos, fechas y plazos — selecciona uno para continuar. El formulario del siguiente paso se ajusta automáticamente.</div>
+    </div>
+
+    <div class="grid">
+      <div class="type-card">
+        <div class="type-icon"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg></div>
+        <div class="type-name">Declarativo · Ordinario</div>
+        <div class="type-desc">Reclamos entre partes de mayor cuantía (contractual, daños y perjuicios). Audiencia preliminar 20–60 días.</div>
+        <div class="type-foot"><span class="field-count">12 campos</span></div>
+      </div>
+
+      <div class="type-card">
+        <div class="type-icon"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg></div>
+        <div class="type-name">Declarativo · Sumario</div>
+        <div class="type-desc">Trámites breves: lanzamientos por intruso o por mora. Audiencia preliminar 10–20 días.</div>
+        <div class="type-foot"><span class="field-count">12 campos</span></div>
+      </div>
+
+      <div class="type-card selected">
+        <div class="type-icon"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg></div>
+        <div class="type-name">Ejecución</div>
+        <div class="type-desc">Cobro de pagarés y mandamientos de pago, con embargo y edicto emplazatorio.</div>
+        <div class="type-foot"><span class="field-count">14 campos</span><div class="check-circle"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div></div>
+      </div>
+
+      <div class="type-card">
+        <div class="type-icon"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></div>
+        <div class="type-name">Jurisdicción voluntaria</div>
+        <div class="type-desc">Sucesiones testadas e intestadas, con edicto emplazatorio y tipos de bienes.</div>
+        <div class="type-foot"><span class="field-count">10 campos</span></div>
+      </div>
+
+      <div class="type-card">
+        <div class="type-icon"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></div>
+        <div class="type-name">Matrimonio</div>
+        <div class="type-desc">Trámites matrimoniales dentro o fuera del despacho. Se rige por el Código de la Familia.</div>
+        <div class="type-foot"><span class="field-count">6 campos</span></div>
+      </div>
+
+      <div class="type-card disabled">
+        <div class="type-icon gray"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#6B6D72" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></div>
+        <div class="type-name">Secuestro</div>
+        <div class="type-desc">Detectado en el cuadro actual del despacho, sin catalogar todavía como tipo de proceso propio.</div>
+        <div class="type-foot"><span class="pending-tag">Pendiente definir en catálogo</span></div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn-ghost">Cancelar</button>
+      <button class="btn-primary">Continuar</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

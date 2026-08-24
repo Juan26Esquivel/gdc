@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel Principal del Juez — GDC</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    a { color: #0F766E; text-decoration: none; }
+    a:hover { color: #0B5C55; }
+    .app { display: flex; width: 1440px; min-height: 1180px; background: #F7F7F5; font-family: 'IBM Plex Sans', sans-serif; color: #16171A; }
+    .side { width: 232px; flex-shrink: 0; background: #FFFFFF; border-right: 1px solid #E7E7E3; display: flex; flex-direction: column; padding: 24px 16px; gap: 28px; }
+    .brand { display: flex; align-items: center; gap: 10px; padding: 0 8px; }
+    .brand-mark { width: 32px; height: 32px; border-radius: 8px; background: #0F766E; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .brand-word { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 16px; letter-spacing: -0.01em; }
+    .brand-sub { font-size: 11px; color: #8A8C90; margin-top: -2px; }
+    .nav { display: flex; flex-direction: column; gap: 2px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; font-size: 13.5px; color: #52545A; font-weight: 500; }
+    .nav-item.active { background: #ECF6F3; color: #0F5F58; }
+    .nav-item svg { flex-shrink: 0; }
+    .side-foot { margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 10px 8px; border-top: 1px solid #EFEFEC; }
+    .avatar { width: 30px; height: 30px; border-radius: 999px; background: #E6E7E3; display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 600; color: #52545A; flex-shrink: 0; }
+    .main { flex: 1; padding: 24px 32px 32px; display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .crumb { font-family: 'Space Grotesk', sans-serif; font-size: 21px; font-weight: 600; }
+    .crumb-sub { font-size: 12.5px; color: #9A9C9F; margin-top: 2px; }
+    .despacho-pill { display: flex; align-items: center; gap: 6px; background: #FFFFFF; border: 1px solid #E4E4E0; border-radius: 9px; padding: 8px 12px; font-size: 12.5px; font-weight: 500; color: #3D3F44; }
+    .card { background: #FFFFFF; border: 1px solid #E9E9E5; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+    .card-title-row { display: flex; align-items: center; justify-content: space-between; }
+    .card-title { font-family: 'Space Grotesk', sans-serif; font-size: 14.5px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .card-hint { font-size: 11.5px; color: #9A9C9F; }
+    .filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .pill { padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 500; border: 1px solid #E4E4E0; background: #FFFFFF; color: #52545A; }
+    .pill.active { background: #16171A; color: #FFFFFF; border-color: #16171A; }
+
+    .bar-list { display: flex; flex-direction: column; gap: 12px; }
+    .bar-row { display: grid; grid-template-columns: 170px 1fr 40px; align-items: center; gap: 12px; }
+    .bar-name { font-size: 12.5px; font-weight: 500; }
+    .bar-track { height: 10px; border-radius: 999px; background: #F1F1EE; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 999px; background: #0F766E; }
+    .bar-count { font-family: 'IBM Plex Mono', monospace; font-size: 12px; text-align: right; color: #3D3F44; }
+
+    .row2 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+
+    .legend { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+    .legend-chip { border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; }
+    .legend-band { font-size: 11px; font-weight: 600; }
+    .legend-value { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 600; }
+    .legend-verde { background: #DCFCE7; color: #15803D; }
+    .legend-amarillo { background: #FEF9C3; color: #854D0E; }
+    .legend-ambar { background: #FFEDD5; color: #9A3412; }
+    .legend-rojo { background: #FEE2E2; color: #B91C1C; }
+    .legend-negro { background: #18181B; color: #F4F4F5; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #9A9C9F; font-weight: 600; padding: 11px 12px; border-bottom: 1px solid #EFEFEC; }
+    td { padding: 12px 12px; border-bottom: 1px solid #F1F1EE; font-size: 12.5px; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    .num { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #3D3F44; }
+    .tipo-tag { font-size: 12px; font-weight: 500; }
+    .tipo-sub { font-size: 11px; color: #9A9C9F; }
+    .date-editable { display: flex; align-items: center; gap: 6px; }
+    .pencil-btn { display: flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 5px; border: 1px solid #E4E4E0; color: #9A9C9F; flex-shrink: 0; }
+
+    .badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+    .badge-verde { background: #DCFCE7; color: #15803D; }
+    .badge-amarillo { background: #FEF9C3; color: #854D0E; }
+    .badge-ambar { background: #FFEDD5; color: #9A3412; }
+    .badge-rojo { background: #FEE2E2; color: #B91C1C; }
+    .badge-negro { background: #18181B; color: #F4F4F5; }
+    .dot { width: 6px; height: 6px; border-radius: 999px; background: currentColor; }
+
+    .simple-list { display: flex; flex-direction: column; }
+    .simple-item { display: flex; align-items: center; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid #F1F1EE; gap: 10px; }
+    .simple-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .simple-left { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .simple-title { font-size: 12.5px; font-weight: 600; }
+    .simple-sub { font-size: 11px; color: #9A9C9F; }
+    .simple-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .warn-text { display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: #B45309; font-weight: 600; white-space: nowrap; }
+    .info-text { font-size: 11.5px; color: #6B6D72; font-weight: 600; white-space: nowrap; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="side">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="13" x2="15" y2="13"></line><line x1="9" y1="17" x2="15" y2="17"></line></svg>
+      </div>
+      <div>
+        <div class="brand-word">GDC</div>
+        <div class="brand-sub">Segundo Municipal Civil</div>
+      </div>
+    </div>
+    <div class="nav">
+      <div class="nav-item active"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>Panel del Juez</div>
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>Expedientes</div>
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>Documentos</div>
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>Calendario</div>
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>KPIs y Reportes</div>
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>Administración</div>
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>Auditoría</div>
+    </div>
+    <div class="side-foot">
+      <div class="avatar">JV</div>
+      <div>
+        <div style="font-size:12.5px; font-weight:600;">Juez de Prueba</div>
+        <div style="font-size:11px; color:#9A9C9F;">Juez</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="crumb">Panel del Juez</div>
+        <div class="crumb-sub">Actualizado en tiempo real · Segundo Municipal Civil</div>
+      </div>
+      <div class="despacho-pill">
+        Despacho: Segundo Municipal Civil
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title-row">
+        <div class="card-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+          Expedientes activos por tipo de proceso
+        </div>
+        <div class="card-hint">160 expedientes activos</div>
+      </div>
+      <div class="bar-list">
+        <div class="bar-row"><div class="bar-name">Declarativo · Ordinario</div><div class="bar-track"><div class="bar-fill" style="width:100%;"></div></div><div class="bar-count">45</div></div>
+        <div class="bar-row"><div class="bar-name">Declarativo · Sumario</div><div class="bar-track"><div class="bar-fill" style="width:84%;"></div></div><div class="bar-count">38</div></div>
+        <div class="bar-row"><div class="bar-name">Ejecución</div><div class="bar-track"><div class="bar-fill" style="width:67%;"></div></div><div class="bar-count">30</div></div>
+        <div class="bar-row"><div class="bar-name">Jurisdicción voluntaria</div><div class="bar-track"><div class="bar-fill" style="width:56%;"></div></div><div class="bar-count">25</div></div>
+        <div class="bar-row"><div class="bar-name">Matrimonio</div><div class="bar-track"><div class="bar-fill" style="width:40%;"></div></div><div class="bar-count">18</div></div>
+        <div class="bar-row"><div class="bar-name">Secuestro</div><div class="bar-track"><div class="bar-fill" style="width:9%; background:#9A9C9F;"></div></div><div class="bar-count">4</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title-row">
+        <div class="card-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          Alertas por tiempo en el sistema
+        </div>
+        <div class="card-hint">Verde ≤3 meses · Amarillo ≤6 · Ámbar ≤9 · Rojo ≤12 · Negro &gt;12</div>
+      </div>
+      <div class="legend">
+        <div class="legend-chip legend-verde"><div class="legend-band">Verde · ≤ 3 meses</div><div class="legend-value">52</div></div>
+        <div class="legend-chip legend-amarillo"><div class="legend-band">Amarillo · ≤ 6 meses</div><div class="legend-value">31</div></div>
+        <div class="legend-chip legend-ambar"><div class="legend-band">Ámbar · ≤ 9 meses</div><div class="legend-value">18</div></div>
+        <div class="legend-chip legend-rojo"><div class="legend-band">Rojo · ≤ 12 meses</div><div class="legend-value">9</div></div>
+        <div class="legend-chip legend-negro"><div class="legend-band">Negro · &gt; 12 meses</div><div class="legend-value">4</div></div>
+      </div>
+      <div class="filters">
+        <div class="pill active">Todos los tipos</div>
+        <div class="pill">Declarativo</div>
+        <div class="pill">Ejecución</div>
+        <div class="pill">Jurisdicción voluntaria</div>
+        <div class="pill">Matrimonio</div>
+        <div class="pill">Secuestro</div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Nº expediente</th>
+            <th>Tipo de proceso</th>
+            <th>Fase actual</th>
+            <th>Fecha de registro</th>
+            <th>Tiempo en el sistema</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="num">1002332025</td>
+            <td><div class="tipo-tag">Ejecución</div></td>
+            <td>Notificación</td>
+            <td><div class="date-editable">14/03/2025 <div class="pencil-btn"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"></path></svg></div></div></td>
+            <td><span class="badge badge-negro"><span class="dot"></span>17 meses</span></td>
+          </tr>
+          <tr>
+            <td class="num">1004552025</td>
+            <td><div class="tipo-tag">Declarativo</div><div class="tipo-sub">Ordinario</div></td>
+            <td>Admisión</td>
+            <td><div class="date-editable">02/06/2025 <div class="pencil-btn"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"></path></svg></div></div></td>
+            <td><span class="badge badge-rojo"><span class="dot"></span>11 meses</span></td>
+          </tr>
+          <tr>
+            <td class="num">1009882025</td>
+            <td><div class="tipo-tag">Jurisdicción voluntaria</div></td>
+            <td>Audiencia preliminar</td>
+            <td><div class="date-editable">20/08/2025 <div class="pencil-btn"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"></path></svg></div></div></td>
+            <td><span class="badge badge-ambar"><span class="dot"></span>8 meses</span></td>
+          </tr>
+          <tr>
+            <td class="num">1015672025</td>
+            <td><div class="tipo-tag">Ejecución</div></td>
+            <td>Notificación</td>
+            <td><div class="date-editable">10/11/2025 <div class="pencil-btn"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"></path></svg></div></div></td>
+            <td><span class="badge badge-amarillo"><span class="dot"></span>5 meses</span></td>
+          </tr>
+          <tr>
+            <td class="num">1021092026</td>
+            <td><div class="tipo-tag">Declarativo</div><div class="tipo-sub">Sumario</div></td>
+            <td>Admisión</td>
+            <td><div class="date-editable">15/02/2026 <div class="pencil-btn"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"></path></svg></div></div></td>
+            <td><span class="badge badge-verde"><span class="dot"></span>2 meses</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="row2">
+      <div class="card">
+        <div class="card-title-row">
+          <div class="card-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 3"></path><circle cx="12" cy="12" r="10"></circle></svg>
+            Movimientos sin trabajar
+          </div>
+          <div class="card-hint">Sin eventos registrados · umbral 30 días</div>
+        </div>
+        <div class="simple-list">
+          <div class="simple-item">
+            <div class="simple-left"><div class="simple-title">1002332025 · Ejecución</div><div class="simple-sub">Fase actual: Notificación</div></div>
+            <div class="simple-right"><div class="warn-text"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>63 días</div></div>
+          </div>
+          <div class="simple-item">
+            <div class="simple-left"><div class="simple-title">1044782025 · Declarativo Ordinario</div><div class="simple-sub">Fase actual: Audiencia preliminar</div></div>
+            <div class="simple-right"><div class="warn-text"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>41 días</div></div>
+          </div>
+          <div class="simple-item">
+            <div class="simple-left"><div class="simple-title">1071232025 · Jurisdicción voluntaria</div><div class="simple-sub">Fase actual: Admisión</div></div>
+            <div class="simple-right"><div class="warn-text"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>38 días</div></div>
+          </div>
+          <div class="simple-item">
+            <div class="simple-left"><div class="simple-title">1009882025 · Jurisdicción voluntaria</div><div class="simple-sub">Fase actual: Audiencia preliminar</div></div>
+            <div class="simple-right"><div class="warn-text"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>35 días</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title-row">
+          <div class="card-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+            Pendientes de notificar tras admisión
+          </div>
+          <div class="card-hint">5 expedientes</div>
+        </div>
+        <div class="simple-list">
+          <div class="simple-item">
+            <div class="simple-left"><div class="simple-title">1061132026 · Declarativo Sumario</div><div class="simple-sub">Admitido 17/08/2026</div></div>
+            <div class="simple-right"><div class="info-text">6 días</div><div class="avatar" style="width:24px; height:24px; font-size:9.5px;">JV</div></div>
+          </div>
+          <div class="simple-item">
+            <div class="simple-left"><div class="simple-title">1049432026 · Declarativo Sumario</div><div class="simple-sub">Admitido 14/08/2026</div></div>
+            <div class="simple-right"><div class="info-text">9 días</div><div class="avatar" style="width:24px; height:24px; font-size:9.5px;">MP</div></div>
+          </div>
+          <div class="simple-item">
+            <div class="simple-left"><div class="simple-title">1088162026 · Ejecución</div><div class="simple-sub">Admitido 20/08/2026</div></div>
+            <div class="simple-right"><div class="info-text">3 días</div><div class="avatar" style="width:24px; height:24px; font-size:9.5px;">JV</div></div>
+          </div>
+          <div class="simple-item">
+            <div class="simple-left"><div class="simple-title">1024532026 · Jurisdicción voluntaria</div><div class="simple-sub">Admitido 15/08/2026</div></div>
+            <div class="simple-right"><div class="info-text">8 días</div><div class="avatar" style="width:24px; height:24px; font-size:9.5px;">MP</div></div>
+          </div>
+          <div class="simple-item">
+            <div class="simple-left"><div class="simple-title">1033852026 · Ejecución</div><div class="simple-sub">Admitido 08/08/2026</div></div>
+            <div class="simple-right"><div class="warn-text">15 días</div><div class="avatar" style="width:24px; height:24px; font-size:9.5px;">AR</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title-row">
+          <div class="card-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H8l-4 4z"></path><line x1="8" y1="9" x2="16" y2="9"></line><line x1="8" y1="13" x2="13" y2="13"></line></svg>
+            Edictos sin publicar (Sucesiones)
+          </div>
+          <div class="card-hint">Más de 30 días desde el edicto</div>
+        </div>
+        <div class="simple-list">
+          <div class="simple-item">
+            <div class="simple-left"><div class="simple-title">1024532025 · Sucesión intestada</div><div class="simple-sub">Edicto emitido 10/07/2026</div></div>
+            <div class="simple-right"><div class="warn-text"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>44 días</div></div>
+          </div>
+          <div class="simple-item">
+            <div class="simple-left"><div class="simple-title">1032922026 · Sucesión testada</div><div class="simple-sub">Edicto emitido 24/07/2026</div></div>
+            <div class="simple-right"><div class="warn-text"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>30 días</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

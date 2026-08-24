@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reglas de cierre por tipo de proceso — GDC</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    a { color: #0F766E; text-decoration: none; }
+    .app { display: flex; width: 1440px; min-height: 1080px; background: #F7F7F5; font-family: 'IBM Plex Sans', sans-serif; color: #16171A; }
+    .side { width: 232px; flex-shrink: 0; background: #FFFFFF; border-right: 1px solid #E7E7E3; display: flex; flex-direction: column; padding: 24px 16px; gap: 28px; }
+    .brand { display: flex; align-items: center; gap: 10px; padding: 0 8px; }
+    .brand-mark { width: 32px; height: 32px; border-radius: 8px; background: #0F766E; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .brand-word { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 16px; letter-spacing: -0.01em; }
+    .brand-sub { font-size: 11px; color: #8A8C90; margin-top: -2px; }
+    .nav { display: flex; flex-direction: column; gap: 2px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; font-size: 13.5px; color: #52545A; font-weight: 500; }
+    .nav-item.active { background: #ECF6F3; color: #0F5F58; }
+    .side-foot { margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 10px 8px; border-top: 1px solid #EFEFEC; }
+    .avatar { width: 30px; height: 30px; border-radius: 999px; background: #E6E7E3; display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 600; color: #52545A; flex-shrink: 0; }
+    .main { flex: 1; padding: 24px 32px 32px; display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+    .breadcrumb { font-size: 12.5px; color: #9A9C9F; display: flex; align-items: center; gap: 6px; }
+    .hero { display: flex; flex-direction: column; gap: 6px; }
+    .hero-title { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 600; }
+    .hero-sub { font-size: 13px; color: #6B6D72; max-width: 800px; line-height: 1.5; }
+    .global-note { display: flex; gap: 10px; background: #F3FBF9; border: 1.5px solid #A6DED4; border-radius: 10px; padding: 14px 16px; }
+    .global-note svg { flex-shrink: 0; margin-top: 2px; }
+    .global-note-title { font-size: 12.5px; font-weight: 600; color: #0F5F58; margin-bottom: 3px; }
+    .global-note-text { font-size: 12px; color: #3D6F68; line-height: 1.5; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .rule-card { background: #FFFFFF; border: 1px solid #E9E9E5; border-radius: 12px; padding: 22px; display: flex; flex-direction: column; gap: 14px; }
+    .rule-head { display: flex; align-items: center; gap: 10px; }
+    .rule-icon { width: 34px; height: 34px; border-radius: 9px; background: #ECF6F3; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .rule-title { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 600; }
+    .rule-body { font-size: 12.5px; color: #52545A; line-height: 1.6; }
+    .rule-body b { color: #16171A; }
+    .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .doc-chip { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: #F1F1EE; color: #52545A; }
+    .feature-list { display: flex; flex-direction: column; gap: 8px; margin-top: 2px; }
+    .feature-item { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: #52545A; line-height: 1.5; }
+    .feature-item svg { flex-shrink: 0; margin-top: 3px; color: #0F766E; }
+    .alert-note { display: flex; gap: 8px; background: #FFFBF0; border: 1px solid #FDE9B8; border-radius: 8px; padding: 10px 12px; font-size: 11.5px; color: #92400E; line-height: 1.5; }
+    .alert-note svg { flex-shrink: 0; margin-top: 1px; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="side">
+    <div class="brand">
+      <div class="brand-mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="13" x2="15" y2="13"></line><line x1="9" y1="17" x2="15" y2="17"></line></svg></div>
+      <div><div class="brand-word">GDC</div><div class="brand-sub">Segundo Municipal Civil</div></div>
+    </div>
+    <div class="nav">
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>Panel del Juez</div>
+      <div class="nav-item active"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>Expedientes</div>
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>Documentos</div>
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>Calendario</div>
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>KPIs y Reportes</div>
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>Administración</div>
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>Auditoría</div>
+    </div>
+    <div class="side-foot">
+      <div class="avatar">MP</div>
+      <div><div style="font-size:12.5px; font-weight:600;">Miguel Pinzón</div><div style="font-size:11px; color:#9A9C9F;">Asistente</div></div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="breadcrumb">
+      <a href="#">Administración</a>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+      <span>Reglas de cierre por tipo de proceso</span>
+    </div>
+
+    <div class="hero">
+      <div class="hero-title">Cómo culmina cada tipo de expediente</div>
+      <div class="hero-sub">Cada grupo de procesos cierra el expediente de una forma distinta. Esta pantalla documenta la regla que aplica "Registrar evento" (ver "Actualización de eventos") para saber cuándo ofrecer el toggle de culminación y qué campos pedir.</div>
+    </div>
+
+    <div class="global-note">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+      <div>
+        <div class="global-note-title">Regla general — aplica a los 4 grupos por igual</div>
+        <div class="global-note-text">Todo expediente activo necesita algún evento registrado dentro de un umbral de días (30 por defecto, configurable por el Administrador en Administración → Configuración general). Superado el umbral sin movimiento, aparece en "Movimientos sin trabajar" del Panel del Juez.</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="rule-card">
+        <div class="rule-head">
+          <div class="rule-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg></div>
+          <div class="rule-title">Declarativo — Ordinarios y Sumarios</div>
+        </div>
+        <div class="rule-body">Culmina con uno de estos tres documentos:</div>
+        <div class="chip-row">
+          <span class="doc-chip">Sentencia</span>
+          <span class="doc-chip">Acuerdo de mediación</span>
+          <span class="doc-chip">Auto</span>
+        </div>
+        <div class="feature-list">
+          <div class="feature-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Al generar cualquiera de los tres, se puede dejar una <b>observación</b> libre.</div>
+          <div class="feature-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Toggle <b>"Este documento culmina el proceso"</b> — al activarlo, pide <b>motivo obligatorio</b>.</div>
+        </div>
+      </div>
+
+      <div class="rule-card">
+        <div class="rule-head">
+          <div class="rule-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg></div>
+          <div class="rule-title">Ejecución (Ejecutivo simple)</div>
+        </div>
+        <div class="rule-body">El <b>Auto que decreta el embargo</b> pasa el expediente a fase "Cumplimiento de embargo" — no culmina el proceso por defecto.</div>
+        <div class="feature-list">
+          <div class="feature-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>En "Cumplimiento de embargo" se pueden registrar <b>abonos al monto embargado</b> hasta saldar la deuda.</div>
+          <div class="feature-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>El Auto también admite <b>observación</b> y el mismo toggle <b>"culmina el proceso"</b> con <b>motivo obligatorio</b>, por si el caso cierra antes de saldar por completo.</div>
+        </div>
+      </div>
+
+      <div class="rule-card">
+        <div class="rule-head">
+          <div class="rule-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></div>
+          <div class="rule-title">Jurisdicción voluntaria (Sucesiones)</div>
+        </div>
+        <div class="rule-body">Culmina con la <b>adjudicación de los bienes heredados</b>.</div>
+        <div class="alert-note">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          Alerta especial: si el documento generado <b>"Edicto emplazatorio"</b> lleva más de 30 días sin un evento de <b>"Publicación"</b> registrado, se marca tanto en la ficha del expediente como en el Panel Principal del Juez.
+        </div>
+      </div>
+
+      <div class="rule-card">
+        <div class="rule-head">
+          <div class="rule-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></div>
+          <div class="rule-title">Matrimonio</div>
+        </div>
+        <div class="rule-body">Culmina únicamente al actualizar el <b>Estado</b> a uno de estos dos valores — no hay documento de cierre:</div>
+        <div class="chip-row">
+          <span class="doc-chip">Celebrado</span>
+          <span class="doc-chip">Retirado</span>
+        </div>
+        <div class="feature-list">
+          <div class="feature-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Cualquier otro estado (ej. pendiente de publicación) mantiene el expediente activo.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

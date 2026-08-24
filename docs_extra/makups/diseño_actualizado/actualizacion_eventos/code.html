@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Actualización de eventos — GDC</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    a { color: #0F766E; text-decoration: none; }
+    .app { display: flex; width: 1440px; min-height: 1080px; background: #F7F7F5; font-family: 'IBM Plex Sans', sans-serif; color: #16171A; }
+    .side { width: 232px; flex-shrink: 0; background: #FFFFFF; border-right: 1px solid #E7E7E3; display: flex; flex-direction: column; padding: 24px 16px; gap: 28px; }
+    .brand { display: flex; align-items: center; gap: 10px; padding: 0 8px; }
+    .brand-mark { width: 32px; height: 32px; border-radius: 8px; background: #0F766E; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .brand-word { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 16px; letter-spacing: -0.01em; }
+    .brand-sub { font-size: 11px; color: #8A8C90; margin-top: -2px; }
+    .nav { display: flex; flex-direction: column; gap: 2px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; font-size: 13.5px; color: #52545A; font-weight: 500; }
+    .nav-item.active { background: #ECF6F3; color: #0F5F58; }
+    .side-foot { margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 10px 8px; border-top: 1px solid #EFEFEC; }
+    .avatar { width: 30px; height: 30px; border-radius: 999px; background: #E6E7E3; display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 600; color: #52545A; flex-shrink: 0; }
+    .main { flex: 1; padding: 24px 32px 32px; display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+    .breadcrumb { font-size: 12.5px; color: #9A9C9F; display: flex; align-items: center; gap: 6px; }
+    .header-row { display: flex; align-items: flex-start; justify-content: space-between; }
+    .header-left { display: flex; flex-direction: column; gap: 8px; }
+    .exp-num { font-family: 'IBM Plex Mono', monospace; font-size: 24px; font-weight: 500; }
+    .tag-row { display: flex; align-items: center; gap: 8px; }
+    .tag { padding: 4px 10px; border-radius: 7px; font-size: 11.5px; font-weight: 600; }
+    .tag-teal { background: #ECF6F3; color: #0F5F58; }
+    .tag-gray { background: #F1F1EE; color: #6B6D72; }
+    .tabs { display: flex; align-items: center; gap: 4px; border-bottom: 1px solid #E9E9E5; }
+    .tab { padding: 10px 14px; font-size: 13px; font-weight: 600; color: #9A9C9F; border-bottom: 2px solid transparent; }
+    .tab.active { color: #16171A; border-bottom-color: #0F766E; }
+    .layout { display: grid; grid-template-columns: 380px 1fr; gap: 18px; align-items: start; }
+    .card { background: #FFFFFF; border: 1px solid #E9E9E5; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+    .card-title { font-family: 'Space Grotesk', sans-serif; font-size: 14.5px; font-weight: 600; }
+    .card-sub { font-size: 11.5px; color: #9A9C9F; margin-top: -8px; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field-label { font-size: 11.5px; color: #52545A; font-weight: 600; }
+    .input { border: 1px solid #E4E4E0; border-radius: 8px; padding: 9px 11px; font-size: 13px; font-family: 'IBM Plex Sans', sans-serif; color: #16171A; background: #FFFFFF; }
+    .select-list { display: flex; flex-direction: column; gap: 6px; }
+    .select-opt { border: 1.5px solid #E4E4E0; border-radius: 8px; padding: 9px 11px; font-size: 12.5px; font-weight: 500; display: flex; align-items: center; justify-content: space-between; color: #52545A; }
+    .select-opt.active { border-color: #0F766E; background: #F3FBF9; color: #0F5F58; }
+    .select-opt .feed { font-size: 10px; font-weight: 600; color: #9A9C9F; }
+    .select-opt.active .feed { color: #0F766E; }
+    .textarea { border: 1px solid #E4E4E0; border-radius: 8px; padding: 10px 11px; font-size: 12.5px; min-height: 64px; color: #16171A; }
+    .textarea.disabled { background: #FBFBFA; color: #B4B6B9; font-style: italic; min-height: 44px; }
+    .req-tag { font-size: 10px; font-weight: 600; color: #B45309; text-transform: none; letter-spacing: 0; margin-left: 4px; }
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; border: 1px solid #E4E4E0; border-radius: 8px; padding: 10px 12px; gap: 12px; }
+    .toggle-row-left { display: flex; flex-direction: column; gap: 3px; }
+    .toggle-title { font-size: 12.5px; font-weight: 600; }
+    .toggle-sub { font-size: 11px; color: #9A9C9F; line-height: 1.4; }
+    .toggle-track { width: 34px; height: 19px; border-radius: 999px; background: #E4E4E0; padding: 2px; flex-shrink: 0; }
+    .toggle-thumb { width: 15px; height: 15px; border-radius: 999px; background: #FFFFFF; }
+    .callout { background: #F3FBF9; border: 1.5px solid #A6DED4; border-radius: 10px; padding: 14px 16px; display: flex; gap: 10px; }
+    .callout svg { flex-shrink: 0; margin-top: 2px; }
+    .callout-title { font-size: 12px; font-weight: 600; color: #0F5F58; margin-bottom: 3px; }
+    .callout-text { font-size: 11.5px; color: #3D6F68; line-height: 1.5; }
+    .checkbox-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #52545A; font-weight: 500; }
+    .checkbox { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid #0F766E; background: #0F766E; display: flex; align-items: center; justify-content: center; }
+    .btn-primary { background: #0F766E; color: #FFFFFF; border: none; border-radius: 9px; padding: 10px 16px; font-size: 13px; font-weight: 600; font-family: 'IBM Plex Sans', sans-serif; align-self: flex-start; }
+    .timeline { display: flex; flex-direction: column; }
+    .t-item { display: grid; grid-template-columns: 24px 1fr; gap: 12px; }
+    .t-marker { display: flex; flex-direction: column; align-items: center; }
+    .t-dot { width: 11px; height: 11px; border-radius: 999px; background: #0F766E; margin-top: 4px; flex-shrink: 0; }
+    .t-dot.sys { background: #B4B6B9; }
+    .t-line { width: 2px; flex: 1; background: #E9E9E5; margin-top: 4px; }
+    .t-body { padding-bottom: 22px; }
+    .t-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .t-title { font-size: 13px; font-weight: 600; }
+    .t-time { font-size: 11px; color: #9A9C9F; white-space: nowrap; }
+    .t-meta { font-size: 11.5px; color: #9A9C9F; margin-top: 2px; }
+    .t-detail { font-size: 12.5px; color: #52545A; margin-top: 6px; line-height: 1.5; }
+    .feed-tag { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; font-size: 10.5px; font-weight: 600; color: #0F5F58; background: #ECF6F3; padding: 3px 9px; border-radius: 999px; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="side">
+    <div class="brand">
+      <div class="brand-mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="13" x2="15" y2="13"></line><line x1="9" y1="17" x2="15" y2="17"></line></svg></div>
+      <div><div class="brand-word">GDC</div><div class="brand-sub">Segundo Municipal Civil</div></div>
+    </div>
+    <div class="nav">
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>Panel del Juez</div>
+      <div class="nav-item active"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>Expedientes</div>
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>Documentos</div>
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>Calendario</div>
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>KPIs y Reportes</div>
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>Administración</div>
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>Auditoría</div>
+    </div>
+    <div class="side-foot">
+      <div class="avatar">MP</div>
+      <div><div style="font-size:12.5px; font-weight:600;">Miguel Pinzón</div><div style="font-size:11px; color:#9A9C9F;">Asistente</div></div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="breadcrumb">
+      <a href="#">Expedientes</a>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+      <span>1016442026</span>
+    </div>
+
+    <div class="header-row">
+      <div class="header-left">
+        <div class="exp-num">1016442026</div>
+        <div class="tag-row">
+          <span class="tag tag-teal">Ejecución · Mandamiento de pago</span>
+          <span class="tag tag-gray">Segundo Municipal · Municipal</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab">Datos generales</div>
+      <div class="tab">Documentos</div>
+      <div class="tab active">Eventos y trazabilidad</div>
+    </div>
+
+    <div class="layout">
+      <div class="card">
+        <div>
+          <div class="card-title">Registrar nuevo evento</div>
+          <div class="card-sub">Actualiza el estado real del expediente — esto es lo que alimenta el Panel del Juez en tiempo real.</div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Tipo de evento</div>
+          <div class="select-list">
+            <div class="select-opt">Notificación registrada <span class="feed">→ Pendientes de notificar</span></div>
+            <div class="select-opt">Cambio de fase <span class="feed">→ Fase actual</span></div>
+            <div class="select-opt">Observación / estado actualizado <span class="feed">→ Estado en listado</span></div>
+            <div class="select-opt">Corrección de fecha de registro <span class="feed">→ Semáforo de tiempos</span></div>
+            <div class="select-opt active">Documento generado: Auto (decreta embargo) <span class="feed">→ Fase: Cumplimiento de embargo</span></div>
+            <div class="select-opt">Actualización de monto de embargo <span class="feed">→ Saldo del embargo</span></div>
+          </div>
+          <div class="helper-text">El listado de tipos cambia según el tipo de proceso del expediente — este es el set de Ejecución.</div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Fecha del evento</div>
+          <input class="input" value="23/08/2026" />
+        </div>
+
+        <div class="field">
+          <div class="field-label">Observación del Auto</div>
+          <div class="textarea">Se decreta el embargo sobre bienes del deudor por B/. 5,096.96. El expediente pasa a fase de cumplimiento.</div>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-row-left">
+            <div class="toggle-title">Este Auto culmina el proceso</div>
+            <div class="toggle-sub">Actívalo solo si este Auto pone fin al expediente (fuera del flujo normal de embargo)</div>
+          </div>
+          <div class="toggle-track"><div class="toggle-thumb"></div></div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Motivo de culminación <span class="req-tag">Obligatorio si el toggle está activo</span></div>
+          <div class="textarea disabled">Se habilita al activar "Este Auto culmina el proceso"</div>
+        </div>
+
+        <div class="callout" style="margin: 0;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+          <div>
+            <div class="callout-title">Todo expediente necesita movimiento cada 30 días</div>
+            <div class="callout-text">Guardar este evento reinicia el contador de "sin movimiento" del Panel del Juez. El umbral (hoy 30 días) es configurable por el Administrador.</div>
+          </div>
+        </div>
+
+        <div class="checkbox-row">
+          <div class="checkbox"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+          Actualizar el estado visible en el listado general
+        </div>
+
+        <button class="btn-primary">Guardar evento</button>
+      </div>
+
+      <div class="card">
+        <div>
+          <div class="card-title">Historial de eventos</div>
+          <div class="card-sub">Cada evento reinicia el contador de "sin movimiento" y actualiza los paneles de alerta del Juez de forma automática.</div>
+        </div>
+
+        <div class="timeline">
+          <div class="t-item">
+            <div class="t-marker"><div class="t-dot"></div><div class="t-line"></div></div>
+            <div class="t-body">
+              <div class="t-top"><div class="t-title">Abono registrado al monto de embargo</div><div class="t-time">Hoy, 15:40</div></div>
+              <div class="t-meta">Miguel Pinzón</div>
+              <div class="t-detail">Abono de B/. 1,500.00. Saldo restante: B/. 3,596.96.</div>
+              <div class="feed-tag">Alimenta: Saldo del embargo</div>
+            </div>
+          </div>
+          <div class="t-item">
+            <div class="t-marker"><div class="t-dot"></div><div class="t-line"></div></div>
+            <div class="t-body">
+              <div class="t-top"><div class="t-title">Notificación registrada</div><div class="t-time">Hoy, 10:32</div></div>
+              <div class="t-meta">Miguel Pinzón</div>
+              <div class="t-detail">Notificación negativa recibida; se reenvía oficio de embargo al deudor.</div>
+              <div class="feed-tag">Alimenta: Pendientes de notificar</div>
+            </div>
+          </div>
+          <div class="t-item">
+            <div class="t-marker"><div class="t-dot"></div><div class="t-line"></div></div>
+            <div class="t-body">
+              <div class="t-top"><div class="t-title">Documento generado: Auto — Decreto de embargo</div><div class="t-time">Hoy, 09:15</div></div>
+              <div class="t-meta">Miguel Pinzón</div>
+              <div class="t-detail">No culmina el proceso — pasa a fase "Cumplimiento de embargo".</div>
+              <div class="feed-tag">Alimenta: Fase → Cumplimiento de embargo</div>
+            </div>
+          </div>
+          <div class="t-item">
+            <div class="t-marker"><div class="t-dot"></div><div class="t-line"></div></div>
+            <div class="t-body">
+              <div class="t-top"><div class="t-title">Cambio de fase: Admisión → Notificación</div><div class="t-time">Ayer</div></div>
+              <div class="t-meta">Miguel Pinzón</div>
+              <div class="feed-tag">Alimenta: Fase actual del expediente</div>
+            </div>
+          </div>
+          <div class="t-item">
+            <div class="t-marker"><div class="t-dot"></div><div class="t-line"></div></div>
+            <div class="t-body">
+              <div class="t-top"><div class="t-title">Observación actualizada: "Pendiente oficio de embargo"</div><div class="t-time">Hace 3 días</div></div>
+              <div class="t-meta">Miguel Pinzón</div>
+              <div class="feed-tag">Alimenta: Estado visible en el listado general</div>
+            </div>
+          </div>
+          <div class="t-item">
+            <div class="t-marker"><div class="t-dot sys"></div><div class="t-line"></div></div>
+            <div class="t-body">
+              <div class="t-top"><div class="t-title">Documento generado: Auto — Decreto de embargo</div><div class="t-time">Hace 5 días</div></div>
+              <div class="t-meta">Sistema</div>
+              <div class="feed-tag">Alimenta: Movimientos sin trabajar (reinicia contador)</div>
+            </div>
+          </div>
+          <div class="t-item">
+            <div class="t-marker"><div class="t-dot sys"></div></div>
+            <div class="t-body">
+              <div class="t-top"><div class="t-title">Expediente registrado</div><div class="t-time">09/07/2026</div></div>
+              <div class="t-meta">Miguel Pinzón · Fecha de registro: 09/07/2026</div>
+              <div class="feed-tag">Alimenta: Semáforo de tiempo en el sistema</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

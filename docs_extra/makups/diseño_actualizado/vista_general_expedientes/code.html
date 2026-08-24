@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vista general — Expedientes — GDC</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    a { color: #0F766E; text-decoration: none; }
+    a:hover { color: #0B5C55; }
+    .app { display: flex; width: 1440px; min-height: 900px; background: #F7F7F5; font-family: 'IBM Plex Sans', sans-serif; color: #16171A; }
+    .side { width: 232px; flex-shrink: 0; background: #FFFFFF; border-right: 1px solid #E7E7E3; display: flex; flex-direction: column; padding: 24px 16px; gap: 28px; }
+    .brand { display: flex; align-items: center; gap: 10px; padding: 0 8px; }
+    .brand-mark { width: 32px; height: 32px; border-radius: 8px; background: #0F766E; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .brand-word { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 16px; letter-spacing: -0.01em; }
+    .brand-sub { font-size: 11px; color: #8A8C90; margin-top: -2px; }
+    .nav { display: flex; flex-direction: column; gap: 2px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; font-size: 13.5px; color: #52545A; font-weight: 500; }
+    .nav-item.active { background: #ECF6F3; color: #0F5F58; }
+    .nav-item svg { flex-shrink: 0; }
+    .side-foot { margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 10px 8px; border-top: 1px solid #EFEFEC; }
+    .avatar { width: 30px; height: 30px; border-radius: 999px; background: #E6E7E3; display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 600; color: #52545A; flex-shrink: 0; }
+    .main { flex: 1; padding: 24px 32px 32px; display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .crumb { font-family: 'Space Grotesk', sans-serif; font-size: 21px; font-weight: 600; }
+    .search { display: flex; align-items: center; gap: 8px; background: #FFFFFF; border: 1px solid #E4E4E0; border-radius: 9px; padding: 8px 12px; width: 340px; color: #8A8C90; font-size: 13px; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .despacho-pill { display: flex; align-items: center; gap: 6px; background: #FFFFFF; border: 1px solid #E4E4E0; border-radius: 9px; padding: 8px 12px; font-size: 12.5px; font-weight: 500; color: #3D3F44; }
+    .btn-primary { display: flex; align-items: center; gap: 6px; background: #0F766E; color: #FFFFFF; border: none; border-radius: 9px; padding: 9px 14px; font-size: 13px; font-weight: 600; font-family: 'IBM Plex Sans', sans-serif; }
+    .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+    .stat-card { background: #FFFFFF; border: 1px solid #E9E9E5; border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; }
+    .stat-label { font-size: 12px; color: #8A8C90; font-weight: 500; }
+    .stat-value { font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 600; }
+    .stat-delta { font-size: 11.5px; color: #15803D; font-weight: 500; }
+    .stat-delta.warn { color: #B45309; }
+    .filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .pill { padding: 7px 13px; border-radius: 999px; font-size: 12.5px; font-weight: 500; border: 1px solid #E4E4E0; background: #FFFFFF; color: #52545A; }
+    .pill.active { background: #16171A; color: #FFFFFF; border-color: #16171A; }
+    .table-card { background: #FFFFFF; border: 1px solid #E9E9E5; border-radius: 12px; overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #9A9C9F; font-weight: 600; padding: 12px 14px; border-bottom: 1px solid #EFEFEC; background: #FBFBFA; }
+    td { padding: 13px 14px; border-bottom: 1px solid #F1F1EE; font-size: 12.5px; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    .num { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #3D3F44; }
+    .tipo-tag { font-size: 12px; font-weight: 500; }
+    .tipo-sub { font-size: 11px; color: #9A9C9F; }
+    .chip { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+    .chip-electronico { background: #ECF6F3; color: #0F5F58; }
+    .chip-fisico { background: #F1F1EE; color: #6B6D72; }
+    .badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 7px; font-size: 11.5px; font-weight: 600; }
+    .badge-amber { background: #FEF3C7; color: #92400E; }
+    .badge-gray { background: #F1F1EE; color: #6B6D72; }
+    .badge-red { background: #FEE2E2; color: #B91C1C; }
+    .badge-green { background: #DCFCE7; color: #15803D; }
+    .plazo-wrap { display: flex; flex-direction: column; gap: 4px; width: 96px; }
+    .plazo-bar { height: 5px; border-radius: 999px; background: #F1F1EE; overflow: hidden; }
+    .plazo-fill { height: 100%; border-radius: 999px; }
+    .plazo-text { font-size: 10.5px; color: #8A8C90; font-weight: 500; }
+    .flag-row td { background: #FFFBF0; }
+    .flag-note { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #B45309; font-weight: 500; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="side">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="13" x2="15" y2="13"></line><line x1="9" y1="17" x2="15" y2="17"></line></svg>
+      </div>
+      <div>
+        <div class="brand-word">GDC</div>
+        <div class="brand-sub">Segundo Municipal Civil</div>
+      </div>
+    </div>
+    <div class="nav">
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>Panel del Juez</div>
+      <div class="nav-item active"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>Expedientes</div>
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>Documentos</div>
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>Calendario</div>
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>KPIs y Reportes</div>
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>Administración</div>
+      <div class="nav-item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>Auditoría</div>
+    </div>
+    <div class="side-foot">
+      <div class="avatar">MP</div>
+      <div>
+        <div style="font-size:12.5px; font-weight:600;">Miguel Pinzón</div>
+        <div style="font-size:11px; color:#9A9C9F;">Asistente</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="crumb">Expedientes</div>
+      <div class="search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        Buscar por número, pretensión o parte…
+      </div>
+      <div class="topbar-right">
+        <div class="despacho-pill">
+          Despacho: Segundo Municipal Civil
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+        <button class="btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Nuevo expediente
+        </button>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-label">Expedientes activos</div>
+        <div class="stat-value">128</div>
+        <div class="stat-delta">+22 este mes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Pendientes de agenda</div>
+        <div class="stat-value">14</div>
+        <div class="stat-delta warn">6 con plazo &lt; 7 días</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Vencidos / críticos</div>
+        <div class="stat-value">5</div>
+        <div class="stat-delta warn">Art. 395 · admisión</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Sin clasificar</div>
+        <div class="stat-value">1</div>
+        <div class="stat-delta warn">Tipo fuera de catálogo</div>
+      </div>
+    </div>
+
+    <div class="filters">
+      <div class="pill active">Todos</div>
+      <div class="pill">Declarativo · Ordinario</div>
+      <div class="pill">Declarativo · Sumario</div>
+      <div class="pill">Ejecución</div>
+      <div class="pill">Jurisdicción voluntaria</div>
+      <div class="pill">Matrimonio</div>
+      <div class="pill">Secuestro</div>
+    </div>
+
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>Nº expediente</th>
+            <th>Tipo / subtipo</th>
+            <th>Pretensión</th>
+            <th>Físico o electr.</th>
+            <th>Fecha admisión</th>
+            <th>Estado (observación)</th>
+            <th>Plazo audiencia</th>
+            <th>Asignado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="num">1084212026</td>
+            <td><div class="tipo-tag">Declarativo</div><div class="tipo-sub">Ordinario</div></td>
+            <td>Contractual</td>
+            <td><span class="chip chip-electronico">Electrónico</span></td>
+            <td>08/07/2026</td>
+            <td><span class="badge badge-amber">Notificación negativa</span></td>
+            <td><div class="plazo-wrap"><div class="plazo-bar"><div class="plazo-fill" style="width:70%; background:#15803D;"></div></div><div class="plazo-text">45 días restantes</div></div></td>
+            <td><div class="avatar" style="width:26px; height:26px; font-size:10px;">JV</div></td>
+          </tr>
+          <tr>
+            <td class="num">1005142026</td>
+            <td><div class="tipo-tag">Declarativo</div><div class="tipo-sub">Sumario</div></td>
+            <td>Lanzamiento por intruso</td>
+            <td><span class="chip chip-electronico">Electrónico</span></td>
+            <td>10/07/2026</td>
+            <td><span class="badge badge-gray">Pendiente notificar</span></td>
+            <td><div class="plazo-wrap"><div class="plazo-bar"><div class="plazo-fill" style="width:35%; background:#B45309;"></div></div><div class="plazo-text">6 días restantes</div></div></td>
+            <td><div class="avatar" style="width:26px; height:26px; font-size:10px;">MP</div></td>
+          </tr>
+          <tr>
+            <td class="num">1016442026</td>
+            <td><div class="tipo-tag">Ejecución</div><div class="tipo-sub">Mandamiento de pago</div></td>
+            <td>Cobro B/. 5,096.96</td>
+            <td><span class="chip chip-electronico">Electrónico</span></td>
+            <td>09/07/2026</td>
+            <td><span class="badge badge-amber">Pendiente oficio de embargo</span></td>
+            <td><div class="plazo-wrap"><div class="plazo-bar"><div class="plazo-fill" style="width:100%; background:#B91C1C;"></div></div><div class="plazo-text">Vencido · 2 días</div></div></td>
+            <td><div class="avatar" style="width:26px; height:26px; font-size:10px;">JV</div></td>
+          </tr>
+          <tr>
+            <td class="num">1012612026</td>
+            <td><div class="tipo-tag">Jurisdicción voluntaria</div><div class="tipo-sub">Sucesión intestada</div></td>
+            <td>—</td>
+            <td><span class="chip chip-electronico">Electrónico</span></td>
+            <td>06/07/2026</td>
+            <td><span class="badge badge-gray">Pendiente declaratoria</span></td>
+            <td><div class="plazo-wrap"><div class="plazo-text" style="color:#B4B6B9;">No aplica</div></div></td>
+            <td><div class="avatar" style="width:26px; height:26px; font-size:10px;">MP</div></td>
+          </tr>
+          <tr>
+            <td class="num">1113632026</td>
+            <td><div class="tipo-tag">Matrimonio</div><div class="tipo-sub">Fuera de despacho</div></td>
+            <td>—</td>
+            <td><span class="chip chip-electronico">Electrónico</span></td>
+            <td>—</td>
+            <td><span class="badge badge-green">Realizado</span></td>
+            <td><div class="plazo-wrap"><div class="plazo-text" style="color:#B4B6B9;">No aplica</div></div></td>
+            <td><div class="avatar" style="width:26px; height:26px; font-size:10px;">AR</div></td>
+          </tr>
+          <tr>
+            <td class="num">1062472026</td>
+            <td><div class="tipo-tag">Declarativo</div><div class="tipo-sub">Ordinario</div></td>
+            <td>Contractual</td>
+            <td><span class="chip chip-electronico">Electrónico</span></td>
+            <td>—</td>
+            <td><span class="badge badge-red">Desistido</span></td>
+            <td><div class="plazo-wrap"><div class="plazo-text" style="color:#B4B6B9;">Cerrado</div></div></td>
+            <td><div class="avatar" style="width:26px; height:26px; font-size:10px;">—</div></td>
+          </tr>
+          <tr class="flag-row">
+            <td class="num">2031092026</td>
+            <td><div class="tipo-tag">Secuestro</div><div class="tipo-sub">Sin tipo confirmado</div></td>
+            <td>—</td>
+            <td><span class="chip chip-fisico">Físico</span></td>
+            <td>—</td>
+            <td>
+              <div class="flag-note">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                Pendiente definir en catálogo
+              </div>
+            </td>
+            <td>—</td>
+            <td>—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</body>
+</html>
