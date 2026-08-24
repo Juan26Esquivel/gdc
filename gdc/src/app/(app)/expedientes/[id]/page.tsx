@@ -277,6 +277,8 @@ export default async function DetalleExpedientePage({ params, searchParams }: Pr
             fecha: a.created_at,
           }))}
           embargo={embargo}
+          esEjecucion={expediente.tipos_proceso?.nombre === "Ejecución"}
+          puedeFijarMontoEmbargo={usuario?.rol === "administrador" || usuario?.rol === "juez"}
           ventanasAudiencia={ventanasAudiencia}
           audiencias={audienciasVista}
           esAdmin={usuario?.rol === "administrador"}

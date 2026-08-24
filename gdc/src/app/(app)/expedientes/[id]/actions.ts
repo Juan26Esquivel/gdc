@@ -394,3 +394,116 @@ export async function reprogramarAudiencia(
 
   return { ok: true };
 }
+
+/**
+ * Establece o amplía el monto del mandamiento de pago, que es la base del
+ * embargo (`expedientes.monto_embargo_decretado`). Hasta ahora esa columna solo
+ * se leía: no había forma de escribirla, y sin ella la tarjeta de saldo nunca
+ * aparecía y los abonos de OT-03 no tenían contra qué calcularse.
+ *
+ * La ampliación tiene respaldo en el Art. 744 (auto de mandamiento de pago
+ * sujeto a cuotas, plazos o ampliación): al vencer nuevos plazos o cuotas, la
+ * ejecución puede ampliarse por su importe. Cada cambio queda como evento con su
+ * monto anterior y el nuevo, porque mueve el saldo pendiente del ejecutado.
+ *
+ * Restringido a Administrador y Juez: fijar la base de un embargo es acto
+ * jurisdiccional, no captura de asistente. La migración 20260823190001 aplica la
+ * misma distinción del lado de la base de datos, por columna y por rol.
+ */
+export async function registrarMontoMandamientoPago(
+  _prevState: EstadoAccionExpediente,
+  formData: FormData,
+): Promise<EstadoAccionExpediente> {
+  const actual = await getUsuarioActual();
+  if (actual?.rol !== "administrador" && actual?.rol !== "juez") {
+    return { error: "Solo el Juez o el Administrador pueden fijar o ampliar el mandamiento de pago" };
+  }
+
+  const expedienteId = formData.get("expediente_id") as string;
+  const montoTexto = (formData.get("monto") as string)?.trim();
+  const motivo = (formData.get("motivo") as string)?.trim() || null;
+  const monto = Number(montoTexto);
+
+  if (!montoTexto || !Number.isFinite(monto) || monto <= 0) {
+    return { error: "El monto debe ser un número mayor a 0" };
+  }
+  if (monto > 99_999_999.99) {
+    return { error: "El monto excede lo que admite el campo (máximo 99,999,999.99)" };
+  }
+
+  const supabase = await createClient();
+
+  const { data: expediente } = await supabase
+    .from("expedientes")
+    .select("monto_embargo_decretado")
+    .eq("id", expedienteId)
+    .maybeSingle();
+
+  if (!expediente) return { error: "No se encontró el expediente" };
+
+  const montoAnterior =
+    expediente.monto_embargo_decretado === null ? null : Number(expediente.monto_embargo_decretado);
+  const esAmpliacion = montoAnterior !== null;
+
+  if (esAmpliacion && monto === montoAnterior) {
+    return { error: "El monto nuevo es igual al actual" };
+  }
+  // Solo se exige motivo al cambiar un monto ya fijado: es lo que distingue una
+  // ampliación del Art. 744 de una corrección, y sin él la auditoría no sirve.
+  if (esAmpliacion && !motivo) {
+    return { error: "El motivo es obligatorio para modificar un monto ya fijado" };
+  }
+
+  const { data: filas, error } = await supabase
+    .from("expedientes")
+    .update({ monto_embargo_decretado: monto })
+    .eq("id", expedienteId)
+    .select("id");
+
+  if (error) return { error: `No se pudo guardar el monto: ${error.message}` };
+  if (!filas?.length) {
+    return { error: "No se guardó nada: no tienes permiso sobre este expediente" };
+  }
+
+  const codigo = esAmpliacion ? "ampliacion_mandamiento_pago" : "mandamiento_pago_librado";
+  const { data: tipoEvento } = await supabase
+    .from("tipos_evento")
+    .select("id")
+    .eq("codigo", codigo)
+    .maybeSingle();
+
+  if (tipoEvento) {
+    await supabase.from("eventos_expediente").insert({
+      expediente_id: expedienteId,
+      tipo_evento_id: tipoEvento.id,
+      fecha_evento: new Date().toISOString().slice(0, 10),
+      detalle: esAmpliacion
+        ? `De B/. ${montoAnterior?.toFixed(2)} a B/. ${monto.toFixed(2)} — ${motivo}`
+        : `Monto base del embargo: B/. ${monto.toFixed(2)}${motivo ? ` — ${motivo}` : ""}`,
+      registrado_por: actual.id,
+    });
+  }
+
+  await registrarAuditoria(
+    actual.id,
+    esAmpliacion ? "ampliar_mandamiento_pago" : "establecer_mandamiento_pago",
+    "expediente",
+    expedienteId,
+    { antes: montoAnterior, despues: monto, motivo },
+  );
+
+  revalidatePath(`/expedientes/${expedienteId}`);
+
+  // Bajar el monto no es una ampliación: reducir o levantar un embargo es
+  // desembargo o rescisión, que el Art. 262 núm. 7 manda a audiencia especial.
+  // Se permite por si hay que corregir un monto mal tecleado, pero se avisa.
+  if (esAmpliacion && montoAnterior !== null && monto < montoAnterior) {
+    return {
+      ok: true,
+      advertencia:
+        "Guardado, pero bajaste el monto: eso no es una ampliación del Art. 744. Una reducción o levantamiento del embargo es desembargo o rescisión, y se sustancia en audiencia especial (Art. 262 núm. 7).",
+    };
+  }
+
+  return { ok: true };
+}

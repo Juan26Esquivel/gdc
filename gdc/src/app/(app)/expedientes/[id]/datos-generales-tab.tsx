@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DatosGeneralesCard } from "./editar-datos-generales";
 import { AudienciasExpediente, type AudienciaVista } from "./audiencias-expediente";
+import { EmbargoExpediente } from "./embargo-expediente";
 
 type FaseLinea = { id: string; nombre: string; orden: number; completada: boolean; actual: boolean; fecha: string | null };
 
@@ -28,6 +29,8 @@ export type DatosGeneralesProps = {
   totalDocumentos: number;
   auditoriaReciente: { id: string; accion: string; usuarioNombre: string | null; fecha: string }[];
   embargo: { montoDecretado: number; totalAbonado: number; saldoPendiente: number } | null;
+  esEjecucion: boolean;
+  puedeFijarMontoEmbargo: boolean;
   ventanasAudiencia: VentanaAudienciaVista[];
   audiencias: AudienciaVista[];
   esAdmin: boolean;
@@ -61,15 +64,6 @@ function formatearFecha(fecha: string | null) {
   return new Date(fecha).toLocaleDateString("es-PA", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
-function Campo({ label, valor }: { label: string; valor: string }) {
-  return (
-    <div>
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-sm font-medium">{valor}</p>
-    </div>
-  );
-}
-
 export function DatosGeneralesTab(props: DatosGeneralesProps) {
   const {
     expedienteId,
@@ -94,6 +88,8 @@ export function DatosGeneralesTab(props: DatosGeneralesProps) {
     totalDocumentos,
     auditoriaReciente,
     embargo,
+    esEjecucion,
+    puedeFijarMontoEmbargo,
     ventanasAudiencia,
     audiencias,
     esAdmin,
@@ -210,18 +206,12 @@ export function DatosGeneralesTab(props: DatosGeneralesProps) {
           esAdmin={esAdmin}
         />
 
-        {embargo && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Saldo del embargo</CardTitle>
-            </CardHeader>
-            <CardContent className="flex gap-8">
-              <Campo label="Decretado" valor={`B/. ${embargo.montoDecretado.toFixed(2)}`} />
-              <Campo label="Abonado" valor={`B/. ${embargo.totalAbonado.toFixed(2)}`} />
-              <Campo label="Saldo pendiente" valor={`B/. ${embargo.saldoPendiente.toFixed(2)}`} />
-            </CardContent>
-          </Card>
-        )}
+        <EmbargoExpediente
+          expedienteId={expedienteId}
+          esEjecucion={esEjecucion}
+          embargo={embargo}
+          puedeFijarMonto={puedeFijarMontoEmbargo}
+        />
 
         <Card>
           <CardHeader>
