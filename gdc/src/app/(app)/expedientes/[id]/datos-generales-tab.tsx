@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DatosGeneralesCard } from "./editar-datos-generales";
 
 type FaseLinea = { id: string; nombre: string; orden: number; completada: boolean; actual: boolean; fecha: string | null };
 
@@ -26,6 +27,7 @@ export type DatosGeneralesProps = {
   totalDocumentos: number;
   auditoriaReciente: { id: string; accion: string; usuarioNombre: string | null; fecha: string }[];
   embargo: { montoDecretado: number; totalAbonado: number; saldoPendiente: number } | null;
+  puedeEditar: boolean;
 };
 
 const LABEL_ESTADO_MATRIMONIO: Record<string, string> = {
@@ -46,17 +48,18 @@ function formatearFecha(fecha: string | null) {
   return new Date(fecha).toLocaleDateString("es-PA", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
-function Campo({ label, valor, capitalizar }: { label: string; valor: string; capitalizar?: boolean }) {
+function Campo({ label, valor }: { label: string; valor: string }) {
   return (
     <div>
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className={`text-sm font-medium ${capitalizar ? "capitalize" : ""}`}>{valor}</p>
+      <p className="text-sm font-medium">{valor}</p>
     </div>
   );
 }
 
 export function DatosGeneralesTab(props: DatosGeneralesProps) {
   const {
+    expedienteId,
     fisicoElectronico,
     municipalCircuito,
     despachoNombre,
@@ -78,36 +81,27 @@ export function DatosGeneralesTab(props: DatosGeneralesProps) {
     totalDocumentos,
     auditoriaReciente,
     embargo,
+    puedeEditar,
   } = props;
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-[2fr_1fr] lg:items-start">
       <div className="flex flex-col gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Datos generales</CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-4">
-            <Campo label="Físico o electrónico" valor={fisicoElectronico ?? "—"} capitalizar />
-            <Campo label="Municipal o circuito" valor={municipalCircuito ?? "—"} capitalizar />
-            <Campo label="Despacho" valor={despachoNombre ?? "—"} />
-            <Campo label="Fecha de notificación" valor={formatearFecha(fechaNotificacionDemanda)} />
-            <div className="col-span-2">
-              <p className="text-xs text-muted-foreground">Pretensión</p>
-              <p className="text-sm font-medium">{pretension ?? "—"}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Cuantía</p>
-              <p className="text-sm font-medium">
-                {esLanzamiento ? "Lanzamiento (sin tope)" : cuantia ? `B/. ${cuantia}` : "Indeterminada"}
-              </p>
-              {!esLanzamiento && cuantia !== null && cuantia <= topeCuantia && (
-                <p className="mt-0.5 text-xs text-emerald-700">Dentro del tope de B/. {topeCuantia}</p>
-              )}
-            </div>
-            <Campo label="Es lanzamiento" valor={esLanzamiento ? "Sí" : "No"} />
-          </CardContent>
-        </Card>
+        <DatosGeneralesCard
+          expedienteId={expedienteId}
+          datos={{
+            fisicoElectronico,
+            municipalCircuito,
+            pretension,
+            notas,
+            fechaNotificacionDemanda,
+          }}
+          despachoNombre={despachoNombre}
+          cuantia={cuantia}
+          esLanzamiento={esLanzamiento}
+          topeCuantia={topeCuantia}
+          puedeEditar={puedeEditar}
+        />
 
         {estadoMatrimonio && (
           <Card>
@@ -182,12 +176,23 @@ export function DatosGeneralesTab(props: DatosGeneralesProps) {
               <p className="mt-1 rounded-md bg-muted p-3 text-sm font-medium">
                 {observacionActual ?? "Sin observación registrada."}
               </p>
+              {puedeEditar && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Se actualiza registrando el evento &quot;Observación actualizada&quot; en la pestaña
+                  &quot;Eventos y trazabilidad&quot;.
+                </p>
+              )}
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Notas</p>
               <p className="mt-1 rounded-md bg-muted p-3 text-sm text-muted-foreground">
                 {notas ?? "Sin notas registradas."}
               </p>
+              {puedeEditar && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Se editan con el botón &quot;Editar&quot; de la tarjeta &quot;Datos generales&quot;.
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>

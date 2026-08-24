@@ -53,21 +53,27 @@ export async function registrarEvento(
   if (codigo === "correccion_fecha_registro") {
     const nuevaFecha = formData.get("nueva_fecha_registro") as string;
     if (!nuevaFecha) return { error: "Debes indicar la nueva fecha de registro" };
-    const { error } = await supabase
+    const { data: filas, error } = await supabase
       .from("expedientes")
       .update({ fecha_registro: nuevaFecha })
-      .eq("id", expedienteId);
+      .eq("id", expedienteId)
+      .select("id");
     if (error) return { error: `No se pudo corregir la fecha de registro: ${error.message}` };
+    // Un UPDATE que RLS descarta devuelve 0 filas sin lanzar error. Sin este
+    // control la pantalla decía "guardado" y la fecha no cambiaba.
+    if (!filas?.length) return { error: "No tienes permiso para corregir la fecha de este expediente" };
   }
 
   if (codigo === "override_umbral_inactividad") {
     const motivo = (formData.get("motivo_omision_umbral") as string)?.trim();
     if (!motivo) return { error: "El motivo es obligatorio para omitir el umbral de inactividad" };
-    const { error } = await supabase
+    const { data: filas, error } = await supabase
       .from("expedientes")
       .update({ omitir_umbral_inactividad: true, motivo_omision_umbral: motivo })
-      .eq("id", expedienteId);
+      .eq("id", expedienteId)
+      .select("id");
     if (error) return { error: `No se pudo activar el override: ${error.message}` };
+    if (!filas?.length) return { error: "No tienes permiso para activar el override en este expediente" };
     // OT-01 sección 3.5: acción administrativa sensible, se registra también
     // en auditoria (además del evento de negocio que se inserta abajo).
     await registrarAuditoria(actual.id, "activar_override_umbral_inactividad", "expediente", expedienteId, {
@@ -78,11 +84,13 @@ export async function registrarEvento(
   if (codigo === "estado_matrimonio_actualizado") {
     const nuevoEstado = formData.get("estado_matrimonio") as string;
     if (!nuevoEstado) return { error: "Debes seleccionar el nuevo estado" };
-    const { error } = await supabase
+    const { data: filas, error } = await supabase
       .from("expedientes")
       .update({ estado_matrimonio: nuevoEstado })
-      .eq("id", expedienteId);
+      .eq("id", expedienteId)
+      .select("id");
     if (error) return { error: `No se pudo actualizar el estado: ${error.message}` };
+    if (!filas?.length) return { error: "No tienes permiso para cambiar el estado de este expediente" };
     // El trigger de OT-03 se encarga de cerrar el expediente si corresponde
     // (celebrado/retirado) y de insertar el evento "expediente_cerrado" — no
     // se duplica esa lógica aquí.
@@ -129,6 +137,113 @@ export async function registrarAbonoEmbargo(
   });
 
   if (error) return { error: `No se pudo registrar el abono: ${error.message}` };
+
+  revalidatePath(`/expedientes/${expedienteId}`);
+  return { ok: true };
+}
+
+const FISICO_ELECTRONICO_VALIDOS = ["fisico", "electronico"];
+const MUNICIPAL_CIRCUITO_VALIDOS = ["municipal", "circuito"];
+const MAX_PRETENSION = 200;
+const MAX_NOTAS = 2000;
+
+/** '' del formulario significa "sin valor" (null en base), no cadena vacía. */
+function textoOpcional(formData: FormData, campo: string) {
+  const valor = (formData.get(campo) as string | null)?.trim();
+  return valor ? valor : null;
+}
+
+/**
+ * OT-04 sección 3.3: corrección de los datos generales de un expediente ya
+ * registrado (antes esta pestaña era de solo lectura y un dato mal escrito no
+ * tenía cómo arreglarse).
+ *
+ * Solo los 5 campos descriptivos. Los que alimentan una alerta o el cierre
+ * (fecha_registro, observación, estado de matrimonio, override de umbral) se
+ * siguen corrigiendo desde la pestaña de eventos, para que quede el rastro de
+ * quién y por qué — no se duplican aquí. La migración 20260823110001 restringe
+ * lo mismo del lado de la base de datos.
+ */
+export async function actualizarDatosGenerales(
+  _prevState: EstadoAccionExpediente,
+  formData: FormData,
+): Promise<EstadoAccionExpediente> {
+  const expedienteId = formData.get("expediente_id") as string;
+  const actual = await puedeActuarSobreExpediente(expedienteId);
+  if (!actual) return { error: "No tienes permiso para editar este expediente" };
+
+  const fisicoElectronico = textoOpcional(formData, "fisico_electronico");
+  const municipalCircuito = textoOpcional(formData, "municipal_circuito");
+  const pretension = textoOpcional(formData, "pretension");
+  const notas = textoOpcional(formData, "notas");
+  const fechaNotificacion = textoOpcional(formData, "fecha_notificacion_demanda");
+
+  // Se valida en el servidor aunque el <select> del formulario ya limite las
+  // opciones: el cliente no es de fiar. Coincide con los `check` de la
+  // migración 20260823090003.
+  if (fisicoElectronico && !FISICO_ELECTRONICO_VALIDOS.includes(fisicoElectronico)) {
+    return { error: "El valor de físico/electrónico no es válido" };
+  }
+  if (municipalCircuito && !MUNICIPAL_CIRCUITO_VALIDOS.includes(municipalCircuito)) {
+    return { error: "El valor de municipal/circuito no es válido" };
+  }
+  if (pretension && pretension.length > MAX_PRETENSION) {
+    return { error: `La pretensión no puede pasar de ${MAX_PRETENSION} caracteres` };
+  }
+  if (notas && notas.length > MAX_NOTAS) {
+    return { error: `Las notas no pueden pasar de ${MAX_NOTAS} caracteres` };
+  }
+  if (fechaNotificacion && Number.isNaN(new Date(fechaNotificacion).getTime())) {
+    return { error: "La fecha de notificación no es una fecha válida" };
+  }
+
+  const supabase = await createClient();
+
+  const { data: antes } = await supabase
+    .from("expedientes")
+    .select("fisico_electronico, municipal_circuito, pretension, notas, fecha_notificacion_demanda")
+    .eq("id", expedienteId)
+    .maybeSingle();
+
+  if (!antes) return { error: "No se encontró el expediente" };
+
+  const despues = {
+    fisico_electronico: fisicoElectronico,
+    municipal_circuito: municipalCircuito,
+    pretension,
+    notas,
+    fecha_notificacion_demanda: fechaNotificacion,
+  };
+
+  // Solo lo que de verdad cambió, para que la auditoría sea legible y no se
+  // registre una entrada vacía por abrir y cerrar el formulario.
+  const cambios = Object.entries(despues).filter(
+    ([campo, valor]) => valor !== antes[campo as keyof typeof antes],
+  );
+
+  if (cambios.length === 0) return { ok: true };
+
+  const { data: filasActualizadas, error } = await supabase
+    .from("expedientes")
+    .update({ ...despues, updated_at: new Date().toISOString() })
+    .eq("id", expedienteId)
+    .select("id");
+
+  if (error) return { error: `No se pudieron guardar los cambios: ${error.message}` };
+  // Un UPDATE que RLS descarta no lanza error: devuelve 0 filas. Sin esta
+  // comprobación la pantalla diría "guardado" y nada habría cambiado.
+  if (!filasActualizadas || filasActualizadas.length === 0) {
+    return { error: "No se guardó nada: no tienes permiso para editar este expediente" };
+  }
+
+  await registrarAuditoria(actual.id, "editar_datos_generales", "expediente", expedienteId, {
+    cambios: Object.fromEntries(
+      cambios.map(([campo, valor]) => [
+        campo,
+        { antes: antes[campo as keyof typeof antes], despues: valor },
+      ]),
+    ),
+  });
 
   revalidatePath(`/expedientes/${expedienteId}`);
   return { ok: true };

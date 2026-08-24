@@ -60,6 +60,16 @@ export default async function DetalleExpedientePage({ params, searchParams }: Pr
   const observacionActual =
     (eventos ?? []).find((e) => e.tipos_evento?.codigo === "observacion_actualizada")?.detalle ?? null;
 
+  // Espeja exactamente lo que permiten las políticas de la migración
+  // 20260823110001: el Administrador y el Juez del despacho pueden corregir los
+  // datos generales, el Asistente solo si el expediente le está asignado, y el
+  // Analista de Datos nunca (es un rol de solo consulta). Ocultar el botón es
+  // cortesía de UI; el permiso real lo aplican RLS y la Server Action.
+  const puedeEditarDatos =
+    usuario?.rol === "administrador" ||
+    usuario?.rol === "juez" ||
+    (usuario?.rol === "asistente" && asignacionActual?.usuarios?.id === usuario.id);
+
   const fasesDelTipo = [...expediente.expediente_fases]
     .map((ef) => ef.fases_proceso)
     .filter((f): f is NonNullable<typeof f> => f !== null);
@@ -216,6 +226,7 @@ export default async function DetalleExpedientePage({ params, searchParams }: Pr
             fecha: a.created_at,
           }))}
           embargo={embargo}
+          puedeEditar={puedeEditarDatos}
         />
       )}
 
