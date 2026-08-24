@@ -35,3 +35,27 @@ export async function getConfiguracionSistema() {
     .single();
   return data;
 }
+
+export type TipoEvento = {
+  id: string;
+  codigo: string;
+  nombre: string;
+  tipo_proceso_id: number | null;
+  alimenta: string;
+  es_generado_por_sistema: boolean;
+};
+
+export async function getTiposEvento(): Promise<TipoEvento[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("tipos_evento")
+    .select("id, codigo, nombre, tipo_proceso_id, alimenta, es_generado_por_sistema")
+    .order("codigo");
+  return data ?? [];
+}
+
+export async function getDespachos() {
+  const supabase = await createClient();
+  const { data } = await supabase.from("despachos").select("id, nombre, tipo").order("nombre");
+  return data ?? [];
+}

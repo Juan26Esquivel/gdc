@@ -15,6 +15,7 @@ import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
@@ -37,6 +38,8 @@ type Documento = {
   created_at: string;
   updated_at: string;
   fecha_confirmacion: string | null;
+  culmina_proceso: boolean;
+  motivo_culminacion: string | null;
   tipos_documento: { nombre: string } | null;
   generado_por_usuario: { nombre_completo: string } | null;
   confirmado_por_usuario: { nombre_completo: string } | null;
@@ -171,6 +174,7 @@ function NuevoDocumentoForm({
 }) {
   const [tipoDocumentoId, setTipoDocumentoId] = useState("");
   const [contenido, setContenido] = useState("");
+  const [culminaProceso, setCulminaProceso] = useState(false);
   const [estado, formAction, pending] = useActionState(generarDocumento, ESTADO_INICIAL_GENERAR);
   useRefrescarAlExito(estado.ok);
 
@@ -201,6 +205,30 @@ function NuevoDocumentoForm({
             </Select>
           </div>
           <TiptapEditor contenidoInicial="" onChangeTexto={setContenido} />
+
+          <div className="flex items-center gap-2 rounded-md border p-3">
+            <Checkbox
+              id="culmina_proceso"
+              name="culmina_proceso"
+              checked={culminaProceso}
+              onCheckedChange={(checked) => setCulminaProceso(checked === true)}
+            />
+            <div>
+              <Label htmlFor="culmina_proceso" className="text-sm font-semibold">
+                Este documento culmina el proceso
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                El cierre real ocurre cuando el Juez confirme este documento, no al generarlo.
+              </p>
+            </div>
+          </div>
+          {culminaProceso && (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="motivo_culminacion">Motivo de culminación (obligatorio)</Label>
+              <Textarea id="motivo_culminacion" name="motivo_culminacion" rows={2} required />
+            </div>
+          )}
+
           {estado.error && <p className="text-sm text-destructive">{estado.error}</p>}
           <Button type="submit" disabled={pending || !tipoDocumentoId || !contenido.trim()}>
             {pending ? "Generando…" : "Generar .docx"}
@@ -257,7 +285,14 @@ function DocumentoExistente({
       <CardContent className="flex flex-col gap-4 p-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-heading text-sm font-semibold">{documento.tipos_documento?.nombre}</p>
+            <p className="font-heading text-sm font-semibold">
+              {documento.tipos_documento?.nombre}
+              {documento.culmina_proceso && (
+                <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-800">
+                  Culmina el proceso
+                </span>
+              )}
+            </p>
             <p className="text-xs text-muted-foreground">
               Generado por {documento.generado_por_usuario?.nombre_completo} el{" "}
               {formatearFecha(documento.created_at)}

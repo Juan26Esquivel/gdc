@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { getUsuarioActual } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
 import { getConfiguracionSistema } from "@/lib/catalogos";
@@ -24,6 +25,12 @@ export async function crearExpediente(
   const cuantiaRaw = (formData.get("cuantia") as string)?.trim();
   const cuantia = cuantiaRaw ? Number(cuantiaRaw) : null;
   const esLanzamiento = formData.get("es_lanzamiento") === "on";
+  const fisicoElectronico = (formData.get("fisico_electronico") as string) || null;
+  const municipalCircuito = (formData.get("municipal_circuito") as string) || null;
+  const pretension = (formData.get("pretension") as string)?.trim() || null;
+  const fechaRegistro =
+    (formData.get("fecha_registro") as string) || new Date().toISOString().slice(0, 10);
+  const asistenteId = (formData.get("asistente_id") as string) || null;
 
   if (!numeroExpediente || !tipoProcesoId) {
     return { error: "Número de expediente y tipo de proceso son obligatorios" };
@@ -46,19 +53,34 @@ export async function crearExpediente(
   }
 
   const supabase = await createClient();
+
+  // El Excel diferencia por tipo (ej. "Monto de mandamiento de pago" en vez de
+  // "Cuantía"), pero el campo subyacente es el mismo `cuantia` — solo cambia
+  // la etiqueta en el formulario (OT-04, sección 3.4).
+  const { data: tipoProceso } = await supabase
+    .from("tipos_proceso")
+    .select("nombre")
+    .eq("id", tipoProcesoId)
+    .single();
+  const esMatrimonio = tipoProceso?.nombre === "Matrimonio";
+
   const { data: expediente, error: errorInsert } = await supabase
     .from("expedientes")
     .insert({
       numero_expediente: numeroExpediente,
       tipo_proceso_id: tipoProcesoId,
       subtipo_proceso_id: subtipoProcesoId,
-      cuantia,
-      es_lanzamiento: esLanzamiento,
+      cuantia: esMatrimonio ? null : cuantia,
+      es_lanzamiento: esMatrimonio ? false : esLanzamiento,
+      pretension: esMatrimonio ? null : pretension,
+      fisico_electronico: fisicoElectronico,
+      municipal_circuito: municipalCircuito,
       created_by: actual.id,
       despacho_id: actual.despacho_id,
-      // Nace igual a la fecha de hoy (= created_at); el Juez puede corregirla
-      // luego desde la aplicación (OT-01/OT-02, campo editable en OT-04).
-      fecha_registro: new Date().toISOString().slice(0, 10),
+      // Nace en la fecha que indique el formulario (por defecto, hoy); el
+      // Juez puede corregirla luego desde la pestaña de Eventos (OT-04).
+      fecha_registro: fechaRegistro,
+      estado_matrimonio: esMatrimonio ? "en_tramite" : null,
     })
     .select("id")
     .single();
@@ -70,7 +92,7 @@ export async function crearExpediente(
   // Algunos tipos de proceso (Matrimonio, y por ahora "Declarativos especiales"
   // y "Desacato a los tribunales" — ver OT-02) no tienen catálogo de fases
   // propio todavía: el expediente se crea igual, simplemente sin fase inicial,
-  // en vez de fallar. El flujo de registro por tipo se construye en OT-04.
+  // en vez de fallar.
   const { data: fasesDelTipo } = await supabase
     .from("fases_proceso")
     .select("id, tipo_proceso_id, nombre, orden, es_fase_inicial")
@@ -88,8 +110,22 @@ export async function crearExpediente(
     }
   }
 
+  if (asistenteId) {
+    await supabase.from("asignaciones").insert({
+      expediente_id: expediente.id,
+      asistente_id: asistenteId,
+      asignado_por: actual.id,
+    });
+  }
+
   revalidatePath("/expedientes");
-  return { ok: true, advertencia };
+  // Modo "alertar" (RF-35): no bloquea la creación, pero la advertencia debe
+  // seguir siendo visible — se pasa como query param a la página de destino
+  // en vez de perderse silenciosamente al redirigir.
+  const destino = advertencia
+    ? `/expedientes/${expediente.id}?advertencia=${encodeURIComponent(advertencia)}`
+    : `/expedientes/${expediente.id}`;
+  redirect(destino);
 }
 
 export type EstadoAvanzarFase = { error?: string; ok?: boolean };

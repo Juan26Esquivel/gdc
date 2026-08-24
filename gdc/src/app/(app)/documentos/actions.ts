@@ -19,9 +19,14 @@ export async function generarDocumento(
   const expedienteId = formData.get("expediente_id") as string;
   const tipoDocumentoId = Number(formData.get("tipo_documento_id"));
   const contenido = (formData.get("contenido_texto") as string)?.trim();
+  const culminaProceso = formData.get("culmina_proceso") === "on";
+  const motivoCulminacion = (formData.get("motivo_culminacion") as string)?.trim() || null;
 
   if (!expedienteId || !tipoDocumentoId || !contenido) {
     return { error: "Expediente, tipo de documento y contenido son obligatorios" };
+  }
+  if (culminaProceso && !motivoCulminacion) {
+    return { error: "El motivo de culminación es obligatorio si el documento culmina el proceso" };
   }
 
   const supabase = await createClient();
@@ -56,6 +61,11 @@ export async function generarDocumento(
       // La "validación" es automática al generarse el .docx (completitud de campos,
       // ya garantizada por los required del formulario) — no es una acción de rol (RF-12/13).
       estado: "validado",
+      // El cierre real del expediente NO ocurre aquí (OT-03): un trigger de
+      // base de datos lo activa cuando este documento pase a "confirmado".
+      // Marcar culmina_proceso ahora es solo declarar la intención.
+      culmina_proceso: culminaProceso,
+      motivo_culminacion: motivoCulminacion,
     })
     .select("id")
     .single();

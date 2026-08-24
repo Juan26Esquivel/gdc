@@ -1,16 +1,31 @@
-import { FileText, Gavel, FileCheck, Folder } from "lucide-react";
+import { Gavel, FileText, FileCheck } from "lucide-react";
 import { getUsuarioActual } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
 import { getConfiguracionSistema } from "@/lib/catalogos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/stat-card";
-import { CargaPorFaseChart } from "./carga-por-fase-chart";
+import { calcularSemaforo } from "@/lib/semaforo";
+import { calcularMovimientosSinTrabajar } from "@/lib/inactividad";
+import { BarrasCategoriaChart } from "./barras-categoria-chart";
 import { DocumentosPorTipoChart } from "./documentos-por-tipo-chart";
+import { TarjetaSemaforo, type FilaSemaforo } from "./tarjeta-semaforo";
+import {
+  TarjetaMovimientosSinTrabajar,
+  TarjetaPendientesNotificar,
+  TarjetaEdictosSinPublicar,
+  type ItemMovimientoSinTrabajar,
+  type ItemPendienteNotificar,
+  type ItemEdictoSinPublicar,
+} from "./tarjetas-alerta";
 import { RealtimeRefresh } from "./realtime-refresh";
 
 function inicioMes(offsetMeses = 0) {
   const d = new Date();
   return new Date(d.getFullYear(), d.getMonth() + offsetMeses, 1);
+}
+
+function faseActivaDe(fases: { fase_id: string; fecha_fin: string | null; fecha_inicio: string; fases_proceso: { nombre: string } | null }[]) {
+  return fases.find((f) => f.fecha_fin === null) ?? null;
 }
 
 export default async function DashboardPage() {
@@ -38,7 +53,9 @@ export default async function DashboardPage() {
   const inicioMesAnterior = inicioMes(-1);
 
   const [
-    { data: expedientes },
+    { data: expedientesActivos },
+    { data: eventos },
+    { data: todosExpedientes },
     { data: documentos },
     { data: audiencias },
     configuracion,
@@ -46,8 +63,18 @@ export default async function DashboardPage() {
     supabase
       .from("expedientes")
       .select(
-        "id, created_at, expediente_fases(fase_id, fecha_fin, fecha_inicio, fases_proceso(nombre))",
-      ),
+        `id, numero_expediente, tipo_proceso_id, subtipo_proceso_id, fecha_registro, created_at,
+         omitir_umbral_inactividad,
+         tipos_proceso(nombre),
+         subtipos_proceso(nombre),
+         expediente_fases(fase_id, fecha_fin, fecha_inicio, fases_proceso(nombre)),
+         asignaciones(activa, usuarios!asistente_id(nombre_completo))`,
+      )
+      .eq("cerrado", false),
+    supabase
+      .from("eventos_expediente")
+      .select("id, expediente_id, created_at, tipos_evento(codigo)"),
+    supabase.from("expedientes").select("id, created_at, cerrado, fecha_cierre"),
     supabase
       .from("documentos")
       .select("id, estado, created_at, fecha_confirmacion, tipos_documento(nombre)"),
@@ -55,78 +82,169 @@ export default async function DashboardPage() {
     getConfiguracionSistema(),
   ]);
 
-  const totalExpedientes = expedientes?.length ?? 0;
-
-  const audienciasEsteMes =
-    audiencias?.filter((a) => new Date(a.fecha_programada) >= inicioMesActual).length ?? 0;
-
-  const documentosPorValidar = documentos?.filter((d) => d.estado === "validado").length ?? 0;
-
-  const documentosConfirmadosMes =
-    documentos?.filter(
-      (d) => d.estado === "confirmado" && d.fecha_confirmacion && new Date(d.fecha_confirmacion) >= inicioMesActual,
-    ).length ?? 0;
-
-  // RF-18: carga de trabajo por fase (fase activa de cada expediente). El
-  // catálogo de fases ahora es por tipo de proceso (OT-02), así que se agrupa
-  // por el nombre de la fase activa en vez de un enum fijo de 4 valores.
-  const conteoPorFase: Record<string, number> = {};
-  for (const exp of expedientes ?? []) {
-    const activa = exp.expediente_fases.find((f) => f.fecha_fin === null);
-    const nombreFase = activa?.fases_proceso?.nombre;
-    if (nombreFase) conteoPorFase[nombreFase] = (conteoPorFase[nombreFase] ?? 0) + 1;
-  }
-  const datosCargaPorFase = Object.entries(conteoPorFase).map(([fase, cantidad]) => ({
-    fase,
-    cantidad,
-  }));
-
-  // RF-16: documentos generados este mes, por tipo
-  const documentosEsteMes = (documentos ?? []).filter(
-    (d) => new Date(d.created_at) >= inicioMesActual,
-  );
-  const conteoPorTipo: Record<string, number> = {};
-  for (const doc of documentosEsteMes) {
-    const nombre = doc.tipos_documento?.nombre ?? "Otro";
-    conteoPorTipo[nombre] = (conteoPorTipo[nombre] ?? 0) + 1;
-  }
-  const datosPorTipo = Object.entries(conteoPorTipo).map(([tipo, cantidad]) => ({
-    tipo,
-    cantidad,
-  }));
-
-  // RF-17: comparativo mes actual vs mes anterior
-  const expedientesMesActual = (expedientes ?? []).filter(
-    (e) => new Date(e.created_at) >= inicioMesActual,
-  ).length;
-  const expedientesMesAnterior = (expedientes ?? []).filter(
-    (e) => new Date(e.created_at) >= inicioMesAnterior && new Date(e.created_at) < inicioMesActual,
-  ).length;
-
-  // RF-24-EXTRA: expedientes en admisión hace más de plazo_admision_dias sin pasar a notificación
+  const activos = expedientesActivos ?? [];
+  const umbralInactividadDias = configuracion?.umbral_inactividad_dias ?? 30;
   const plazoAdmisionDias = configuracion?.plazo_admision_dias ?? 30;
+
+  // Punto 1: expedientes activos por tipo de proceso (Declarativo se
+  // desglosa por subtipo, como en el Excel/mockup; el resto no tiene subtipo
+  // parametrizado en el catálogo todavía).
+  const conteoPorCategoria: Record<string, number> = {};
+  for (const exp of activos) {
+    const etiqueta = exp.subtipos_proceso?.nombre
+      ? `${exp.tipos_proceso?.nombre} · ${exp.subtipos_proceso.nombre}`
+      : (exp.tipos_proceso?.nombre ?? "Sin tipo");
+    conteoPorCategoria[etiqueta] = (conteoPorCategoria[etiqueta] ?? 0) + 1;
+  }
+  const datosPorCategoria = Object.entries(conteoPorCategoria)
+    .map(([categoria, cantidad]) => ({ categoria, cantidad }))
+    .sort((a, b) => b.cantidad - a.cantidad);
+
+  // Punto 2: semáforo por tiempo en el sistema (sobre fecha_registro).
+  const filasSemaforo: FilaSemaforo[] = activos.map((exp) => {
+    const estado = calcularSemaforo(exp.fecha_registro);
+    const faseActiva = faseActivaDe(exp.expediente_fases);
+    return {
+      id: exp.id,
+      numeroExpediente: exp.numero_expediente,
+      tipoProcesoId: exp.tipo_proceso_id,
+      tipoNombre: exp.tipos_proceso?.nombre ?? "—",
+      subtipoNombre: exp.subtipos_proceso?.nombre ?? null,
+      faseNombre: faseActiva?.fases_proceso?.nombre ?? null,
+      fechaRegistro: exp.fecha_registro,
+      color: estado.color,
+      meses: estado.meses,
+    };
+  });
+  const tiposParaFiltro = Array.from(
+    new Map(activos.map((e) => [e.tipo_proceso_id, e.tipos_proceso?.nombre ?? "—"])).entries(),
+  ).map(([id, nombre]) => ({ id, nombre }));
+
+  // Punto 3: movimientos sin trabajar (eventos_expediente.created_at, nunca
+  // fecha_evento — ver OT-03/OT-04). Último evento por expediente.
+  const ultimoEventoPorExpediente = new Map<string, string>();
+  for (const ev of eventos ?? []) {
+    const actual = ultimoEventoPorExpediente.get(ev.expediente_id);
+    if (!actual || new Date(ev.created_at) > new Date(actual)) {
+      ultimoEventoPorExpediente.set(ev.expediente_id, ev.created_at);
+    }
+  }
+  const inactivos = calcularMovimientosSinTrabajar(
+    activos.map((e) => ({ id: e.id, createdAt: e.created_at, omitirUmbral: e.omitir_umbral_inactividad })),
+    ultimoEventoPorExpediente,
+    umbralInactividadDias,
+  );
+  const itemsMovimientosSinTrabajar: ItemMovimientoSinTrabajar[] = inactivos.map((item) => {
+    const exp = activos.find((e) => e.id === item.expedienteId)!;
+    const faseActiva = faseActivaDe(exp.expediente_fases);
+    return {
+      id: exp.id,
+      numeroExpediente: exp.numero_expediente,
+      tipoNombre: exp.subtipos_proceso?.nombre
+        ? `${exp.tipos_proceso?.nombre} ${exp.subtipos_proceso.nombre}`
+        : (exp.tipos_proceso?.nombre ?? "—"),
+      faseNombre: faseActiva?.fases_proceso?.nombre ?? null,
+      diasSinMovimiento: item.diasSinMovimiento,
+      sinEventos: item.sinEventos,
+    };
+  });
+
+  // Punto 4: pendientes de notificar tras admisión (ya existía como
+  // "Críticos Art. 395" — se conserva la misma regla, ahora contra
+  // fases_proceso.nombre en vez del enum viejo, con el día exacto y el
+  // asignado, como pide el mockup).
   const limiteAdmision = new Date();
   limiteAdmision.setDate(limiteAdmision.getDate() - plazoAdmisionDias);
-  const expedientesCriticos = (expedientes ?? [])
+  const itemsPendientesNotificar: ItemPendienteNotificar[] = activos
     .map((exp) => {
       const admisionActiva = exp.expediente_fases.find(
         (f) => f.fases_proceso?.nombre === "Admisión" && f.fecha_fin === null,
       );
-      return admisionActiva ? { id: exp.id, fecha_inicio: admisionActiva.fecha_inicio } : null;
+      if (!admisionActiva || new Date(admisionActiva.fecha_inicio) >= limiteAdmision) return null;
+      const dias = Math.floor(
+        (new Date().getTime() - new Date(admisionActiva.fecha_inicio).getTime()) / (1000 * 60 * 60 * 24),
+      );
+      const asignacionActiva = exp.asignaciones.find((a) => a.activa);
+      return {
+        id: exp.id,
+        numeroExpediente: exp.numero_expediente,
+        tipoNombre: exp.tipos_proceso?.nombre ?? "—",
+        diasEnAdmision: dias,
+        asignadoNombre: asignacionActiva?.usuarios?.nombre_completo ?? null,
+      };
     })
-    .filter(
-      (item): item is { id: string; fecha_inicio: string } =>
-        item !== null && new Date(item.fecha_inicio) < limiteAdmision,
-    );
+    .filter((item): item is ItemPendienteNotificar => item !== null)
+    .sort((a, b) => b.diasEnAdmision - a.diasEnAdmision);
+
+  // Punto 5: edictos sin publicar (Jurisdicción voluntaria) — edicto emitido
+  // sin publicación posterior, hace más de 30 días.
+  const eventosPorExpediente = new Map<string, { edicto?: string; publicacion?: string }>();
+  for (const ev of eventos ?? []) {
+    const codigo = ev.tipos_evento?.codigo;
+    if (codigo !== "edicto_emplazatorio_emitido" && codigo !== "publicacion_edicto_registrada") continue;
+    const actual = eventosPorExpediente.get(ev.expediente_id) ?? {};
+    if (codigo === "edicto_emplazatorio_emitido") {
+      if (!actual.edicto || new Date(ev.created_at) > new Date(actual.edicto)) actual.edicto = ev.created_at;
+    } else {
+      if (!actual.publicacion || new Date(ev.created_at) > new Date(actual.publicacion)) {
+        actual.publicacion = ev.created_at;
+      }
+    }
+    eventosPorExpediente.set(ev.expediente_id, actual);
+  }
+  const itemsEdictosSinPublicar: ItemEdictoSinPublicar[] = [];
+  for (const [expedienteId, datos] of eventosPorExpediente.entries()) {
+    if (!datos.edicto) continue;
+    if (datos.publicacion && new Date(datos.publicacion) > new Date(datos.edicto)) continue;
+    const dias = Math.floor((new Date().getTime() - new Date(datos.edicto).getTime()) / (1000 * 60 * 60 * 24));
+    if (dias <= 30) continue;
+    const exp = activos.find((e) => e.id === expedienteId);
+    if (!exp) continue;
+    itemsEdictosSinPublicar.push({
+      id: exp.id,
+      numeroExpediente: exp.numero_expediente,
+      subtipoNombre: exp.subtipos_proceso?.nombre ?? null,
+      diasDesdeEdicto: dias,
+    });
+  }
+  itemsEdictosSinPublicar.sort((a, b) => b.diasDesdeEdicto - a.diasDesdeEdicto);
+
+  // Indicadores generales (RF-16/RF-17, ya existentes — se conservan debajo
+  // del Panel Principal, sin la aproximación vieja de "resueltos" que este
+  // dashboard usaba antes: expedientes.cerrado ya existe de verdad, y el
+  // dato de "resueltos" real vive en el semáforo/estado de cada expediente,
+  // no en un conteo de documentos confirmados).
+  const audienciasEsteMes =
+    audiencias?.filter((a) => new Date(a.fecha_programada) >= inicioMesActual).length ?? 0;
+  const documentosPorValidar = documentos?.filter((d) => d.estado === "validado").length ?? 0;
+  const documentosEsteMes = (documentos ?? []).filter((d) => new Date(d.created_at) >= inicioMesActual);
+  const conteoPorTipoDoc: Record<string, number> = {};
+  for (const doc of documentosEsteMes) {
+    const nombre = doc.tipos_documento?.nombre ?? "Otro";
+    conteoPorTipoDoc[nombre] = (conteoPorTipoDoc[nombre] ?? 0) + 1;
+  }
+  const datosPorTipoDoc = Object.entries(conteoPorTipoDoc).map(([tipo, cantidad]) => ({ tipo, cantidad }));
+  const expedientesMesActual = (todosExpedientes ?? []).filter(
+    (e) => new Date(e.created_at) >= inicioMesActual,
+  ).length;
+  const expedientesMesAnterior = (todosExpedientes ?? []).filter(
+    (e) => new Date(e.created_at) >= inicioMesAnterior && new Date(e.created_at) < inicioMesActual,
+  ).length;
+
+  // RF-17: "resueltos" ya no se aproxima con documentos confirmados (OT-01
+  // sección 3.6) — usa el cierre real de expedientes.cerrado (OT-03).
+  const expedientesCerradosMes = (todosExpedientes ?? []).filter(
+    (e) => e.cerrado && e.fecha_cierre && new Date(e.fecha_cierre) >= inicioMesActual,
+  ).length;
 
   return (
     <div className="flex flex-col gap-4">
       <RealtimeRefresh />
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-heading text-xl font-semibold">Resumen del Despacho</h1>
+          <h1 className="font-heading text-xl font-semibold">Panel del Juez</h1>
           <p className="text-sm text-muted-foreground">
-            Monitor de carga laboral y cumplimiento de plazos procesales.
+            Actualizado en tiempo real · {activos.length} expedientes activos.
           </p>
         </div>
         <span className="rounded-sm bg-emerald-500/10 px-2 py-1 text-xs font-semibold uppercase text-emerald-700">
@@ -134,14 +252,30 @@ export default async function DashboardPage() {
         </span>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard icono={Folder} label="Total expedientes" valor={totalExpedientes} />
+      <Card>
+        <CardHeader>
+          <CardTitle>Expedientes activos por tipo de proceso</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <BarrasCategoriaChart datos={datosPorCategoria} />
+        </CardContent>
+      </Card>
+
+      <TarjetaSemaforo filas={filasSemaforo} tipos={tiposParaFiltro} />
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <TarjetaMovimientosSinTrabajar items={itemsMovimientosSinTrabajar} umbralDias={umbralInactividadDias} />
+        <TarjetaPendientesNotificar items={itemsPendientesNotificar} plazoAdmisionDias={plazoAdmisionDias} />
+        <TarjetaEdictosSinPublicar items={itemsEdictosSinPublicar} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard icono={Gavel} label="Audiencias este mes" valor={audienciasEsteMes} />
         <StatCard icono={FileText} label="Documentos por validar" valor={documentosPorValidar} />
         <StatCard
           icono={FileCheck}
-          label="Documentos confirmados (mes)"
-          valor={documentosConfirmadosMes}
+          label="Expedientes cerrados (mes)"
+          valor={expedientesCerradosMes}
           destacado
         />
       </div>
@@ -149,32 +283,19 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Carga de Trabajo por Fase</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <CargaPorFaseChart datos={datosCargaPorFase} />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
             <CardTitle>Documentos Emitidos Este Mes</CardTitle>
           </CardHeader>
           <CardContent>
-            {datosPorTipo.length > 0 ? (
-              <DocumentosPorTipoChart datos={datosPorTipo} />
+            {datosPorTipoDoc.length > 0 ? (
+              <DocumentosPorTipoChart datos={datosPorTipoDoc} />
             ) : (
-              <p className="text-sm text-muted-foreground">
-                Sin documentos generados este mes todavía.
-              </p>
+              <p className="text-sm text-muted-foreground">Sin documentos generados este mes todavía.</p>
             )}
           </CardContent>
         </Card>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Comparativo Mensual de Expedientes</CardTitle>
+            <CardTitle>Comparativo Mensual de Expedientes Ingresados</CardTitle>
           </CardHeader>
           <CardContent className="flex gap-8">
             <div>
@@ -185,26 +306,6 @@ export default async function DashboardPage() {
               <p className="text-2xl font-bold">{expedientesMesAnterior}</p>
               <p className="text-xs text-muted-foreground">Ingresados mes anterior</p>
             </div>
-          </CardContent>
-        </Card>
-        <Card className="border-l-4 border-l-destructive">
-          <CardHeader>
-            <CardTitle>Críticos (Art. 395 — plazo de admisión)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {expedientesCriticos.length > 0 ? (
-              <p className="text-sm">
-                <span className="font-semibold text-destructive">
-                  {expedientesCriticos.length}
-                </span>{" "}
-                expediente(s) llevan más de {plazoAdmisionDias} días en Admisión sin pasar a
-                Notificación de la demanda.
-              </p>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Ningún expediente excede el plazo de admisión de {plazoAdmisionDias} días.
-              </p>
-            )}
           </CardContent>
         </Card>
       </div>

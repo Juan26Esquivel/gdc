@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CatalogoProcesos } from "./catalogo-procesos";
 import { ConfiguracionForm } from "./configuracion-form";
+import { ReglasCierre } from "./reglas-cierre";
 
 export default async function AdministracionPage() {
   const usuario = await getUsuarioActual();
@@ -62,6 +63,8 @@ export default async function AdministracionPage() {
           <ConfiguracionForm configuracion={configuracion ?? null} />
         </CardContent>
       </Card>
+
+      <ReglasCierre umbralInactividadDias={configuracion?.umbral_inactividad_dias ?? 30} />
     </div>
   );
 }
