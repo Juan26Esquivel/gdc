@@ -161,6 +161,13 @@ create index idx_expedientes_numero on expedientes(numero_expediente);
 
 ### 005 — Fases de Expediente (histórico)
 
+> **Reemplazado por OT-02** (migración `20260823090002`): el enum `fase_expediente` y la
+> columna `expediente_fases.fase` ya no existen — se reemplazaron por el catálogo
+> `fases_proceso` (una lista de fases propia por tipo de proceso) y `expediente_fases.fase_id`
+> (FK). Se deja el SQL original abajo tal cual se documentó en su momento, como referencia
+> histórica de por qué el diseño original quedó corto (ver `docs_extra/ordenes_tecnicas/OT-01`,
+> sección 3.2).
+
 ```sql
 create type fase_expediente as enum (
   'admision',
@@ -604,7 +611,7 @@ create trigger trg_auditoria_borrado_audiencias
 
 ### Módulo 2 — Gestión de Expedientes y Procesos
 
-**RF-04.** El sistema debe permitir al Administrador registrar un expediente indicando: número de expediente, tipo de proceso (de los 6 catalogados), subtipo (cuando aplique, ej. Ordinario/Sumario dentro de Declarativo), cuantía (o indicar que es indeterminada), y si corresponde a un lanzamiento. **Implementado** (`gdc/src/app/(app)/expedientes/`), incluyendo la validación del tope de cuantía (RF-35/36) al momento de crear el expediente.
+**RF-04.** El sistema debe permitir al Administrador registrar un expediente indicando: número de expediente, tipo de proceso (de los 6 catalogados), subtipo (cuando aplique, ej. Ordinario/Sumario dentro de Declarativo), cuantía (o indicar que es indeterminada), y si corresponde a un lanzamiento. **Implementado** (`gdc/src/app/(app)/expedientes/`), incluyendo la validación del tope de cuantía (RF-35/36) al momento de crear el expediente. **Actualización OT-02** (`docs_extra/ordenes_tecnicas/`): el modelo de `expedientes` ya tiene los campos que pedía el Excel real del despacho (`fisico_electronico`, `municipal_circuito`, `pretension`, `notas`, `fecha_registro` editable, `despacho_id`, override de umbral de inactividad), pero el formulario de un solo paso actual todavía no los expone ni implementa el flujo de selección de tipo primero — eso es la ficha OT-04, pendiente.
 
 **RF-05.** El sistema debe permitir al Administrador asignar un expediente como tarea a un Asistente específico. **Implementado** (columna "Asignado a" en `/expedientes`): una sola asignación activa por expediente (se desactiva la anterior al reasignar). Verificado que un Asistente autenticado solo ve, vía RLS, los expedientes que tiene asignados.
 
@@ -612,7 +619,7 @@ create trigger trg_auditoria_borrado_audiencias
 
 **RF-07.** El sistema debe mostrar al Juez el desglose de expedientes por fase (Admisión, Notificación de la demanda, Audiencia preliminar, Audiencia de fondo) dentro de cada tipo de proceso.
 
-**RF-08.** El sistema debe registrar el historial de cambios de fase de cada expediente (tabla `expediente_fases`), conservando fecha de inicio y fin de cada fase. **Implementado**: fase `admision` se crea automáticamente al registrar el expediente; el Administrador avanza manualmente de fase desde el listado (cierra la fase activa y abre la siguiente en el mismo orden de `ORDEN_FASES`), pidiendo `fecha_notificacion_demanda` al entrar a la fase `notificacion_demanda`.
+**RF-08.** El sistema debe registrar el historial de cambios de fase de cada expediente (tabla `expediente_fases`), conservando fecha de inicio y fin de cada fase. **Implementado**: la fase inicial se crea automáticamente al registrar el expediente; el Administrador avanza manualmente de fase desde el listado (cierra la fase activa y abre la siguiente), pidiendo `fecha_notificacion_demanda` al entrar a la fase de notificación. **Actualización OT-02**: el enum fijo `fase_expediente` (pensado solo para Declarativo) se reemplazó por el catálogo `fases_proceso`, con una lista de fases propia por tipo de proceso (Declarativo, Ejecución y Jurisdicción voluntaria tienen la suya; Matrimonio no usa fases, sino un campo de Estado que construye la ficha OT-03). Los datos existentes se remapearon sin pérdida. "Declarativos especiales" y "Desacato a los tribunales" quedan sin catálogo de fases propio por ahora — no tienen expedientes reales todavía; se retoma en una ficha futura, igual que "Secuestro".
 
 ### Módulo 3 — Generación y Ciclo de Vida de Documentos
 
@@ -682,7 +689,7 @@ create trigger trg_auditoria_borrado_audiencias
 
 **RF-31.** El sistema debe permitir al Administrador administrar usuarios y roles con permisos completos (lectura, modificación, ingreso, eliminación, restablecimiento). **Implementado**: el panel lateral de `/usuarios` ahora permite editar nombre/rol, activar/desactivar la cuenta y restablecer la contraseña (`gdc/src/app/(app)/usuarios/actions.ts`). **Hallazgo de seguridad corregido en el camino**: `usuarios.activo` nunca había tenido ningún efecto real (ni en RLS ni en el login) — ver migración 021 — una cuenta "desactivada" seguía funcionando con total normalidad antes de este módulo.
 
-**RF-32.** El sistema debe estar diseñado de forma que la incorporación futura de un campo `despacho_id`/`tenant_id` no requiera reestructurar las tablas existentes (preparación multi-tenant). **Satisfecho por diseño, sin cambios de código**: ninguna tabla ni política RLS asume un único despacho de forma que impida agregar esa columna después (ver nota en migración 011).
+**RF-32.** El sistema debe estar diseñado de forma que la incorporación futura de un campo `despacho_id`/`tenant_id` no requiera reestructurar las tablas existentes (preparación multi-tenant). **Implementado** (OT-02, migración `20260823090001`): pasa de "preparado pero pospuesto" a implementado de verdad. Existe la tabla `despachos` (sembrada con el único despacho real, "Segundo Municipal Civil"), `despacho_id` en `expedientes` y `usuarios` (no null, con datos existentes migrados), y las políticas RLS de `expedientes`/`documentos`/`audiencias`/`expediente_fases`/`asignaciones` ya filtran por despacho además de por rol (migración `20260823090007`) — verificado con sesiones reales de los 4 roles, confirmando que cada uno ve exactamente las filas esperadas de su despacho.
 
 **RF-33.** El sistema debe registrar en `auditoria` cualquier acción de creación, modificación o eliminación realizada por el Administrador sobre configuración, usuarios o catálogos. **Implementado** vía `gdc/src/lib/auditoria.ts` (`registrarAuditoria`), llamado desde crear/editar/activar/desactivar/restablecer usuario, editar subtipo de proceso y editar configuración general. Consultable en `/auditoria`.
 
@@ -751,6 +758,8 @@ create trigger trg_auditoria_borrado_audiencias
 - **RF-15 — "quién revisó" un documento:** la tabla `documentos` no tiene un campo `revisado_por` separado; solo se infiere de `observaciones_juez` (si tiene texto, alguien lo revisó y rechazó) y de `confirmado_por` (si fue aprobado directamente). Si se necesita trazabilidad explícita de cada revisión (incluyendo aprobaciones sin observaciones), se requeriría una tabla `documento_revisiones` separada — no implementada por ahora.
 - **RF-01 — edición/desactivación/restablecimiento de usuarios:** ✅ resuelto en el Módulo 7.
 - **RF-38 — botón de copiar texto plano:** ✅ resuelto — botón "Copiar texto" en el workspace de documentos.
+- **Restructuración de modelo (eventos, cierre real de expediente, alertas en tiempo real) — EN CURSO:** documentada en `docs_extra/ordenes_tecnicas/OT-01` (análisis y decisiones ya confirmadas por el usuario), con fichas ejecutables `OT-02` (modelo de datos base — **aplicada**: despachos, catálogo de fases por tipo, campos nuevos de expediente, umbral de inactividad, `culmina_proceso` en documentos) y `OT-03` (eventos de negocio, cierre real de expediente, abonos de embargo — pendiente) y `OT-04` (pantallas nuevas sobre ese modelo — pendiente, ni siquiera redactada todavía). RF-17 (aproximación de "resueltos" contando documentos confirmados) se corrige recién cuando OT-03 quede aplicada, no antes.
+- **Gap encontrado al ejecutar OT-02, resuelto con el usuario:** `tipos_proceso` tiene 6 filas pero OT-01/02/03 solo diseñan fases para 4 (Declarativo, Ejecución, Jurisdicción voluntaria, Matrimonio); "Declarativos especiales" y "Desacato a los tribunales" quedan sin catálogo de fases y sin poder registrar un expediente completo de esos 2 tipos, igual que "Secuestro" — decisión del usuario: dejarlos fuera de alcance por ahora (no tienen expedientes reales todavía). Se retoma en una ficha futura si el despacho llega a necesitarlos.
 
 ---
 
@@ -771,7 +780,7 @@ create trigger trg_auditoria_borrado_audiencias
 
 ## 8. Checklist de Estado de Implementación
 
-- [x] Migraciones 001–023 aplicadas en Supabase (proyecto "GDC", vía `gdc/supabase/migrations/` + `supabase db push`)
+- [x] Migraciones 001–030 aplicadas en Supabase (proyecto "GDC", vía `gdc/supabase/migrations/` + `supabase db push`) — 024 a 030 corresponden a la ficha OT-02 (ver más abajo)
 - [x] Seed de catálogo (`gdc/supabase/seed.sql`: tipos_proceso, subtipos_proceso, tipos_documento) aplicado y verificado
 - [x] RLS configurado por rol para cada tabla (migraciones 014–015, corrección en 017), verificado con `pg_class`/`pg_policies` en las 13 tablas y con usuarios reales de cada rol
 - [x] Proyecto Next.js inicializado (`gdc/`, App Router, TypeScript, Tailwind 4, shadcn/ui) con Supabase Auth conectado (`src/lib/supabase/{client,server,middleware}.ts`) y verificado end-to-end en navegador: login real → middleware protege `/dashboard` → lectura de `usuarios` vía RLS muestra rol correcto
@@ -794,3 +803,4 @@ create trigger trg_auditoria_borrado_audiencias
 - [x] Barra de búsqueda global y campana de notificaciones (header, antes decorativas — Fase 0 del sistema de diseño Iustitia): búsqueda multidato (expedientes + documentos) insensible a tildes/mayúsculas vía `gdc/src/app/(app)/busqueda-actions.ts`; notificaciones reales por rol (documentos pendientes de revisión/corrección, expedientes que exceden el plazo de admisión) vía `gdc/src/lib/notificaciones.ts` — sin tabla de notificaciones nueva, reutiliza datos ya existentes. Verificado con las 4 cuentas de prueba (Administrador, Juez, Asistente, Analista)
 - [x] Trigger de auditoría de borrado verificado en entorno de prueba (migración 013, ampliado en 022 a fases/audiencias) — confirmado end-to-end: eliminar un expediente de prueba generó entradas `eliminar_expediente`, `eliminar_documento` y `eliminar_fase_expediente` visibles en `/auditoria`
 - [~] Decisiones abiertas de la sección 6 resueltas: repositorio Git/GitHub ✅; campos restringidos pospuesto explícitamente (RF-29); plantilla oficial `.docx` sigue pendiente
+- [~] Ficha OT-02 — Modelo de datos base (`docs_extra/ordenes_tecnicas/`): despachos + `despacho_id` real (RF-32), catálogo `fases_proceso` por tipo de proceso reemplazando el enum fijo (con migración de datos existentes verificada), campos nuevos de `expedientes` (incluido `fecha_registro` editable y el override de umbral de inactividad con `check` en base de datos), `umbral_inactividad_dias` en configuración, `culmina_proceso`/`motivo_culminacion` en `documentos`, tipo de documento "Acuerdo de Mediación", y RLS por despacho en las 5 tablas afectadas — todo aplicado y verificado (build, lint, sesiones reales de los 4 roles, y los 2 `check` de base de datos probados con datos desechables). Solo falta el modelo de datos de OT-03 (eventos, cierre real de expediente, abonos de embargo) y las pantallas nuevas de OT-04 — ninguna de las dos se tocó en esta ficha

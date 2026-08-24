@@ -7,15 +7,37 @@
 ## 0. Datos del Proyecto (rellenar por el usuario en cada proyecto nuevo)
 
 ```
-Nombre del proyecto: [completar]
-Descripción / objetivo del negocio: [completar — ej. "SaaS de gestión de turnos para peluquerías"]
-Usuarios objetivo: [completar]
-Etapa: [idea / MVP / producción / mantenimiento]
-Stack elegido para este proyecto: [completar, o dejar que el agente proponga uno usando la sección 4]
-Restricciones especiales (presupuesto, hosting, integraciones obligatorias, normativa, etc.): [completar]
+Nombre del proyecto: GDC — Gestor Documental y de Trazabilidad de Expedientes (Iustitia)
+Descripción / objetivo del negocio: sistema de apoyo administrativo para un despacho judicial
+  civil en Panamá (hoy: Segundo Municipal Civil). Clasifica y da seguimiento a expedientes por
+  tipo de proceso y fase, genera documentos judiciales (Proveído, Providencia, Auto, Sentencia,
+  Oficio) con ciclo de vida propio, y da visibilidad de carga de trabajo y KPIs. No se integra
+  técnicamente con la plataforma del Órgano Judicial (el traslado del contenido es manual).
+Usuarios objetivo: 4 roles dentro del despacho — Juez, Asistente, Analista de Datos,
+  Administrador (rol único = superadministrador, acceso total).
+Etapa: MVP en desarrollo activo. Módulos 1-9 de REQUERIMIENTOS_GDC.md implementados y
+  verificados; en curso una restructuración de modelo de datos (eventos de negocio, cierre real
+  de expediente, alertas en tiempo real) documentada en docs_extra/ordenes_tecnicas/.
+Stack elegido para este proyecto: Next.js 16 (App Router) + React 19 + TypeScript, Tailwind CSS 4
+  + shadcn/ui, Supabase (Postgres/Auth/Storage/Realtime, proyecto alojado en la nube — sin Docker
+  local disponible en este entorno, ver nota abajo), `docx` para generación de documentos,
+  react-big-calendar, Recharts, deploy en Vercel.
+Restricciones especiales: basado en el Código Procesal Civil de Panamá (Ley 402 de 2023) —
+  cualquier cita legal sin confirmar se marca `[VERIFICAR]`, nunca se inventa un artículo. Sin
+  entorno Supabase local (no hay Docker instalado): las migraciones no se pueden ensayar antes de
+  aplicarlas, así que antes de escribir una migración de datos hay que verificar el estado real
+  con una consulta de solo lectura, y aplicar cambios de esquema es una acción a confirmar con el
+  usuario (ver sección 3.2 y 14 de este archivo).
 ```
 
 Si esta sección está vacía o incompleta, el agente debe **preguntar antes de asumir** decisiones importantes (stack, arquitectura, proveedor de hosting, etc.).
+
+**Nota sobre fichas técnicas (`docs_extra/ordenes_tecnicas/`):** este proyecto usa un patrón de
+dos sesiones — una sesión "líder técnico" (solo lectura) redacta fichas `OT-XX` con el análisis,
+las decisiones ya confirmadas por el usuario, y los criterios de aceptación; una sesión de
+desarrollo (con escritura) las ejecuta contra el código y Supabase. Al ejecutar una ficha, seguir
+exactamente su alcance (ni más ni menos que lo que pide, incluidas las partes que dice dejar fuera
+para una ficha futura) y cerrar con el reporte que la propia ficha pide en su última sección.
 
 ---
 
