@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CatalogoProcesos } from "./catalogo-procesos";
 import { ConfiguracionForm } from "./configuracion-form";
+import { DiasNoHabiles } from "./dias-no-habiles";
 import { ReglasCierre } from "./reglas-cierre";
 
 export default async function AdministracionPage() {
@@ -13,8 +14,12 @@ export default async function AdministracionPage() {
   }
 
   const supabase = await createClient();
-  const [{ data: tiposProceso }, { data: subtiposProceso }, { data: configuracion }] =
-    await Promise.all([
+  const [
+    { data: tiposProceso },
+    { data: subtiposProceso },
+    { data: configuracion },
+    { data: diasNoHabiles },
+  ] = await Promise.all([
       supabase.from("tipos_proceso").select("id, nombre, base_legal").order("id"),
       supabase
         .from("subtipos_proceso")
@@ -27,6 +32,7 @@ export default async function AdministracionPage() {
         .select("tope_cuantia, modo_validacion_cuantia, plazo_admision_dias, umbral_inactividad_dias")
         .eq("id", 1)
         .single(),
+      supabase.from("dias_no_habiles").select("fecha, descripcion").order("fecha"),
     ]);
 
   return (
@@ -61,6 +67,15 @@ export default async function AdministracionPage() {
         </CardHeader>
         <CardContent>
           <ConfiguracionForm configuracion={configuracion ?? null} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Días no hábiles (cálculo de términos, Ley 402)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <DiasNoHabiles dias={diasNoHabiles ?? []} />
         </CardContent>
       </Card>
 

@@ -59,3 +59,15 @@ export async function getDespachos() {
   const { data } = await supabase.from("despachos").select("id, nombre, tipo").order("nombre");
   return data ?? [];
 }
+
+/**
+ * Catálogo de días no hábiles (migración 20260823120001) como Set de
+ * "YYYY-MM-DD", que es la forma en que lo consumen las funciones puras de
+ * lib/dias-habiles.ts. Los sábados y domingos no están aquí: se excluyen por
+ * cálculo, no por catálogo.
+ */
+export async function getDiasNoHabiles(): Promise<Set<string>> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("dias_no_habiles").select("fecha").order("fecha");
+  return new Set((data ?? []).map((d) => d.fecha));
+}

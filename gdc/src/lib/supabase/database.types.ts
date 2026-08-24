@@ -256,6 +256,24 @@ export type Database = {
         }
         Relationships: []
       }
+      dias_no_habiles: {
+        Row: {
+          created_at: string
+          descripcion: string
+          fecha: string
+        }
+        Insert: {
+          created_at?: string
+          descripcion: string
+          fecha: string
+        }
+        Update: {
+          created_at?: string
+          descripcion?: string
+          fecha?: string
+        }
+        Relationships: []
+      }
       documentos: {
         Row: {
           archivo_docx_path: string | null

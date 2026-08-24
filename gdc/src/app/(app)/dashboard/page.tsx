@@ -1,7 +1,8 @@
 import { Gavel, FileText, FileCheck } from "lucide-react";
 import { getUsuarioActual } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
-import { getConfiguracionSistema } from "@/lib/catalogos";
+import { getConfiguracionSistema, getDiasNoHabiles } from "@/lib/catalogos";
+import { contarDiasHabilesTranscurridos } from "@/lib/dias-habiles";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/stat-card";
 import { calcularSemaforo } from "@/lib/semaforo";
@@ -59,6 +60,7 @@ export default async function DashboardPage() {
     { data: documentos },
     { data: audiencias },
     configuracion,
+    diasNoHabiles,
   ] = await Promise.all([
     supabase
       .from("expedientes")
@@ -80,6 +82,7 @@ export default async function DashboardPage() {
       .select("id, estado, created_at, fecha_confirmacion, tipos_documento(nombre)"),
     supabase.from("audiencias").select("id, fecha_programada"),
     getConfiguracionSistema(),
+    getDiasNoHabiles(),
   ]);
 
   const activos = expedientesActivos ?? [];
@@ -153,17 +156,22 @@ export default async function DashboardPage() {
   // "Críticos Art. 395" — se conserva la misma regla, ahora contra
   // fases_proceso.nombre en vez del enum viejo, con el día exacto y el
   // asignado, como pide el mockup).
-  const limiteAdmision = new Date();
-  limiteAdmision.setDate(limiteAdmision.getDate() - plazoAdmisionDias);
+  // El Art. 395 cuenta el plazo en días HÁBILES, no calendario: antes esta
+  // tarjeta restaba días corridos, así que avisaba antes del vencimiento legal
+  // real (confirmado con el usuario el 2026-08-23, ver REQUERIMIENTOS sección 6).
+  const hoyIso = new Date().toISOString().slice(0, 10);
   const itemsPendientesNotificar: ItemPendienteNotificar[] = activos
     .map((exp) => {
       const admisionActiva = exp.expediente_fases.find(
         (f) => f.fases_proceso?.nombre === "Admisión" && f.fecha_fin === null,
       );
-      if (!admisionActiva || new Date(admisionActiva.fecha_inicio) >= limiteAdmision) return null;
-      const dias = Math.floor(
-        (new Date().getTime() - new Date(admisionActiva.fecha_inicio).getTime()) / (1000 * 60 * 60 * 24),
+      if (!admisionActiva) return null;
+      const dias = contarDiasHabilesTranscurridos(
+        admisionActiva.fecha_inicio,
+        hoyIso,
+        diasNoHabiles,
       );
+      if (dias <= plazoAdmisionDias) return null;
       const asignacionActiva = exp.asignaciones.find((a) => a.activa);
       return {
         id: exp.id,

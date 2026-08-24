@@ -75,7 +75,8 @@ export function TarjetaPendientesNotificar({
       <CardHeader>
         <CardTitle>Pendientes de notificar tras admisión</CardTitle>
         <p className="text-xs text-muted-foreground">
-          Exceden el plazo de admisión (Art. 395, {plazoAdmisionDias} días) sin pasar a notificación
+          Exceden el plazo de admisión (Art. 395, {plazoAdmisionDias} días hábiles) sin pasar a
+          notificación
         </p>
       </CardHeader>
       <CardContent className="flex flex-col divide-y divide-border">
@@ -97,7 +98,7 @@ export function TarjetaPendientesNotificar({
               </p>
             </div>
             <span className="shrink-0 text-xs font-semibold text-destructive">
-              {item.diasEnAdmision} días
+              {item.diasEnAdmision} días hábiles
             </span>
           </Link>
         ))}
