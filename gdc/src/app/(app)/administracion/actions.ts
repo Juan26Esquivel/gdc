@@ -27,6 +27,7 @@ export async function actualizarPlazosSubtipo(
   if (!id) return { error: "Subtipo inválido" };
 
   const cambios = {
+    plazo_contestacion_dias: diasONulo(formData, "plazo_contestacion_dias"),
     plazo_audiencia_min_dias: diasONulo(formData, "plazo_audiencia_min_dias"),
     plazo_audiencia_max_dias: diasONulo(formData, "plazo_audiencia_max_dias"),
     plazo_audiencia_fondo_min_dias: diasONulo(formData, "plazo_audiencia_fondo_min_dias"),
@@ -56,6 +57,8 @@ export async function actualizarConfiguracionSistema(
   const modoValidacion = formData.get("modo_validacion_cuantia") as string;
   const plazoAdmisionDias = Number(formData.get("plazo_admision_dias"));
   const umbralInactividadDias = Number(formData.get("umbral_inactividad_dias"));
+  const plazoExcepcionEjecutivoDias = Number(formData.get("plazo_excepcion_ejecutivo_dias"));
+  const plazoEmbargoEjecutivoDias = Number(formData.get("plazo_embargo_ejecutivo_dias"));
 
   if (!Number.isFinite(topeCuantia) || topeCuantia <= 0) {
     return { error: "El tope de cuantía debe ser un número mayor a 0" };
@@ -69,6 +72,19 @@ export async function actualizarConfiguracionSistema(
   if (!Number.isFinite(umbralInactividadDias) || umbralInactividadDias <= 0) {
     return { error: "El umbral de inactividad debe ser un número mayor a 0" };
   }
+  if (!Number.isFinite(plazoExcepcionEjecutivoDias) || plazoExcepcionEjecutivoDias <= 0) {
+    return { error: "El término de excepción debe ser un número mayor a 0" };
+  }
+  if (!Number.isFinite(plazoEmbargoEjecutivoDias) || plazoEmbargoEjecutivoDias <= 0) {
+    return { error: "El plazo para decretar el embargo debe ser un número mayor a 0" };
+  }
+  // El embargo se decreta DESPUÉS de que venza la excepción: al revés, la alerta
+  // nacería ya vencida para todo expediente.
+  if (plazoEmbargoEjecutivoDias <= plazoExcepcionEjecutivoDias) {
+    return {
+      error: "El plazo para decretar el embargo debe ser mayor que el término de excepción",
+    };
+  }
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -78,6 +94,8 @@ export async function actualizarConfiguracionSistema(
       modo_validacion_cuantia: modoValidacion,
       plazo_admision_dias: plazoAdmisionDias,
       umbral_inactividad_dias: umbralInactividadDias,
+      plazo_excepcion_ejecutivo_dias: plazoExcepcionEjecutivoDias,
+      plazo_embargo_ejecutivo_dias: plazoEmbargoEjecutivoDias,
       actualizado_por: actual.id,
     })
     .eq("id", 1);
@@ -89,6 +107,8 @@ export async function actualizarConfiguracionSistema(
     modo_validacion_cuantia: modoValidacion,
     plazo_admision_dias: plazoAdmisionDias,
     umbral_inactividad_dias: umbralInactividadDias,
+    plazo_excepcion_ejecutivo_dias: plazoExcepcionEjecutivoDias,
+    plazo_embargo_ejecutivo_dias: plazoEmbargoEjecutivoDias,
   });
 
   revalidatePath("/administracion");

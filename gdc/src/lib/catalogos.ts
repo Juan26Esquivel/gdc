@@ -30,7 +30,10 @@ export async function getConfiguracionSistema() {
   const supabase = await createClient();
   const { data } = await supabase
     .from("configuracion_sistema")
-    .select("tope_cuantia, modo_validacion_cuantia, plazo_admision_dias, umbral_inactividad_dias")
+    .select(
+      `tope_cuantia, modo_validacion_cuantia, plazo_admision_dias, umbral_inactividad_dias,
+       plazo_excepcion_ejecutivo_dias, plazo_embargo_ejecutivo_dias`,
+    )
     .eq("id", 1)
     .single();
   return data;

@@ -24,12 +24,15 @@ export default async function AdministracionPage() {
       supabase
         .from("subtipos_proceso")
         .select(
-          "id, tipo_proceso_id, nombre, plazo_audiencia_min_dias, plazo_audiencia_max_dias, plazo_audiencia_fondo_min_dias, plazo_audiencia_fondo_max_dias, base_legal",
+          "id, tipo_proceso_id, nombre, plazo_contestacion_dias, plazo_audiencia_min_dias, plazo_audiencia_max_dias, plazo_audiencia_fondo_min_dias, plazo_audiencia_fondo_max_dias, base_legal",
         )
         .order("id"),
       supabase
         .from("configuracion_sistema")
-        .select("tope_cuantia, modo_validacion_cuantia, plazo_admision_dias, umbral_inactividad_dias")
+        .select(
+          `tope_cuantia, modo_validacion_cuantia, plazo_admision_dias, umbral_inactividad_dias,
+           plazo_excepcion_ejecutivo_dias, plazo_embargo_ejecutivo_dias`,
+        )
         .eq("id", 1)
         .single(),
       supabase.from("dias_no_habiles").select("fecha, descripcion").order("fecha"),

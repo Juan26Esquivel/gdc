@@ -18,6 +18,8 @@ type Configuracion = {
   modo_validacion_cuantia: string;
   plazo_admision_dias: number;
   umbral_inactividad_dias: number;
+  plazo_excepcion_ejecutivo_dias: number;
+  plazo_embargo_ejecutivo_dias: number;
 } | null;
 
 const ESTADO_INICIAL: EstadoAdministracion = {};
@@ -65,7 +67,9 @@ export function ConfiguracionForm({ configuracion }: { configuracion: Configurac
       </div>
 
       <div className="flex flex-col gap-1">
-        <Label htmlFor="plazo_admision_dias">Plazo de admisión (Art. 395, días hábiles)</Label>
+        <Label htmlFor="plazo_admision_dias">
+          Plazo de admisión (Art. 395, días hábiles)
+        </Label>
         <Input
           id="plazo_admision_dias"
           name="plazo_admision_dias"
@@ -87,6 +91,43 @@ export function ConfiguracionForm({ configuracion }: { configuracion: Configurac
         <p className="text-xs text-muted-foreground">
           Aplica a todos los tipos de proceso; un expediente puntual puede omitirlo con
           justificación (Panel del Juez).
+        </p>
+      </div>
+
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Procesos ejecutivos
+      </p>
+
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="plazo_excepcion_ejecutivo_dias">
+          Término de excepción (días hábiles desde la notificación)
+        </Label>
+        <Input
+          id="plazo_excepcion_ejecutivo_dias"
+          name="plazo_excepcion_ejecutivo_dias"
+          type="number"
+          defaultValue={configuracion.plazo_excepcion_ejecutivo_dias}
+          required
+        />
+        <p className="text-xs text-muted-foreground">
+          Vencido este término, el expediente aparece en el Panel del Juez como apto para decretar
+          el embargo.
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="plazo_embargo_ejecutivo_dias">
+          Límite para decretar el embargo (días hábiles desde la notificación)
+        </Label>
+        <Input
+          id="plazo_embargo_ejecutivo_dias"
+          name="plazo_embargo_ejecutivo_dias"
+          type="number"
+          defaultValue={configuracion.plazo_embargo_ejecutivo_dias}
+          required
+        />
+        <p className="text-xs text-muted-foreground">
+          Debe ser mayor que el término de excepción. Pasado este día, la alerta se marca en rojo.
         </p>
       </div>
 

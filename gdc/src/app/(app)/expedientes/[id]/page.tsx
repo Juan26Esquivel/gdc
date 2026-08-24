@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getUsuarioActual } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
-import { getTiposEvento } from "@/lib/catalogos";
+import { getDiasNoHabiles, getTiposEvento } from "@/lib/catalogos";
+import { calcularVentana, calcularVentanaPreliminar } from "@/lib/ventana-audiencia";
 import { AsignarDialog } from "../asignar-dialog";
 import { DocumentoWorkspace } from "./documentos/documento-workspace";
 import { DatosGeneralesTab } from "./datos-generales-tab";
@@ -34,7 +35,11 @@ export default async function DetalleExpedientePage({ params, searchParams }: Pr
        fecha_notificacion_demanda, fecha_registro, fisico_electronico, municipal_circuito,
        pretension, notas, estado_matrimonio, monto_embargo_decretado,
        cerrado, fecha_cierre, tipo_cierre, motivo_cierre, created_at,
-       tipos_proceso(nombre), subtipos_proceso(nombre), despachos(nombre, tipo),
+       tipos_proceso(nombre), despachos(nombre, tipo),
+       subtipos_proceso(nombre, plazo_contestacion_dias, plazo_audiencia_min_dias,
+                        plazo_audiencia_max_dias, plazo_audiencia_fondo_min_dias,
+                        plazo_audiencia_fondo_max_dias),
+       audiencias(tipo, fecha_programada, estado),
        expediente_fases(fase_id, fecha_inicio, fecha_fin, fases_proceso(id, nombre, orden)),
        asignaciones(activa, usuarios!asistente_id(id, nombre_completo))`,
     )
@@ -45,7 +50,7 @@ export default async function DetalleExpedientePage({ params, searchParams }: Pr
   // sin asignación) — en ambos casos, notFound() es el comportamiento correcto.
   if (!expediente) notFound();
 
-  const [{ data: eventos }, { data: configuracion }] = await Promise.all([
+  const [{ data: eventos }, { data: configuracion }, diasNoHabiles] = await Promise.all([
     supabase
       .from("eventos_expediente")
       .select(
@@ -54,11 +59,47 @@ export default async function DetalleExpedientePage({ params, searchParams }: Pr
       .eq("expediente_id", id)
       .order("created_at", { ascending: false }),
     supabase.from("configuracion_sistema").select("umbral_inactividad_dias, tope_cuantia").eq("id", 1).single(),
+    getDiasNoHabiles(),
   ]);
 
   const asignacionActual = expediente.asignaciones.find((a) => a.activa);
   const observacionActual =
     (eventos ?? []).find((e) => e.tipos_evento?.codigo === "observacion_actualizada")?.detalle ?? null;
+
+  // Ventanas legales de audiencia (Ley 402), en días hábiles. La preliminar se
+  // cuenta desde que VENCE el término de contestación, no desde la notificación
+  // (confirmado con el usuario el 2026-08-23); la de fondo, desde la preliminar.
+  const subtipo = expediente.subtipos_proceso;
+  const preliminarProgramada =
+    expediente.audiencias.find((a) => a.tipo === "preliminar")?.fecha_programada ?? null;
+  const ventanaPreliminar = calcularVentanaPreliminar(
+    expediente.fecha_notificacion_demanda,
+    subtipo?.plazo_contestacion_dias ?? null,
+    subtipo?.plazo_audiencia_min_dias ?? null,
+    subtipo?.plazo_audiencia_max_dias ?? null,
+    diasNoHabiles,
+  );
+  const ventanaFondo = calcularVentana(
+    preliminarProgramada,
+    subtipo?.plazo_audiencia_fondo_min_dias ?? null,
+    subtipo?.plazo_audiencia_fondo_max_dias ?? null,
+    diasNoHabiles,
+  );
+  const ventanasAudiencia = [
+    ventanaPreliminar && {
+      etiqueta: "Audiencia preliminar",
+      pie: "Días hábiles desde el vencimiento del término de contestación",
+      ...ventanaPreliminar,
+      fechaProgramada: preliminarProgramada,
+    },
+    ventanaFondo && {
+      etiqueta: "Audiencia de fondo",
+      pie: "Días hábiles desde la audiencia preliminar",
+      ...ventanaFondo,
+      fechaProgramada:
+        expediente.audiencias.find((a) => a.tipo === "fondo")?.fecha_programada ?? null,
+    },
+  ].filter((v): v is NonNullable<typeof v> => Boolean(v));
 
   // Espeja exactamente lo que permiten las políticas de la migración
   // 20260823110001: el Administrador y el Juez del despacho pueden corregir los
@@ -226,6 +267,7 @@ export default async function DetalleExpedientePage({ params, searchParams }: Pr
             fecha: a.created_at,
           }))}
           embargo={embargo}
+          ventanasAudiencia={ventanasAudiencia}
           puedeEditar={puedeEditarDatos}
         />
       )}

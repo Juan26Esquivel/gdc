@@ -27,7 +27,17 @@ export type DatosGeneralesProps = {
   totalDocumentos: number;
   auditoriaReciente: { id: string; accion: string; usuarioNombre: string | null; fecha: string }[];
   embargo: { montoDecretado: number; totalAbonado: number; saldoPendiente: number } | null;
+  ventanasAudiencia: VentanaAudienciaVista[];
   puedeEditar: boolean;
+};
+
+export type VentanaAudienciaVista = {
+  etiqueta: string;
+  pie: string;
+  ancla: string;
+  desde: string;
+  hasta: string;
+  fechaProgramada: string | null;
 };
 
 const LABEL_ESTADO_MATRIMONIO: Record<string, string> = {
@@ -81,6 +91,7 @@ export function DatosGeneralesTab(props: DatosGeneralesProps) {
     totalDocumentos,
     auditoriaReciente,
     embargo,
+    ventanasAudiencia,
     puedeEditar,
   } = props;
 
@@ -147,6 +158,43 @@ export function DatosGeneralesTab(props: DatosGeneralesProps) {
                   </div>
                 ))}
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {ventanasAudiencia.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Ventana legal de audiencia</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+              {ventanasAudiencia.map((v) => (
+                <div key={v.etiqueta}>
+                  <p className="text-xs text-muted-foreground">{v.etiqueta}</p>
+                  <p className="text-sm font-medium">
+                    Puede celebrarse entre {formatearFecha(v.desde)} y {formatearFecha(v.hasta)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {v.pie} ({formatearFecha(v.ancla)})
+                  </p>
+                  <p className="mt-1 text-sm">
+                    {v.fechaProgramada ? (
+                      <>
+                        <span className="text-muted-foreground">Programada para: </span>
+                        <span className="font-medium">{formatearFecha(v.fechaProgramada)}</span>
+                        {(v.fechaProgramada.slice(0, 10) < v.desde ||
+                          v.fechaProgramada.slice(0, 10) > v.hasta) && (
+                          <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-800">
+                            Fuera de la ventana
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground">Sin fecha fijada todavía.</span>
+                    )}
+                  </p>
+                </div>
+              ))}
             </CardContent>
           </Card>
         )}

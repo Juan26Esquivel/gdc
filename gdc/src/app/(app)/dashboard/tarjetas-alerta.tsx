@@ -143,3 +143,67 @@ export function TarjetaEdictosSinPublicar({ items }: { items: ItemEdictoSinPubli
     </Card>
   );
 }
+
+export type ItemAptoEmbargo = {
+  id: string;
+  numeroExpediente: string;
+  diasHabilesDesdeNotificacion: number;
+  fechaLimiteDecreto: string;
+  pasadoElLimite: boolean;
+};
+
+/**
+ * Pedido del usuario (transcripción del 2026-08-23): vencido el término de
+ * excepción de un ejecutivo, el expediente queda apto para decretar el embargo
+ * sobre los bienes denunciados. Solo aparecen los que siguen en la fase de
+ * Notificación: si ya avanzaron a "Cumplimiento de embargo", el embargo se
+ * decretó y la alerta no tiene sentido.
+ */
+export function TarjetaAptosParaEmbargo({
+  items,
+  plazoExcepcionDias,
+  plazoEmbargoDias,
+}: {
+  items: ItemAptoEmbargo[];
+  plazoExcepcionDias: number;
+  plazoEmbargoDias: number;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Ejecutivos aptos para decretar embargo</CardTitle>
+        <p className="text-xs text-muted-foreground">
+          Venció el término de {plazoExcepcionDias} días hábiles para presentar excepción; el día{" "}
+          {plazoEmbargoDias} hábil es la referencia de límite para decretar
+        </p>
+      </CardHeader>
+      <CardContent className="flex flex-col divide-y divide-border">
+        {items.length === 0 && (
+          <ListaVacia mensaje="Ningún ejecutivo tiene el término de excepción vencido." />
+        )}
+        {items.map((item) => (
+          <Link
+            key={item.id}
+            href={`/expedientes/${item.id}`}
+            className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
+          >
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold">{item.numeroExpediente}</p>
+              <p className="text-xs text-muted-foreground">
+                Límite para decretar: {item.fechaLimiteDecreto}
+              </p>
+            </div>
+            <span
+              className={`flex shrink-0 items-center gap-1 text-xs font-semibold ${
+                item.pasadoElLimite ? "text-destructive" : "text-amber-700"
+              }`}
+            >
+              <AlertTriangle className="size-3" />
+              {item.diasHabilesDesdeNotificacion} días hábiles
+            </span>
+          </Link>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}

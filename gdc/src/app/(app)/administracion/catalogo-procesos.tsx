@@ -27,6 +27,7 @@ type SubtipoProceso = {
   id: number;
   tipo_proceso_id: number;
   nombre: string;
+  plazo_contestacion_dias: number | null;
   plazo_audiencia_min_dias: number | null;
   plazo_audiencia_max_dias: number | null;
   plazo_audiencia_fondo_min_dias: number | null;
@@ -60,6 +61,7 @@ export function CatalogoProcesos({
           <TableRow>
             <TableHead>Tipo de proceso</TableHead>
             <TableHead>Subtipo</TableHead>
+            <TableHead>Contestación</TableHead>
             <TableHead>Audiencia preliminar</TableHead>
             <TableHead>Audiencia de fondo</TableHead>
             <TableHead>Base legal</TableHead>
@@ -71,6 +73,9 @@ export function CatalogoProcesos({
             <TableRow key={s.id}>
               <TableCell>{nombreTipo(s.tipo_proceso_id)}</TableCell>
               <TableCell className="font-medium">{s.nombre}</TableCell>
+              <TableCell>
+                {s.plazo_contestacion_dias === null ? "—" : `${s.plazo_contestacion_dias} días`}
+              </TableCell>
               <TableCell>
                 {rangoODash(s.plazo_audiencia_min_dias, s.plazo_audiencia_max_dias)}
               </TableCell>
@@ -132,8 +137,22 @@ function FormularioPlazos({
   return (
     <form action={formAction} className="flex flex-col gap-4 p-4 pt-0">
       <input type="hidden" name="id" value={subtipo.id} />
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="plazo_contestacion_dias">Término de contestación (días hábiles)</Label>
+        <Input
+          id="plazo_contestacion_dias"
+          name="plazo_contestacion_dias"
+          type="number"
+          defaultValue={subtipo.plazo_contestacion_dias ?? ""}
+        />
+        <p className="text-xs text-muted-foreground">
+          La ventana de la audiencia preliminar se cuenta desde que VENCE este término, no desde la
+          notificación. Sin este dato no hay ventana calculable.
+        </p>
+      </div>
+
       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        Audiencia preliminar
+        Audiencia preliminar (días hábiles desde el vencimiento de la contestación)
       </p>
       <div className="grid grid-cols-2 gap-4">
         <div className="flex flex-col gap-1">
@@ -157,7 +176,7 @@ function FormularioPlazos({
       </div>
 
       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        Audiencia de fondo (desde el cierre de la preliminar)
+        Audiencia de fondo (días hábiles desde la preliminar)
       </p>
       <div className="grid grid-cols-2 gap-4">
         <div className="flex flex-col gap-1">

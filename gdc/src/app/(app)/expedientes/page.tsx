@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Folder, AlertTriangle, Gavel } from "lucide-react";
 import { getUsuarioActual } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
-import { getTiposProceso, getFasesProceso } from "@/lib/catalogos";
+import { getTiposProceso, getFasesProceso, getDiasNoHabiles } from "@/lib/catalogos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -17,7 +17,8 @@ import { AvanzarFaseForm } from "./avanzar-fase-form";
 import { AsignarDialog } from "./asignar-dialog";
 import { FiltrosExpedientes } from "./filtros-expedientes";
 import { EliminarExpedienteBoton } from "./eliminar-expediente-boton";
-import { siguienteFase, type FaseProceso } from "@/lib/fases";
+import { siguienteFase, esFaseDeAudiencia, type FaseProceso } from "@/lib/fases";
+import { calcularVentana, calcularVentanaPreliminar } from "@/lib/ventana-audiencia";
 import { StatCard } from "@/components/stat-card";
 import { PlazoBar } from "@/components/plazo-bar";
 import { calcularEstadoPlazo } from "@/lib/plazo-audiencia";
@@ -36,6 +37,7 @@ export default async function ExpedientesPage({ searchParams }: Props) {
     { data: expedientes },
     tiposProceso,
     fasesProceso,
+    diasNoHabiles,
     { data: asistentes },
     { data: observaciones },
   ] = await Promise.all([
@@ -45,14 +47,17 @@ export default async function ExpedientesPage({ searchParams }: Props) {
         `id, numero_expediente, tipo_proceso_id, cuantia, es_lanzamiento, pretension,
          fisico_electronico, fecha_notificacion_demanda, created_at,
          tipos_proceso(nombre),
-         subtipos_proceso(nombre),
+         subtipos_proceso(nombre, plazo_contestacion_dias, plazo_audiencia_min_dias,
+                          plazo_audiencia_max_dias, plazo_audiencia_fondo_min_dias,
+                          plazo_audiencia_fondo_max_dias),
          expediente_fases(fase_id, fecha_fin, fases_proceso(id, tipo_proceso_id, nombre, orden, es_fase_inicial)),
          asignaciones(activa, usuarios!asistente_id(id, nombre_completo)),
-         audiencias(tipo, fecha_limite_calculada, estado)`,
+         audiencias(tipo, fecha_programada, fecha_minima_calculada, fecha_limite_calculada, estado)`,
       )
       .order("created_at", { ascending: false }),
     getTiposProceso(),
     getFasesProceso(),
+    getDiasNoHabiles(),
     esAdmin
       ? supabase
           .from("usuarios")
@@ -191,6 +196,27 @@ export default async function ExpedientesPage({ searchParams }: Props) {
                   exp.fecha_notificacion_demanda,
                   audienciaActiva?.fecha_limite_calculada ?? null,
                 );
+                // Ventana legal de la próxima audiencia, para mostrarla ANTES de
+                // programarla: es el "puede celebrarse entre tal y tal fecha"
+                // que el mínimo del rango nunca había llegado a producir.
+                const ventanaSugerida =
+                  proximaFase && esFaseDeAudiencia(proximaFase.nombre)
+                    ? proximaFase.nombre === "Audiencia preliminar"
+                      ? calcularVentanaPreliminar(
+                          exp.fecha_notificacion_demanda,
+                          exp.subtipos_proceso?.plazo_contestacion_dias ?? null,
+                          exp.subtipos_proceso?.plazo_audiencia_min_dias ?? null,
+                          exp.subtipos_proceso?.plazo_audiencia_max_dias ?? null,
+                          diasNoHabiles,
+                        )
+                      : calcularVentana(
+                          exp.audiencias.find((a) => a.tipo === "preliminar")?.fecha_programada ??
+                            null,
+                          exp.subtipos_proceso?.plazo_audiencia_fondo_min_dias ?? null,
+                          exp.subtipos_proceso?.plazo_audiencia_fondo_max_dias ?? null,
+                          diasNoHabiles,
+                        )
+                    : null;
                 return (
                   <TableRow key={exp.id}>
                     <TableCell>
@@ -231,7 +257,11 @@ export default async function ExpedientesPage({ searchParams }: Props) {
                     )}
                     {esAdmin && (
                       <TableCell>
-                        <AvanzarFaseForm expedienteId={exp.id} proximaFase={proximaFase} />
+                        <AvanzarFaseForm
+                          expedienteId={exp.id}
+                          proximaFase={proximaFase}
+                          ventanaSugerida={ventanaSugerida}
+                        />
                       </TableCell>
                     )}
                     {esAdmin && (

@@ -4,8 +4,19 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getUsuarioActual } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
-import { getConfiguracionSistema } from "@/lib/catalogos";
-import { faseInicial, siguienteFase, type FaseProceso } from "@/lib/fases";
+import { getConfiguracionSistema, getDiasNoHabiles } from "@/lib/catalogos";
+import {
+  esFaseDeNotificacion,
+  faseInicial,
+  siguienteFase,
+  type FaseProceso,
+} from "@/lib/fases";
+import {
+  calcularVentana,
+  calcularVentanaPreliminar,
+  ubicarEnVentana,
+  type VentanaAudiencia,
+} from "@/lib/ventana-audiencia";
 
 export type EstadoCrearExpediente = { error?: string; advertencia?: string; ok?: boolean };
 
@@ -128,7 +139,7 @@ export async function crearExpediente(
   redirect(destino);
 }
 
-export type EstadoAvanzarFase = { error?: string; ok?: boolean };
+export type EstadoAvanzarFase = { error?: string; advertencia?: string; ok?: boolean };
 
 export async function avanzarFase(
   _prevState: EstadoAvanzarFase,
@@ -178,8 +189,15 @@ export async function avanzarFase(
     return { error: "El expediente ya está en la última fase de su catálogo" };
   }
 
-  if (proxima.nombre === "Notificación de la demanda" && !fechaNotificacion) {
-    return { error: "Debes indicar la fecha de notificación de la demanda para avanzar a esta fase" };
+  // "Notificación de la demanda" es el nombre de la fase en Declarativo;
+  // Ejecución la llama solo "Notificación". Antes solo se capturaba la fecha en
+  // el primer caso, así que ningún expediente ejecutivo llegaba a tener
+  // fecha_notificacion_demanda — y sin ella no hay forma de contar el término de
+  // excepción de los ejecutivos.
+  const esFaseNotificacion = esFaseDeNotificacion(proxima.nombre);
+
+  if (esFaseNotificacion && !fechaNotificacion) {
+    return { error: "Debes indicar la fecha de notificación para avanzar a esta fase" };
   }
 
   const esAudienciaPreliminar = proxima.nombre === "Audiencia preliminar";
@@ -189,24 +207,36 @@ export async function avanzarFase(
     return { error: "Debes indicar la fecha programada de la audiencia para avanzar a esta fase" };
   }
 
-  let fechaLimiteCalculada: string | null = null;
+  let ventana: VentanaAudiencia | null = null;
 
   if (esAudienciaPreliminar || esAudienciaFondo) {
-    const { data: expediente } = await supabase
-      .from("expedientes")
-      .select(
-        "fecha_notificacion_demanda, subtipos_proceso(plazo_audiencia_max_dias, plazo_audiencia_fondo_max_dias)",
-      )
-      .eq("id", expedienteId)
-      .single();
+    const [{ data: expediente }, diasNoHabiles] = await Promise.all([
+      supabase
+        .from("expedientes")
+        .select(
+          `fecha_notificacion_demanda,
+           subtipos_proceso(plazo_contestacion_dias, plazo_audiencia_min_dias, plazo_audiencia_max_dias,
+                            plazo_audiencia_fondo_min_dias, plazo_audiencia_fondo_max_dias)`,
+        )
+        .eq("id", expedienteId)
+        .single(),
+      getDiasNoHabiles(),
+    ]);
+
+    const subtipo = expediente?.subtipos_proceso;
 
     if (esAudienciaPreliminar) {
-      const maxDias = expediente?.subtipos_proceso?.plazo_audiencia_max_dias;
-      if (expediente?.fecha_notificacion_demanda && maxDias) {
-        fechaLimiteCalculada = sumarDias(expediente.fecha_notificacion_demanda, maxDias);
-      }
+      // La ventana arranca cuando VENCE el término de contestación, no cuando se
+      // notifica, y se cuenta en días hábiles (confirmado con el usuario el
+      // 2026-08-23 — ver REQUERIMIENTOS sección 6).
+      ventana = calcularVentanaPreliminar(
+        expediente?.fecha_notificacion_demanda ?? null,
+        subtipo?.plazo_contestacion_dias ?? null,
+        subtipo?.plazo_audiencia_min_dias ?? null,
+        subtipo?.plazo_audiencia_max_dias ?? null,
+        diasNoHabiles,
+      );
     } else {
-      const maxDiasFondo = expediente?.subtipos_proceso?.plazo_audiencia_fondo_max_dias;
       const { data: audienciaPreliminar } = await supabase
         .from("audiencias")
         .select("fecha_programada")
@@ -214,10 +244,13 @@ export async function avanzarFase(
         .eq("tipo", "preliminar")
         .order("fecha_programada", { ascending: false })
         .limit(1)
-        .single();
-      if (audienciaPreliminar?.fecha_programada && maxDiasFondo) {
-        fechaLimiteCalculada = sumarDias(audienciaPreliminar.fecha_programada, maxDiasFondo);
-      }
+        .maybeSingle();
+      ventana = calcularVentana(
+        audienciaPreliminar?.fecha_programada ?? null,
+        subtipo?.plazo_audiencia_fondo_min_dias ?? null,
+        subtipo?.plazo_audiencia_fondo_max_dias ?? null,
+        diasNoHabiles,
+      );
     }
   }
 
@@ -239,34 +272,45 @@ export async function avanzarFase(
     return { error: `No se pudo registrar la nueva fase: ${errorNuevaFase.message}` };
   }
 
-  if (proxima.nombre === "Notificación de la demanda" && fechaNotificacion) {
+  if (esFaseNotificacion && fechaNotificacion) {
     await supabase
       .from("expedientes")
       .update({ fecha_notificacion_demanda: fechaNotificacion })
       .eq("id", expedienteId);
   }
 
+  let advertencia: string | undefined;
+
   if ((esAudienciaPreliminar || esAudienciaFondo) && fechaAudiencia) {
     const { error: errorAudiencia } = await supabase.from("audiencias").insert({
       expediente_id: expedienteId,
       tipo: esAudienciaPreliminar ? "preliminar" : "fondo",
       fecha_programada: fechaAudiencia,
-      fecha_limite_calculada: fechaLimiteCalculada,
+      fecha_minima_calculada: ventana?.desde ?? null,
+      fecha_limite_calculada: ventana?.hasta ?? null,
     });
     if (errorAudiencia) {
       return { error: `Fase avanzada, pero falló programar la audiencia: ${errorAudiencia.message}` };
+    }
+
+    // Se avisa, no se bloquea: el juez puede tener motivos para salirse del
+    // rango legal, pero tiene que verlo. Si no hay ventana calculable (falta el
+    // término de contestación del subtipo o la fecha de notificación) también se
+    // avisa, para que no parezca que la fecha quedó validada contra algo.
+    if (!ventana) {
+      advertencia =
+        "La audiencia quedó programada, pero no se pudo calcular su ventana legal: falta la fecha de notificación o los plazos del subtipo de proceso.";
+    } else {
+      const ubicacion = ubicarEnVentana(fechaAudiencia, ventana);
+      if (ubicacion !== "dentro") {
+        advertencia = `La fecha programada cae ${ubicacion === "antes" ? "antes del inicio" : "después del límite"} de la ventana legal (${ventana.desde} a ${ventana.hasta}, en días hábiles desde el vencimiento del término de contestación).`;
+      }
     }
   }
 
   revalidatePath("/expedientes");
   revalidatePath("/calendario");
-  return { ok: true };
-}
-
-function sumarDias(fechaBase: string, dias: number): string {
-  const fecha = new Date(fechaBase);
-  fecha.setDate(fecha.getDate() + dias);
-  return fecha.toISOString();
+  return { ok: true, advertencia };
 }
 
 export type EstadoAsignarExpediente = { error?: string; ok?: boolean };

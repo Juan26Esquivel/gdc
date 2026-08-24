@@ -2,7 +2,7 @@ import { Gavel, FileText, FileCheck } from "lucide-react";
 import { getUsuarioActual } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
 import { getConfiguracionSistema, getDiasNoHabiles } from "@/lib/catalogos";
-import { contarDiasHabilesTranscurridos } from "@/lib/dias-habiles";
+import { contarDiasHabilesTranscurridos, sumarDiasHabiles } from "@/lib/dias-habiles";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/stat-card";
 import { calcularSemaforo } from "@/lib/semaforo";
@@ -14,9 +14,11 @@ import {
   TarjetaMovimientosSinTrabajar,
   TarjetaPendientesNotificar,
   TarjetaEdictosSinPublicar,
+  TarjetaAptosParaEmbargo,
   type ItemMovimientoSinTrabajar,
   type ItemPendienteNotificar,
   type ItemEdictoSinPublicar,
+  type ItemAptoEmbargo,
 } from "./tarjetas-alerta";
 import { RealtimeRefresh } from "./realtime-refresh";
 
@@ -66,7 +68,7 @@ export default async function DashboardPage() {
       .from("expedientes")
       .select(
         `id, numero_expediente, tipo_proceso_id, subtipo_proceso_id, fecha_registro, created_at,
-         omitir_umbral_inactividad,
+         fecha_notificacion_demanda, omitir_umbral_inactividad,
          tipos_proceso(nombre),
          subtipos_proceso(nombre),
          expediente_fases(fase_id, fecha_fin, fecha_inicio, fases_proceso(nombre)),
@@ -88,6 +90,8 @@ export default async function DashboardPage() {
   const activos = expedientesActivos ?? [];
   const umbralInactividadDias = configuracion?.umbral_inactividad_dias ?? 30;
   const plazoAdmisionDias = configuracion?.plazo_admision_dias ?? 30;
+  const plazoExcepcionDias = configuracion?.plazo_excepcion_ejecutivo_dias ?? 8;
+  const plazoEmbargoDias = configuracion?.plazo_embargo_ejecutivo_dias ?? 10;
 
   // Punto 1: expedientes activos por tipo de proceso (Declarativo se
   // desglosa por subtipo, como en el Excel/mockup; el resto no tiene subtipo
@@ -184,6 +188,42 @@ export default async function DashboardPage() {
     .filter((item): item is ItemPendienteNotificar => item !== null)
     .sort((a, b) => b.diasEnAdmision - a.diasEnAdmision);
 
+  // Ejecutivos aptos para decretar embargo (pedido del usuario, transcripción
+  // del 2026-08-23): notificada la parte, corren 8 días hábiles para presentar
+  // excepción; vencido ese término el expediente queda apto para el embargo,
+  // con el día 10 hábil como referencia de límite. Solo se listan los que siguen
+  // en la fase de Notificación: si ya avanzaron a "Cumplimiento de embargo", el
+  // embargo se decretó y la alerta no aplica.
+  const itemsAptosParaEmbargo: ItemAptoEmbargo[] = activos
+    .map((exp) => {
+      if (exp.tipos_proceso?.nombre !== "Ejecución") return null;
+      if (!exp.fecha_notificacion_demanda) return null;
+      const faseActiva = faseActivaDe(exp.expediente_fases);
+      if (faseActiva?.fases_proceso?.nombre !== "Notificación") return null;
+
+      const habiles = contarDiasHabilesTranscurridos(
+        exp.fecha_notificacion_demanda,
+        hoyIso,
+        diasNoHabiles,
+      );
+      if (habiles <= plazoExcepcionDias) return null;
+
+      const fechaLimite = sumarDiasHabiles(
+        exp.fecha_notificacion_demanda,
+        plazoEmbargoDias,
+        diasNoHabiles,
+      );
+      return {
+        id: exp.id,
+        numeroExpediente: exp.numero_expediente,
+        diasHabilesDesdeNotificacion: habiles,
+        fechaLimiteDecreto: fechaLimite,
+        pasadoElLimite: habiles > plazoEmbargoDias,
+      };
+    })
+    .filter((item): item is ItemAptoEmbargo => item !== null)
+    .sort((a, b) => b.diasHabilesDesdeNotificacion - a.diasHabilesDesdeNotificacion);
+
   // Punto 5: edictos sin publicar (Jurisdicción voluntaria) — edicto emitido
   // sin publicación posterior, hace más de 30 días.
   const eventosPorExpediente = new Map<string, { edicto?: string; publicacion?: string }>();
@@ -275,6 +315,14 @@ export default async function DashboardPage() {
         <TarjetaMovimientosSinTrabajar items={itemsMovimientosSinTrabajar} umbralDias={umbralInactividadDias} />
         <TarjetaPendientesNotificar items={itemsPendientesNotificar} plazoAdmisionDias={plazoAdmisionDias} />
         <TarjetaEdictosSinPublicar items={itemsEdictosSinPublicar} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4">
+        <TarjetaAptosParaEmbargo
+          items={itemsAptosParaEmbargo}
+          plazoExcepcionDias={plazoExcepcionDias}
+          plazoEmbargoDias={plazoEmbargoDias}
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

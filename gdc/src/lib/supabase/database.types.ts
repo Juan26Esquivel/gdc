@@ -75,6 +75,7 @@ export type Database = {
           created_at: string
           estado: Database["public"]["Enums"]["estado_audiencia"]
           expediente_id: string
+          fecha_minima_calculada: string | null
           fecha_limite_calculada: string | null
           fecha_programada: string
           id: string
@@ -84,6 +85,7 @@ export type Database = {
           created_at?: string
           estado?: Database["public"]["Enums"]["estado_audiencia"]
           expediente_id: string
+          fecha_minima_calculada?: string | null
           fecha_limite_calculada?: string | null
           fecha_programada: string
           id?: string
@@ -93,6 +95,7 @@ export type Database = {
           created_at?: string
           estado?: Database["public"]["Enums"]["estado_audiencia"]
           expediente_id?: string
+          fecha_minima_calculada?: string | null
           fecha_limite_calculada?: string | null
           fecha_programada?: string
           id?: string
@@ -197,6 +200,8 @@ export type Database = {
           id: number
           modo_validacion_cuantia: string
           plazo_admision_dias: number
+          plazo_embargo_ejecutivo_dias: number
+          plazo_excepcion_ejecutivo_dias: number
           tope_cuantia: number
           umbral_inactividad_dias: number
           updated_at: string
@@ -206,6 +211,8 @@ export type Database = {
           id?: number
           modo_validacion_cuantia?: string
           plazo_admision_dias?: number
+          plazo_embargo_ejecutivo_dias?: number
+          plazo_excepcion_ejecutivo_dias?: number
           tope_cuantia?: number
           umbral_inactividad_dias?: number
           updated_at?: string
@@ -215,6 +222,8 @@ export type Database = {
           id?: number
           modo_validacion_cuantia?: string
           plazo_admision_dias?: number
+          plazo_embargo_ejecutivo_dias?: number
+          plazo_excepcion_ejecutivo_dias?: number
           tope_cuantia?: number
           umbral_inactividad_dias?: number
           updated_at?: string
@@ -741,6 +750,7 @@ export type Database = {
           base_legal: string | null
           id: number
           nombre: string
+          plazo_contestacion_dias: number | null
           plazo_audiencia_fondo_max_dias: number | null
           plazo_audiencia_fondo_min_dias: number | null
           plazo_audiencia_max_dias: number | null
@@ -751,6 +761,7 @@ export type Database = {
           base_legal?: string | null
           id?: number
           nombre: string
+          plazo_contestacion_dias?: number | null
           plazo_audiencia_fondo_max_dias?: number | null
           plazo_audiencia_fondo_min_dias?: number | null
           plazo_audiencia_max_dias?: number | null
@@ -761,6 +772,7 @@ export type Database = {
           base_legal?: string | null
           id?: number
           nombre?: string
+          plazo_contestacion_dias?: number | null
           plazo_audiencia_fondo_max_dias?: number | null
           plazo_audiencia_fondo_min_dias?: number | null
           plazo_audiencia_max_dias?: number | null
