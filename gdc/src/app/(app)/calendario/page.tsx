@@ -12,8 +12,11 @@ export default async function CalendarioPage() {
     .from("audiencias")
     .select(
       `id, tipo, motivo, fecha_programada, fecha_minima_calculada, fecha_limite_calculada, estado,
-       expedientes(numero_expediente, tipos_proceso(nombre))`,
+       expedientes(numero_expediente, cerrado, tipos_proceso(nombre))`,
     )
+    // Las anuladas no son agenda: se señalaron por error y ya se dijo por qué.
+    // Se quedan en la base con su motivo, pero no en el calendario.
+    .neq("estado", "anulada")
     .order("fecha_programada", { ascending: true });
 
   return (

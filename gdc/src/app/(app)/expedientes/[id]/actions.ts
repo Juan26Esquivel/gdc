@@ -4,6 +4,9 @@ import { revalidatePath } from "next/cache";
 import { getUsuarioActual } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
 import { registrarAuditoria } from "@/lib/auditoria";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getDiasNoHabiles } from "@/lib/catalogos";
+import { calcularVentanaPreliminar } from "@/lib/ventana-audiencia";
 
 export type EstadoAccionExpediente = { error?: string; advertencia?: string; ok?: boolean };
 
@@ -260,6 +263,13 @@ export async function actualizarDatosGenerales(
     return { error: "No se guardó nada: no tienes permiso para editar este expediente" };
   }
 
+  // Si cambió la fecha de notificación, la ventana legal guardada de las
+  // audiencias preliminares quedó desactualizada: se recalcula aquí mismo para
+  // que no convivan dos rangos distintos para la misma audiencia.
+  if (cambios.some(([campo]) => campo === "fecha_notificacion_demanda")) {
+    await recalcularVentanaPreliminar(expedienteId, await getDiasNoHabiles());
+  }
+
   await registrarAuditoria(actual.id, "editar_datos_generales", "expediente", expedienteId, {
     cambios: Object.fromEntries(
       cambios.map(([campo, valor]) => [
@@ -506,4 +516,116 @@ export async function registrarMontoMandamientoPago(
   }
 
   return { ok: true };
+}
+
+/**
+ * Anula una audiencia programada por error. No la borra: en un expediente
+ * judicial interesa saber que se señaló y se anuló, con su motivo, no que
+ * desapareció sin rastro. Solo Administrador, igual que el resto de la escritura
+ * sobre `audiencias`.
+ */
+export async function anularAudiencia(
+  _prevState: EstadoAccionExpediente,
+  formData: FormData,
+): Promise<EstadoAccionExpediente> {
+  const actual = await getUsuarioActual();
+  if (actual?.rol !== "administrador") {
+    return { error: "Solo el Administrador puede anular audiencias" };
+  }
+
+  const audienciaId = formData.get("audiencia_id") as string;
+  const expedienteId = formData.get("expediente_id") as string;
+  const motivo = (formData.get("motivo_anulacion") as string)?.trim();
+
+  if (!audienciaId) return { error: "Audiencia inválida" };
+  if (!motivo) return { error: "El motivo de la anulación es obligatorio" };
+  if (motivo.length > 300) return { error: "El motivo no puede pasar de 300 caracteres" };
+
+  const supabase = await createClient();
+  const { data: filas, error } = await supabase
+    .from("audiencias")
+    .update({ estado: "anulada", motivo_anulacion: motivo })
+    .eq("id", audienciaId)
+    .select("id, tipo, fecha_programada");
+
+  if (error) return { error: `No se pudo anular: ${error.message}` };
+  if (!filas?.length) return { error: "No tienes permiso para anular esta audiencia" };
+
+  await registrarAuditoria(actual.id, "anular_audiencia", "expediente", expedienteId, {
+    audiencia_id: audienciaId,
+    tipo: filas[0].tipo,
+    fecha_programada: filas[0].fecha_programada,
+    motivo,
+  });
+
+  revalidatePath(`/expedientes/${expedienteId}`);
+  revalidatePath("/calendario");
+  return { ok: true };
+}
+
+/**
+ * Recalcula la ventana legal guardada de las audiencias PRELIMINARES de un
+ * expediente cuando cambia su fecha de notificación de la demanda.
+ *
+ * Sin esto, corregir esa fecha dejaba `fecha_minima_calculada` y
+ * `fecha_limite_calculada` congeladas en el valor del momento en que se creó la
+ * audiencia: el detalle del expediente recalcula al vuelo y mostraría un rango,
+ * mientras la audiencia guardada seguiría comparándose contra el viejo. Dos
+ * números distintos para la misma audiencia.
+ *
+ * Solo las preliminares: la ventana de la audiencia de fondo se ancla en la
+ * fecha de la preliminar, no en la notificación, y la especial no tiene ventana.
+ *
+ * Va con el cliente administrador a propósito. La escritura sobre `audiencias`
+ * está reservada al Administrador (programar y reprogramar audiencias es acto
+ * del despacho), pero la fecha de notificación sí la puede corregir el Juez o el
+ * Asistente asignado. Sin este bypass, el recálculo se descartaría en silencio
+ * para esos dos roles y quedaría la inconsistencia. La alternativa —abrir
+ * `audiencias` a escritura de no-administradores— les daría también la
+ * capacidad de reprogramar, que es un permiso mucho mayor. Este helper solo
+ * toca las dos columnas derivadas, nunca la fecha programada.
+ */
+async function recalcularVentanaPreliminar(expedienteId: string, diasNoHabiles: Set<string>) {
+  const supabase = await createClient();
+
+  const { data: expediente } = await supabase
+    .from("expedientes")
+    .select(
+      `fecha_notificacion_demanda,
+       subtipos_proceso(plazo_contestacion_dias, plazo_audiencia_min_dias, plazo_audiencia_max_dias)`,
+    )
+    .eq("id", expedienteId)
+    .maybeSingle();
+
+  const { data: preliminares } = await supabase
+    .from("audiencias")
+    .select("id")
+    .eq("expediente_id", expedienteId)
+    .eq("tipo", "preliminar");
+
+  if (!preliminares?.length) return;
+
+  const subtipo = expediente?.subtipos_proceso;
+  const ventana = calcularVentanaPreliminar(
+    expediente?.fecha_notificacion_demanda ?? null,
+    subtipo?.plazo_contestacion_dias ?? null,
+    subtipo?.plazo_audiencia_min_dias ?? null,
+    subtipo?.plazo_audiencia_max_dias ?? null,
+    diasNoHabiles,
+  );
+
+  // Si la ventana ya no se puede calcular (se borró la fecha de notificación),
+  // se limpian las dos columnas: mejor sin dato que con un dato viejo que
+  // parece vigente.
+  const admin = createAdminClient();
+  await admin
+    .from("audiencias")
+    .update({
+      fecha_minima_calculada: ventana?.desde ?? null,
+      fecha_limite_calculada: ventana?.hasta ?? null,
+    })
+    .in(
+      "id",
+      preliminares.map((a) => a.id),
+    );
 }

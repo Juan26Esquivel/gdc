@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  anularAudiencia,
   programarAudienciaEspecial,
   reprogramarAudiencia,
   type EstadoAccionExpediente,
@@ -25,6 +26,7 @@ const LABEL_ESTADO: Record<string, string> = {
   suspendida: "Suspendida",
   continuada: "Continuada",
   terminada_por_incomparecencia: "Terminada por incomparecencia",
+  anulada: "Anulada",
 };
 
 export type AudienciaVista = {
@@ -33,6 +35,7 @@ export type AudienciaVista = {
   fechaProgramada: string;
   estado: string;
   motivo: string | null;
+  motivoAnulacion: string | null;
 };
 
 function formatearFecha(fecha: string) {
@@ -61,6 +64,10 @@ export function AudienciasExpediente({
     programarAudienciaEspecial,
     ESTADO_INICIAL,
   );
+  const [estadoAnular, accionAnular, anularPendiente] = useActionState(
+    anularAudiencia,
+    ESTADO_INICIAL,
+  );
 
   return (
     <Card>
@@ -82,6 +89,9 @@ export function AudienciasExpediente({
               </span>
             </div>
             {a.motivo && <p className="text-xs text-muted-foreground">Motivo: {a.motivo}</p>}
+            {a.motivoAnulacion && (
+              <p className="text-xs text-muted-foreground">Anulada porque: {a.motivoAnulacion}</p>
+            )}
             {esAdmin && a.estado === "programada" && (
               <form action={accionReprog} className="mt-1 flex flex-wrap items-end gap-2">
                 <input type="hidden" name="audiencia_id" value={a.id} />
@@ -98,9 +108,28 @@ export function AudienciasExpediente({
                 </Button>
               </form>
             )}
+            {esAdmin && a.estado === "programada" && (
+              <form action={accionAnular} className="flex flex-wrap items-end gap-2">
+                <input type="hidden" name="audiencia_id" value={a.id} />
+                <input type="hidden" name="expediente_id" value={expedienteId} />
+                <input
+                  type="text"
+                  name="motivo_anulacion"
+                  required
+                  maxLength={300}
+                  placeholder="Motivo de la anulación"
+                  className="h-8 flex-1 rounded-md border border-input bg-background px-2 text-xs"
+                />
+                <Button type="submit" size="sm" variant="outline" disabled={anularPendiente}>
+                  {anularPendiente ? "..." : "Anular"}
+                </Button>
+              </form>
+            )}
           </div>
         ))}
 
+        {estadoAnular.error && <p className="text-sm text-destructive">{estadoAnular.error}</p>}
+        {estadoAnular.ok && <p className="text-sm text-status-confirmed">Audiencia anulada.</p>}
         {estadoReprog.error && <p className="text-sm text-destructive">{estadoReprog.error}</p>}
         {estadoReprog.advertencia && (
           <p className="text-sm text-amber-700">{estadoReprog.advertencia}</p>

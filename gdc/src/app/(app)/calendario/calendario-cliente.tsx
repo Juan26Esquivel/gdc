@@ -31,7 +31,11 @@ type Audiencia = {
   fecha_programada: string;
   fecha_limite_calculada: string | null;
   estado: string;
-  expedientes: { numero_expediente: string; tipos_proceso: { nombre: string } | null } | null;
+  expedientes: {
+    numero_expediente: string;
+    cerrado: boolean;
+    tipos_proceso: { nombre: string } | null;
+  } | null;
 };
 
 type EventoAudiencia = Event & { audiencia: Audiencia };
@@ -55,7 +59,10 @@ export function CalendarioCliente({
   const eventos: EventoAudiencia[] = useMemo(
     () =>
       audiencias.map((a) => ({
-        title: `${a.expedientes?.numero_expediente ?? "?"} · ${TIPO_LABEL[a.tipo]}`,
+        // Un expediente ya cerrado (por sentencia, desistimiento, etc.) puede
+        // seguir teniendo una audiencia señalada que nunca se va a celebrar. No se
+        // oculta —el histórico importa— pero se marca para que no se lea como agenda.
+        title: `${a.expedientes?.cerrado ? "[Cerrado] " : ""}${a.expedientes?.numero_expediente ?? "?"} · ${TIPO_LABEL[a.tipo] ?? a.tipo}`,
         start: new Date(a.fecha_programada),
         end: new Date(a.fecha_programada),
         audiencia: a,

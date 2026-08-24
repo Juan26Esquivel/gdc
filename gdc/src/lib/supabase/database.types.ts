@@ -77,6 +77,7 @@ export type Database = {
           expediente_id: string
           fecha_minima_calculada: string | null
           motivo: string | null
+          motivo_anulacion: string | null
           fecha_limite_calculada: string | null
           fecha_programada: string
           id: string
@@ -88,6 +89,7 @@ export type Database = {
           expediente_id: string
           fecha_minima_calculada?: string | null
           motivo?: string | null
+          motivo_anulacion?: string | null
           fecha_limite_calculada?: string | null
           fecha_programada: string
           id?: string
@@ -99,6 +101,7 @@ export type Database = {
           expediente_id?: string
           fecha_minima_calculada?: string | null
           motivo?: string | null
+          motivo_anulacion?: string | null
           fecha_limite_calculada?: string | null
           fecha_programada?: string
           id?: string
@@ -950,6 +953,7 @@ export type Database = {
       categoria_documento: "resolucion_judicial" | "comunicacion"
       entidad_base_kpi: "expediente" | "documento" | "audiencia"
       estado_audiencia:
+        | "anulada"
         | "programada"
         | "celebrada"
         | "suspendida"
@@ -1094,6 +1098,7 @@ export const Constants = {
         "suspendida",
         "continuada",
         "terminada_por_incomparecencia",
+        "anulada",
       ],
       estado_documento: ["generado", "validado", "en_correccion", "confirmado"],
       metrica_kpi: ["conteo", "porcentaje_cumplimiento", "promedio_dias"],

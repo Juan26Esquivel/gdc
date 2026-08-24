@@ -39,7 +39,7 @@ export default async function DetalleExpedientePage({ params, searchParams }: Pr
        subtipos_proceso(nombre, plazo_contestacion_dias, plazo_audiencia_min_dias,
                         plazo_audiencia_max_dias, plazo_audiencia_fondo_min_dias,
                         plazo_audiencia_fondo_max_dias),
-       audiencias(id, tipo, fecha_programada, estado, motivo),
+       audiencias(id, tipo, fecha_programada, estado, motivo, motivo_anulacion),
        expediente_fases(fase_id, fecha_inicio, fecha_fin, fases_proceso(id, nombre, orden)),
        asignaciones(activa, usuarios!asistente_id(id, nombre_completo))`,
     )
@@ -71,7 +71,8 @@ export default async function DetalleExpedientePage({ params, searchParams }: Pr
   // (confirmado con el usuario el 2026-08-23); la de fondo, desde la preliminar.
   const subtipo = expediente.subtipos_proceso;
   const preliminarProgramada =
-    expediente.audiencias.find((a) => a.tipo === "preliminar")?.fecha_programada ?? null;
+    expediente.audiencias.find((a) => a.tipo === "preliminar" && a.estado !== "anulada")
+      ?.fecha_programada ?? null;
   const ventanaPreliminar = calcularVentanaPreliminar(
     expediente.fecha_notificacion_demanda,
     subtipo?.plazo_contestacion_dias ?? null,
@@ -97,7 +98,8 @@ export default async function DetalleExpedientePage({ params, searchParams }: Pr
       pie: "Días hábiles desde la audiencia preliminar",
       ...ventanaFondo,
       fechaProgramada:
-        expediente.audiencias.find((a) => a.tipo === "fondo")?.fecha_programada ?? null,
+        expediente.audiencias.find((a) => a.tipo === "fondo" && a.estado !== "anulada")
+          ?.fecha_programada ?? null,
     },
   ].filter((v): v is NonNullable<typeof v> => Boolean(v));
 
@@ -109,6 +111,7 @@ export default async function DetalleExpedientePage({ params, searchParams }: Pr
       fechaProgramada: a.fecha_programada,
       estado: a.estado,
       motivo: a.motivo,
+      motivoAnulacion: a.motivo_anulacion,
     }));
 
   // Espeja exactamente lo que permiten las políticas de la migración
