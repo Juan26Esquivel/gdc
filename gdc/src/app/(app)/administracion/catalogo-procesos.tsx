@@ -20,7 +20,11 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+import { TablePagination } from "@/components/table-pagination";
+import { usePaginacion } from "@/hooks/use-paginacion";
 import { actualizarPlazosSubtipo, type EstadoAdministracion } from "./actions";
+
+const POR_PAGINA = 10;
 
 type TipoProceso = { id: number; nombre: string; base_legal: string | null };
 type SubtipoProceso = {
@@ -50,6 +54,11 @@ export function CatalogoProcesos({
   subtiposProceso: SubtipoProceso[];
 }) {
   const [editando, setEditando] = useState<SubtipoProceso | null>(null);
+  const { pagina, totalPaginas, setPagina, inicio, fin } = usePaginacion(
+    subtiposProceso.length,
+    POR_PAGINA,
+  );
+  const subtiposPagina = subtiposProceso.slice(inicio, fin);
 
   const nombreTipo = (tipoId: number) =>
     tiposProceso.find((t) => t.id === tipoId)?.nombre ?? "?";
@@ -69,7 +78,7 @@ export function CatalogoProcesos({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {subtiposProceso.map((s) => (
+          {subtiposPagina.map((s) => (
             <TableRow key={s.id}>
               <TableCell>{nombreTipo(s.tipo_proceso_id)}</TableCell>
               <TableCell className="font-medium">{s.nombre}</TableCell>
@@ -101,6 +110,13 @@ export function CatalogoProcesos({
           )}
         </TableBody>
       </Table>
+      <TablePagination
+        pagina={pagina}
+        totalPaginas={totalPaginas}
+        onCambiar={setPagina}
+        total={subtiposProceso.length}
+        porPagina={POR_PAGINA}
+      />
 
       <Sheet open={editando !== null} onOpenChange={(open) => !open && setEditando(null)}>
         <SheetContent>

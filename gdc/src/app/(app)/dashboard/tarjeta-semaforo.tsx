@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -16,6 +16,10 @@ import {
   LABEL_COLOR_SEMAFORO,
   type ColorSemaforo,
 } from "@/lib/semaforo";
+import { TablePagination } from "@/components/table-pagination";
+import { usePaginacion } from "@/hooks/use-paginacion";
+
+const POR_PAGINA = 10;
 
 const ESTILO_LEGEND: Record<ColorSemaforo, string> = {
   verde: "bg-emerald-100 text-emerald-800",
@@ -72,8 +76,19 @@ export function TarjetaSemaforo({
 
   const filasFiltradas = useMemo(() => {
     const filtradas = tipoFiltro ? filas.filter((f) => f.tipoProcesoId === tipoFiltro) : filas;
-    return [...filtradas].sort((a, b) => b.meses - a.meses).slice(0, 15);
+    return [...filtradas].sort((a, b) => b.meses - a.meses);
   }, [filas, tipoFiltro]);
+
+  const { pagina, totalPaginas, setPagina, inicio, fin } = usePaginacion(
+    filasFiltradas.length,
+    POR_PAGINA,
+  );
+  // Volver a la página 1 al cambiar de filtro: quedarse en una página que ya
+  // no tiene sentido para el nuevo filtro se ve como una tabla vacía rara.
+  useEffect(() => {
+    setPagina(1);
+  }, [tipoFiltro, setPagina]);
+  const filasPagina = filasFiltradas.slice(inicio, fin);
 
   return (
     <Card>
@@ -129,7 +144,7 @@ export function TarjetaSemaforo({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filasFiltradas.map((fila) => (
+            {filasPagina.map((fila) => (
               <TableRow key={fila.id}>
                 <TableCell>
                   <Link
@@ -156,7 +171,7 @@ export function TarjetaSemaforo({
                 </TableCell>
               </TableRow>
             ))}
-            {filasFiltradas.length === 0 && (
+            {filasPagina.length === 0 && (
               <TableRow>
                 <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
                   Sin expedientes activos para este filtro.
@@ -165,6 +180,13 @@ export function TarjetaSemaforo({
             )}
           </TableBody>
         </Table>
+        <TablePagination
+          pagina={pagina}
+          totalPaginas={totalPaginas}
+          onCambiar={setPagina}
+          total={filasFiltradas.length}
+          porPagina={POR_PAGINA}
+        />
       </CardContent>
     </Card>
   );

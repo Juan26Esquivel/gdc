@@ -4,23 +4,10 @@ import { getUsuarioActual } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
 import { getTiposProceso, getFasesProceso, getDiasNoHabiles } from "@/lib/catalogos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { AvanzarFaseForm } from "./avanzar-fase-form";
-import { AsignarDialog } from "./asignar-dialog";
 import { FiltrosExpedientes } from "./filtros-expedientes";
-import { EliminarExpedienteBoton } from "./eliminar-expediente-boton";
-import { siguienteFase, esFaseDeAudiencia, type FaseProceso } from "@/lib/fases";
-import { calcularVentana, calcularVentanaPreliminar } from "@/lib/ventana-audiencia";
+import { ExpedientesTabla } from "./expedientes-tabla";
 import { StatCard } from "@/components/stat-card";
-import { PlazoBar } from "@/components/plazo-bar";
 import { calcularEstadoPlazo } from "@/lib/plazo-audiencia";
 
 type Props = {
@@ -164,119 +151,14 @@ export default async function ExpedientesPage({ searchParams }: Props) {
           <CardTitle>Listado</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Número</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Subtipo</TableHead>
-                <TableHead>Pretensión</TableHead>
-                <TableHead>Físico/electr.</TableHead>
-                <TableHead>Cuantía</TableHead>
-                <TableHead>Fase actual</TableHead>
-                <TableHead>Estado (observación)</TableHead>
-                <TableHead>Plazo</TableHead>
-                {esAdmin && <TableHead>Asignado a</TableHead>}
-                {esAdmin && <TableHead>Acción</TableHead>}
-                {esAdmin && <TableHead className="text-right">Eliminar</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filas.map((exp) => {
-                const faseActual = exp.expediente_fases.find((f) => f.fecha_fin === null);
-                const fasesDelTipo = fasesProceso.filter(
-                  (f) => f.tipo_proceso_id === exp.tipo_proceso_id,
-                );
-                const proximaFase = faseActual
-                  ? siguienteFase(fasesDelTipo as FaseProceso[], faseActual.fase_id)
-                  : null;
-                const asignacionActual = exp.asignaciones.find((a) => a.activa);
-                const audienciaActiva = exp.audiencias.find((a) => a.estado === "programada");
-                const estadoPlazo = calcularEstadoPlazo(
-                  exp.fecha_notificacion_demanda,
-                  audienciaActiva?.fecha_limite_calculada ?? null,
-                );
-                // Ventana legal de la próxima audiencia, para mostrarla ANTES de
-                // programarla: es el "puede celebrarse entre tal y tal fecha"
-                // que el mínimo del rango nunca había llegado a producir.
-                const ventanaSugerida =
-                  proximaFase && esFaseDeAudiencia(proximaFase.nombre)
-                    ? proximaFase.nombre === "Audiencia preliminar"
-                      ? calcularVentanaPreliminar(
-                          exp.fecha_notificacion_demanda,
-                          exp.subtipos_proceso?.plazo_contestacion_dias ?? null,
-                          exp.subtipos_proceso?.plazo_audiencia_min_dias ?? null,
-                          exp.subtipos_proceso?.plazo_audiencia_max_dias ?? null,
-                          diasNoHabiles,
-                        )
-                      : calcularVentana(
-                          exp.audiencias.find((a) => a.tipo === "preliminar")?.fecha_programada ??
-                            null,
-                          exp.subtipos_proceso?.plazo_audiencia_fondo_min_dias ?? null,
-                          exp.subtipos_proceso?.plazo_audiencia_fondo_max_dias ?? null,
-                          diasNoHabiles,
-                        )
-                    : null;
-                return (
-                  <TableRow key={exp.id}>
-                    <TableCell>
-                      <Link
-                        href={`/expedientes/${exp.id}`}
-                        className="underline underline-offset-2"
-                      >
-                        {exp.numero_expediente}
-                      </Link>
-                    </TableCell>
-                    <TableCell>{exp.tipos_proceso?.nombre}</TableCell>
-                    <TableCell>{exp.subtipos_proceso?.nombre ?? "—"}</TableCell>
-                    <TableCell className="max-w-40 truncate">{exp.pretension ?? "—"}</TableCell>
-                    <TableCell className="capitalize">{exp.fisico_electronico ?? "—"}</TableCell>
-                    <TableCell>
-                      {exp.es_lanzamiento
-                        ? "Lanzamiento (sin tope)"
-                        : exp.cuantia
-                          ? `B/.${exp.cuantia}`
-                          : "Indeterminada"}
-                    </TableCell>
-                    <TableCell>{faseActual?.fases_proceso?.nombre ?? "—"}</TableCell>
-                    <TableCell className="max-w-40 truncate text-xs">
-                      {observacionPorExpediente.get(exp.id) ?? "—"}
-                    </TableCell>
-                    <TableCell>
-                      <PlazoBar estado={estadoPlazo} />
-                    </TableCell>
-                    {esAdmin && (
-                      <TableCell>
-                        <AsignarDialog
-                          expedienteId={exp.id}
-                          asistentes={asistentes ?? []}
-                          asignadoActualId={asignacionActual?.usuarios?.id ?? null}
-                          asignadoActualNombre={asignacionActual?.usuarios?.nombre_completo ?? null}
-                        />
-                      </TableCell>
-                    )}
-                    {esAdmin && (
-                      <TableCell>
-                        <AvanzarFaseForm
-                          expedienteId={exp.id}
-                          proximaFase={proximaFase}
-                          ventanaSugerida={ventanaSugerida}
-                        />
-                      </TableCell>
-                    )}
-                    {esAdmin && (
-                      <TableCell className="text-right">
-                        <EliminarExpedienteBoton
-                          expedienteId={exp.id}
-                          numeroExpediente={exp.numero_expediente}
-                        />
-                      </TableCell>
-                    )}
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+          <ExpedientesTabla
+            filas={filas}
+            fasesProceso={fasesProceso}
+            diasNoHabiles={diasNoHabiles}
+            asistentes={asistentes ?? []}
+            observacionPorExpediente={Object.fromEntries(observacionPorExpediente)}
+            esAdmin={esAdmin}
+          />
         </CardContent>
       </Card>
     </div>

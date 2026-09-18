@@ -4,7 +4,11 @@ import { useState } from "react";
 import { Pencil, Trash2, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { TablePagination } from "@/components/table-pagination";
+import { usePaginacion } from "@/hooks/use-paginacion";
 import { ENTIDAD_BASE_LABEL, METRICA_LABEL, type ResultadoKpi } from "@/lib/kpis";
+
+const POR_PAGINA = 10;
 import { ConfiguradorKpi, type KpiEditable } from "./configurador-kpi";
 import { KpiTendenciaChart } from "./kpi-tendencia-chart";
 import { eliminarKpi } from "./actions";
@@ -32,6 +36,11 @@ const COLOR_UMBRAL_DEFAULT = "text-primary";
 export function KpisPanel({ kpis, puedeEditar }: { kpis: KpiConValor[]; puedeEditar: boolean }) {
   const [kpiEditando, setKpiEditando] = useState<KpiEditable | null>(null);
   const [creandoNuevo, setCreandoNuevo] = useState(false);
+  const { pagina, totalPaginas, setPagina, inicio, fin } = usePaginacion(
+    kpis.length,
+    POR_PAGINA,
+  );
+  const kpisPagina = kpis.slice(inicio, fin);
 
   const activos = kpis.filter((k) => k.activo);
 
@@ -64,7 +73,7 @@ export function KpisPanel({ kpis, puedeEditar }: { kpis: KpiConValor[]; puedeEdi
               </TableRow>
             </TableHeader>
             <TableBody>
-              {kpis.map((kpi) => (
+              {kpisPagina.map((kpi) => (
                 <TableRow key={kpi.id}>
                   <TableCell>
                     <div className="flex flex-col">
@@ -131,6 +140,15 @@ export function KpisPanel({ kpis, puedeEditar }: { kpis: KpiConValor[]; puedeEdi
               )}
             </TableBody>
           </Table>
+          <div className="px-6 pb-4">
+            <TablePagination
+              pagina={pagina}
+              totalPaginas={totalPaginas}
+              onCambiar={setPagina}
+              total={kpis.length}
+              porPagina={POR_PAGINA}
+            />
+          </div>
         </div>
 
         <div className="rounded-sm border border-border bg-card p-6 shadow-sm">

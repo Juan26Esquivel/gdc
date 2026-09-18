@@ -1,15 +1,6 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { EstadoBadge } from "@/components/estado-badge";
+import { DocumentosTabla } from "./documentos-tabla";
 
 export default async function DocumentosPage() {
   const supabase = await createClient();
@@ -39,41 +30,7 @@ export default async function DocumentosPage() {
           <CardTitle>Listado</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Expediente</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Generado por</TableHead>
-                <TableHead>Confirmado por</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {documentos?.map((doc) => (
-                <TableRow key={doc.id}>
-                  <TableCell>{doc.expedientes?.numero_expediente}</TableCell>
-                  <TableCell>{doc.tipos_documento?.nombre}</TableCell>
-                  <TableCell>
-                    <EstadoBadge estado={doc.estado} />
-                  </TableCell>
-                  <TableCell>{doc.generado_por_usuario?.nombre_completo}</TableCell>
-                  <TableCell>{doc.confirmado_por_usuario?.nombre_completo ?? "—"}</TableCell>
-                  <TableCell>
-                    {doc.expedientes?.id && (
-                      <Link
-                        href={`/expedientes/${doc.expedientes.id}/documentos`}
-                        className="text-sm underline"
-                      >
-                        Ver expediente
-                      </Link>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <DocumentosTabla documentos={documentos ?? []} />
         </CardContent>
       </Card>
     </div>

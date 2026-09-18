@@ -16,6 +16,8 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+import { TablePagination } from "@/components/table-pagination";
+import { usePaginacion } from "@/hooks/use-paginacion";
 import type { Json } from "@/lib/supabase/database.types";
 
 type Registro = {
@@ -29,8 +31,15 @@ type Registro = {
   usuarios: { nombre_completo: string } | null;
 };
 
+const POR_PAGINA = 10;
+
 export function AuditoriaTabla({ registros }: { registros: Registro[] }) {
   const [seleccionado, setSeleccionado] = useState<Registro | null>(null);
+  const { pagina, totalPaginas, setPagina, inicio, fin } = usePaginacion(
+    registros.length,
+    POR_PAGINA,
+  );
+  const registrosPagina = registros.slice(inicio, fin);
 
   return (
     <>
@@ -44,7 +53,7 @@ export function AuditoriaTabla({ registros }: { registros: Registro[] }) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {registros.map((r) => (
+          {registrosPagina.map((r) => (
             <TableRow key={r.id} onClick={() => setSeleccionado(r)} className="cursor-pointer">
               <TableCell className="text-xs text-muted-foreground">
                 {new Date(r.created_at).toLocaleString("es-PA")}
@@ -63,6 +72,13 @@ export function AuditoriaTabla({ registros }: { registros: Registro[] }) {
           )}
         </TableBody>
       </Table>
+      <TablePagination
+        pagina={pagina}
+        totalPaginas={totalPaginas}
+        onCambiar={setPagina}
+        total={registros.length}
+        porPagina={POR_PAGINA}
+      />
 
       <Sheet open={seleccionado !== null} onOpenChange={(open) => !open && setSeleccionado(null)}>
         <SheetContent>

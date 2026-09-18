@@ -11,8 +11,12 @@ import {
 } from "@/components/ui/table";
 import { AvatarIniciales } from "@/components/avatar-iniciales";
 import { RolBadge } from "@/components/rol-badge";
+import { TablePagination } from "@/components/table-pagination";
+import { usePaginacion } from "@/hooks/use-paginacion";
 import { DetalleUsuarioSheet } from "./detalle-usuario-sheet";
 import type { RolGdc } from "@/lib/auth/current-user";
+
+const POR_PAGINA = 10;
 
 type Usuario = {
   id: string;
@@ -30,6 +34,11 @@ export function UsuariosTabla({
   usuarioActualId: string;
 }) {
   const [seleccionado, setSeleccionado] = useState<Usuario | null>(null);
+  const { pagina, totalPaginas, setPagina, inicio, fin } = usePaginacion(
+    usuarios.length,
+    POR_PAGINA,
+  );
+  const usuariosPagina = usuarios.slice(inicio, fin);
 
   return (
     <>
@@ -42,7 +51,7 @@ export function UsuariosTabla({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {usuarios.map((u) => (
+          {usuariosPagina.map((u) => (
             <TableRow
               key={u.id}
               onClick={() => setSeleccionado(u)}
@@ -62,6 +71,13 @@ export function UsuariosTabla({
           ))}
         </TableBody>
       </Table>
+      <TablePagination
+        pagina={pagina}
+        totalPaginas={totalPaginas}
+        onCambiar={setPagina}
+        total={usuarios.length}
+        porPagina={POR_PAGINA}
+      />
       <DetalleUsuarioSheet
         usuario={seleccionado}
         esCuentaPropia={seleccionado?.id === usuarioActualId}
