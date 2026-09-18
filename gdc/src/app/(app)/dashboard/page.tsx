@@ -5,6 +5,7 @@ import { getConfiguracionSistema, getDiasNoHabiles } from "@/lib/catalogos";
 import { contarDiasHabilesTranscurridos, sumarDiasHabiles } from "@/lib/dias-habiles";
 import { calcularEstadoPublicacionEdicto } from "@/lib/plazo-edicto";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatCard } from "@/components/stat-card";
 import { calcularSemaforo } from "@/lib/semaforo";
 import { calcularMovimientosSinTrabajar } from "@/lib/inactividad";
@@ -328,71 +329,85 @@ export default async function DashboardPage() {
         </span>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Expedientes activos por tipo de proceso</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <BarrasCategoriaChart datos={datosPorCategoria} />
-        </CardContent>
-      </Card>
+      <Tabs defaultValue="alertas-tiempo">
+        <TabsList>
+          <TabsTrigger value="alertas-tiempo">Alertas de tiempo</TabsTrigger>
+          <TabsTrigger value="pendientes">Pendientes de trabajo</TabsTrigger>
+          <TabsTrigger value="indicadores">Indicadores generales</TabsTrigger>
+        </TabsList>
 
-      <TarjetaSemaforo filas={filasSemaforo} tipos={tiposParaFiltro} />
+        <TabsContent value="alertas-tiempo" className="flex flex-col gap-4 pt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Expedientes activos por tipo de proceso</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <BarrasCategoriaChart datos={datosPorCategoria} />
+            </CardContent>
+          </Card>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <TarjetaMovimientosSinTrabajar items={itemsMovimientosSinTrabajar} umbralDias={umbralInactividadDias} />
-        <TarjetaPendientesNotificar items={itemsPendientesNotificar} plazoAdmisionDias={plazoAdmisionDias} />
-        <TarjetaEdictosSinPublicar items={itemsEdictosSinPublicar} plazoMeses={plazoEdictoMeses} />
-      </div>
+          <TarjetaSemaforo filas={filasSemaforo} tipos={tiposParaFiltro} />
+        </TabsContent>
 
-      <div className="grid grid-cols-1 gap-4">
-        <TarjetaAptosParaEmbargo
-          items={itemsAptosParaEmbargo}
-          plazoExcepcionDias={plazoExcepcionDias}
-          plazoEmbargoDias={plazoEmbargoDias}
-        />
-      </div>
+        <TabsContent value="pendientes" className="pt-4">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <TarjetaMovimientosSinTrabajar items={itemsMovimientosSinTrabajar} umbralDias={umbralInactividadDias} />
+            <TarjetaPendientesNotificar items={itemsPendientesNotificar} plazoAdmisionDias={plazoAdmisionDias} />
+            <TarjetaEdictosSinPublicar items={itemsEdictosSinPublicar} plazoMeses={plazoEdictoMeses} />
+          </div>
+        </TabsContent>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard icono={Gavel} label="Audiencias este mes" valor={audienciasEsteMes} />
-        <StatCard icono={FileText} label="Documentos por validar" valor={documentosPorValidar} />
-        <StatCard
-          icono={FileCheck}
-          label="Expedientes cerrados (mes)"
-          valor={expedientesCerradosMes}
-          destacado
-        />
-      </div>
+        <TabsContent value="indicadores" className="flex flex-col gap-4 pt-4">
+          <div className="grid grid-cols-1 gap-4">
+            <TarjetaAptosParaEmbargo
+              items={itemsAptosParaEmbargo}
+              plazoExcepcionDias={plazoExcepcionDias}
+              plazoEmbargoDias={plazoEmbargoDias}
+            />
+          </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Documentos Emitidos Este Mes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {datosPorTipoDoc.length > 0 ? (
-              <DocumentosPorTipoChart datos={datosPorTipoDoc} />
-            ) : (
-              <p className="text-sm text-muted-foreground">Sin documentos generados este mes todavía.</p>
-            )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Comparativo Mensual de Expedientes Ingresados</CardTitle>
-          </CardHeader>
-          <CardContent className="flex gap-8">
-            <div>
-              <p className="text-2xl font-bold">{expedientesMesActual}</p>
-              <p className="text-xs text-muted-foreground">Ingresados este mes</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{expedientesMesAnterior}</p>
-              <p className="text-xs text-muted-foreground">Ingresados mes anterior</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <StatCard icono={Gavel} label="Audiencias este mes" valor={audienciasEsteMes} />
+            <StatCard icono={FileText} label="Documentos por validar" valor={documentosPorValidar} />
+            <StatCard
+              icono={FileCheck}
+              label="Expedientes cerrados (mes)"
+              valor={expedientesCerradosMes}
+              destacado
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Documentos Emitidos Este Mes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {datosPorTipoDoc.length > 0 ? (
+                  <DocumentosPorTipoChart datos={datosPorTipoDoc} />
+                ) : (
+                  <p className="text-sm text-muted-foreground">Sin documentos generados este mes todavía.</p>
+                )}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Comparativo Mensual de Expedientes Ingresados</CardTitle>
+              </CardHeader>
+              <CardContent className="flex gap-8">
+                <div>
+                  <p className="text-2xl font-bold">{expedientesMesActual}</p>
+                  <p className="text-xs text-muted-foreground">Ingresados este mes</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{expedientesMesAnterior}</p>
+                  <p className="text-xs text-muted-foreground">Ingresados mes anterior</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
