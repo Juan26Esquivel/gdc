@@ -12,6 +12,7 @@ import { AvatarIniciales } from "@/components/avatar-iniciales";
 import { RolBadge } from "@/components/rol-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/password-input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -36,6 +37,7 @@ type Usuario = {
   nombre_completo: string;
   rol: RolGdc;
   activo: boolean;
+  email: string | null;
 };
 
 const ESTADO_INICIAL: EstadoCrearUsuario = {};
@@ -106,6 +108,9 @@ function FormularioUsuario({
         <AvatarIniciales nombreCompleto={usuario.nombre_completo} className="size-14 text-base" />
         <div>
           <p className="font-heading text-lg font-semibold">{usuario.nombre_completo}</p>
+          {usuario.email && (
+            <p className="text-sm text-muted-foreground">{usuario.email}</p>
+          )}
           <RolBadge rol={usuario.rol} />
         </div>
       </div>
@@ -166,9 +171,8 @@ function FormularioUsuario({
         <form action={formActionReset} className="flex flex-col gap-2">
           <input type="hidden" name="id" value={usuario.id} />
           <input type="hidden" name="auth_user_id" value={usuario.auth_user_id} />
-          <Input
+          <PasswordInput
             name="nueva_contrasena"
-            type="password"
             placeholder="Nueva contraseña (mín. 8 caracteres)"
             minLength={8}
             required

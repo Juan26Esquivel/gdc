@@ -24,6 +24,7 @@ type Usuario = {
   nombre_completo: string;
   rol: RolGdc;
   activo: boolean;
+  email: string | null;
 };
 
 export function UsuariosTabla({

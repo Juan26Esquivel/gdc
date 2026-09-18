@@ -5,6 +5,7 @@ import { crearUsuario, type EstadoCrearUsuario } from "./actions";
 import { ROL_LABEL } from "@/lib/roles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/password-input";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -60,7 +61,7 @@ export function NuevoUsuarioDialog() {
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="password">Contraseña temporal</Label>
-            <Input id="password" name="password" type="password" required minLength={8} />
+            <PasswordInput id="password" name="password" required minLength={8} />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="rol">Rol</Label>
