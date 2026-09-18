@@ -24,17 +24,22 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const notificaciones = await obtenerNotificaciones(usuario.rol);
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="flex w-64 shrink-0 flex-col bg-sidebar p-4 text-sidebar-foreground">
-        <div className="mb-6 flex items-center gap-2 px-2">
-          <Scale className="size-6 text-sidebar-primary-foreground" />
-          <div>
-            <p className="font-heading text-lg font-semibold leading-tight">GDC</p>
-            <p className="text-xs text-sidebar-foreground/60">Gestor Documental</p>
+    <div className="flex h-screen overflow-hidden">
+      <aside className="flex h-full w-64 shrink-0 flex-col bg-sidebar text-sidebar-foreground">
+        {/* Scroll propio del menú: si la lista de opciones creciera más de lo
+            que cabe en la pantalla, se desplaza sola, sin arrastrar consigo
+            el bloque de usuario/cerrar sesión de abajo. */}
+        <div className="flex-1 overflow-y-auto p-4">
+          <div className="mb-6 flex items-center gap-2 px-2">
+            <Scale className="size-6 text-sidebar-primary-foreground" />
+            <div>
+              <p className="font-heading text-lg font-semibold leading-tight">GDC</p>
+              <p className="text-xs text-sidebar-foreground/60">Gestor Documental</p>
+            </div>
           </div>
+          <SidebarNav rol={usuario.rol} />
         </div>
-        <SidebarNav rol={usuario.rol} />
-        <div className="border-t border-sidebar-border pt-4">
+        <div className="shrink-0 border-t border-sidebar-border p-4">
           <div className="flex items-center gap-2 px-2 pb-2">
             <AvatarIniciales nombreCompleto={usuario.nombre_completo} />
             <div className="min-w-0">
@@ -54,8 +59,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </form>
         </div>
       </aside>
-      <div className="flex flex-1 flex-col">
-        <header className="flex h-16 items-center gap-4 border-b border-border bg-card px-6">
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <header className="flex h-16 shrink-0 items-center gap-4 border-b border-border bg-card px-6">
           <GlobalSearch />
           <NotificacionesBell items={notificaciones} />
           <div className="flex items-center gap-2">
@@ -66,7 +71,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <AvatarIniciales nombreCompleto={usuario.nombre_completo} />
           </div>
         </header>
-        <main className="flex-1 bg-background p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto bg-background p-6">{children}</main>
       </div>
     </div>
   );
