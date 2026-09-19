@@ -14,6 +14,29 @@ function esRolValido(valor: string): valor is RolGdc {
   return (ROLES_VALIDOS as string[]).includes(valor);
 }
 
+/**
+ * Protección contra quedarse sin nadie que pueda administrar el despacho:
+ * ni desactivar ni cambiarle el rol al último Administrador activo de un
+ * despacho. Sin esto, un Administrador podía desactivar a los demás (o
+ * cambiarse su propio rol) y dejar el despacho sin nadie con acceso total,
+ * sin que ningún otro rol pudiera revertirlo. Verificado con el usuario
+ * (2026-09-19): el riesgo real era este, no una jerarquía de roles nueva.
+ */
+async function esUltimoAdministradorActivo(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  despachoId: string,
+  usuarioIdExcluido: string,
+): Promise<boolean> {
+  const { count } = await supabase
+    .from("usuarios")
+    .select("id", { count: "exact", head: true })
+    .eq("despacho_id", despachoId)
+    .eq("rol", "administrador")
+    .eq("activo", true)
+    .neq("id", usuarioIdExcluido);
+  return (count ?? 0) === 0;
+}
+
 export async function crearUsuario(
   _prevState: EstadoCrearUsuario,
   formData: FormData,
@@ -96,6 +119,25 @@ export async function actualizarUsuario(
   }
 
   const supabase = await createClient();
+
+  if (rol !== "administrador") {
+    const { data: objetivo } = await supabase
+      .from("usuarios")
+      .select("rol, activo, despacho_id")
+      .eq("id", id)
+      .single();
+
+    if (objetivo?.rol === "administrador" && objetivo.activo) {
+      const seQuedaSinAdmin = await esUltimoAdministradorActivo(supabase, objetivo.despacho_id, id);
+      if (seQuedaSinAdmin) {
+        return {
+          error:
+            "No puedes quitarle el rol de Administrador: es el único activo del despacho. Asigna primero el rol a otra cuenta.",
+        };
+      }
+    }
+  }
+
   const { error } = await supabase
     .from("usuarios")
     .update({ nombre_completo: nombreCompleto, rol })
@@ -122,6 +164,25 @@ export async function alternarActivoUsuario(id: string, activo: boolean): Promis
   }
 
   const supabase = await createClient();
+
+  if (!activo) {
+    const { data: objetivo } = await supabase
+      .from("usuarios")
+      .select("rol, despacho_id")
+      .eq("id", id)
+      .single();
+
+    if (objetivo?.rol === "administrador") {
+      const seQuedaSinAdmin = await esUltimoAdministradorActivo(supabase, objetivo.despacho_id, id);
+      if (seQuedaSinAdmin) {
+        return {
+          error:
+            "No puedes desactivar esta cuenta: es el único Administrador activo del despacho.",
+        };
+      }
+    }
+  }
+
   const { error } = await supabase.from("usuarios").update({ activo }).eq("id", id);
   if (error) return { error: error.message };
 
